@@ -7,6 +7,10 @@
 #alias rm='rm -i'
 #alias mv='mv -i'
 #alias cp='cp -i'
+alias rmf="rm -rf"
+alias cpr="cp -R"
+
+alias mkdir="mkdir -p"
 
 # List hidden files
 alias l.='ls -d .* --color=auto'
@@ -30,13 +34,18 @@ alias ..9='cd ../../../../../../../../..'
 ################################################################################
 alias now='date +"%T"'
 alias timestamp='date +%Y%m%d_%H%M%S'
-alias path='echo -e ${PATH//:/\\n}'
+alias path='echo $PATH'
+alias path-lines='echo -e ${PATH//:/\\n}'
 
 alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
 alias alert-sound='while true; do sleep 1; echo -e -n "\a"; done'
 alias soundalert=alert-sound
 alias alert-done='echo "Done at: $(date)"; alert "Done at: $(date)"; alert-sound'
 
+alias sourcebash-rc="source ~/.bashrc"
+alias sourcebash-aliases="source ~/.bash_aliases"
+
+alias rclear="reset && clear"
 
 ##
 ## Common apps
@@ -64,15 +73,7 @@ alias psmem10='ps auxf | sort -nr -k 4 | head -10'
 alias pscpu='ps auxf | sort -nr -k 3'
 alias pscpu10='ps auxf | sort -nr -k 3 | head -10'
 
-# Network
-function DiscoverMyIP() {
-  local interface=(`ifconfig -s | grep -o eth[0-9]`)
-  [ ${#interface[@]} -ne "1" ] && {
-    echo "[$FUNCNAME] ERROR: Cannot discover IP address"
-    return 1
-  }
-  local ip=`ifconfig $interface | grep -o "[0-9][0-9]*\.[0-9]*\.[0-9]*\.[0-9]*" | grep -m 1 ".*"`
-  echo $ip
-}
-export MY_IP=$(DiscoverMyIP)
-alias my-ip=DiscoverMyIP
+
+alias clear="clear && printf '\e[3J'"
+
+alias sudovim='sudo vim -S /lhome/$USER/.vimrc'
