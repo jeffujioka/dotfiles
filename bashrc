@@ -140,3 +140,34 @@ if [ -d ~/.bashrc.d ]; then
   done
   unset rc
 fi
+
+parse_git_branch() {
+     git branch 2> /dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1)/'
+}
+
+get_battery_level() {
+  acpi -b 2> /dev/null | grep "Battery 0" | grep -Po '[0-9]+%'
+}
+
+PS1="\e[1;94m\u\e[39m🎯\e[34m\h🔓\[\e[32m\]\w\[\e[22;91m\]\$(parse_git_branch)\[\e[00m\] ⏰ \[\e[1m\]\t ⛽ \$(get_battery_level) $\n \[\e[0;5m\]\$\[\e[0;0m\] "
+
+# turn off "suspend/resume" feature
+stty -ixon
+
+# HSTR configuration - add this to ~/.bashrc
+alias hh=hstr                    # hh to be alias for hstr
+export HSTR_CONFIG=hicolor       # get more colors
+export HISTCONTROL=ignoreboth:erasedups     # leading space hides commands from history
+export HISTFILESIZE=5000        # increase history file size (default is 500)
+export HISTSIZE=${HISTFILESIZE}  # increase history size (default is 500)
+# ensure synchronization between bash memory and history file
+# export PROMPT_COMMAND="history -a; history -n; ${PROMPT_COMMAND}"
+# if this is interactive shell, then bind hstr to Ctrl-r (for Vi mode check doc)
+if [[ $- =~ .*i.* ]]; then bind '"\C-r": "\C-a hstr -- \C-j"'; fi
+# if this is interactive shell, then bind 'kill last command' to Ctrl-x k
+
+if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
+  exec tmux
+fi
+https://unix.stackexchange.com/a/113768
+
