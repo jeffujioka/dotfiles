@@ -1,0 +1,238 @@
+# ~/.config/starship.toml
+
+add_newline = false
+command_timeout = 1000
+
+format = """
+$user\
+$hostname\
+$directory\
+${custom.giticon}\
+$git_branch\
+$git_status\
+$fill \
+$cmd_duration\
+$python\
+$aws\
+$c\
+$java\
+$nodejs\
+$rust\
+$package\
+$docker_context\
+$memory_usage\
+${custom.cpp}\
+${custom.vpn}\
+$battery\
+$time\
+$os 
+$character
+"""
+# [](#1C3A5E)$time[ ](#1C3A5E)
+
+# right_format = """
+# $all\
+# $cmd_duration\
+# $python\
+# $aws\
+# $c\
+# $java\
+# $nodejs\
+# $rust\
+# $package\
+# $docker_context\
+# $memory_usage\
+# ${custom.cpp}\
+# ${custom.vpn}\
+# $battery\
+# $os\
+# $time\
+# """
+
+continuation_prompt = '▶▶ '
+
+[fill]
+symbol = ' '
+style = 'bold green'
+
+[character]
+success_symbol = "[](bold green)"
+error_symbol = "[](bold red)"
+
+[battery]
+disabled = false
+full_symbol = '󱊣'
+charging_symbol = '󱊦'
+discharging_symbol = '󱊣'
+format = '[$symbol$percentage]($style) '
+
+[[battery.display]]
+threshold = 100
+style = 'bold green'
+
+# [[battery.display]]
+# threshold = 85
+# charging_symbol = '󱊦'
+# discharging_symbol = '󱊣'
+# style = 'bold green'
+
+[[battery.display]]
+threshold = 50
+charging_symbol = '󱊥'
+discharging_symbol = '󱊢'
+style = 'bold yellow'
+
+[[battery.display]]
+threshold = 20
+charging_symbol = '󱊤'
+discharging_symbol = '󱊡'
+style = 'bold orange'
+
+[[battery.display]]
+threshold = 10
+charging_symbol = '󰢜'
+discharging_symbol = '󱃍'
+style = 'bold red'
+
+[time]
+disabled = true
+time_format = "%r" # Hour:Minute Format
+style = "bg:#1d2230"
+format = '[](#1C3A5E)[[ 󱑍 $time ](bg:#1C3A5E fg:#8DFBD2)]($style)[ ](#1C3A5E)'
+# [](#1C3A5E)$time[ ](#1C3A5E)
+
+[cmd_duration]
+format = 'last command: [$duration](bold yellow) '
+
+# ---
+
+[os]
+format = '[$symbol](bold white) '   
+disabled = false
+# style = "bg:#1d2230"
+
+[os.symbols]
+Macos = '󰀵'
+Ubuntu = ""
+# Ubuntu = "🐧"
+Linux = ""
+
+[username]
+format = '[$user]($style) '
+disabled = false
+
+# Shows the hostname
+[hostname]
+ssh_only = true
+format = '[$hostname](bold yellow) '
+disabled = false
+ssh_symbol = " "
+detect_env_vars = ['!TMUX', 'SSH_CONNECTION']
+
+# Shows current directory
+[directory]
+truncation_length = 3
+fish_style_pwd_dir_length=2
+home_symbol = '󰋜 ~'
+read_only_style = '197'
+read_only = '  '
+format = '[$path]($style)[$read_only]($read_only_style) '
+
+# Shows current git branch
+[git_branch]
+symbol = " "
+format = 'on [$symbol$branch]($style)'
+# truncation_length = 4
+truncation_symbol = '…/'
+style = 'bold green'
+
+# Shows current git status
+[git_status]
+format = '[ \[$all_status$ahead_behind\]]($style) '
+style = 'bold green'
+# conflicted = '' 
+up_to_date = ''
+# untracked = ''
+ahead = '⇡${count}'
+diverged = '⇕⇡${ahead_count}⇣${behind_count}'
+behind = '⇣${count}'
+# stashed = '\$'
+# modified = ''
+staged = '[++\($count\)](green)'
+# renamed = '»'
+# deleted = ''
+
+[directory.substitutions]
+"Documents" = "󰈙 "
+"Downloads" = " "
+"Music" = " "
+"Pictures" = " "
+
+# ---
+
+[aws]
+symbol = "  "
+
+[c]
+symbol = " "
+detect_extensions = ['.c']
+
+[cmake]
+format = "[$symbol($version )]($style)"
+detect_extensions = ['.cmake']
+disabled = false
+
+[docker_context]
+symbol = " "
+
+[java]
+symbol = " "
+
+[memory_usage]
+symbol = "󰍛 "
+disabled = true
+style='bold dimmed white'
+threshold = 1
+format = "$symbol [${ram}(|${swap})]($style) "
+
+[nodejs]
+symbol = " "
+
+[package]
+symbol = "󰏗 "
+
+[python]
+symbol = " "
+pyenv_version_name = true
+
+[rust]
+symbol = " "
+
+# --- Custom modules
+
+[custom.cpp]
+description = "custom C++ config"
+command = "echo "
+detect_extensions = ['.h', '.hpp', 'cpp', '.cc']
+style = "blue"
+when = true
+
+[custom.giticon]
+disabled = false
+description = "Display symbol for remote Git server"
+command = "check-git-remote.sh"
+when = 'git rev-parse --is-inside-work-tree 2> /dev/null'
+shell = ["bash", "--noprofile", "--norc"]
+format = "at $output  "
+
+[custom.vpn]
+disabled = false
+command = "echo  󰒄"
+style = "green red"
+when = 'ip route show  | grep zcctun | awk "{ print $1 }" | grep "^53\." || daimler-vpn -s | grep -w "Connection Established"'
+
+[custom.newline]
+disabled = false
+command = "printf '\\x0A'"
+style = "green red"
+when = "true"
