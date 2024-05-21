@@ -45,3 +45,8 @@ bin/
 *.zst
 *.lz4
 *.zip
+
+.android
+.repo
+.cargo
+.config

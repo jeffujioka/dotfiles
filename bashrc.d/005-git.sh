@@ -1,0 +1,16 @@
+#!/usr/bin/bash
+
+alias gst="git status"
+alias gpf="git push -f"
+alias gpr="git pull --rebase"
+alias gco="git checkout"
+alias gcob="git checkout -b"
+alias gadd="git add"
+alias grm="git rm"
+alias grmf="git rm -f"
+alias glg="git lg"
+alias glgna="git lg --no-abbrev"
+alias gchlg="git changelog"
+alias gcm="git commit"
+alias gcma="git commit --amend"
+alias gcane="git cane"

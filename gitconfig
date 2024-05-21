@@ -32,8 +32,17 @@
 	co = checkout
 	st = status
 	dc = diff --cached
+	fpa = fetch --prune --all
+	cane = commit --amend --no-edit
+	pf = push -f
+	pr = pull --rebase
+	nb = checkout -b
+
 	alias = !git config --global -l | grep 'alias.' | cut -d. -f2-
 	codereview = log --decorate -p --reverse
+    changelog = log --abbrev-commit --pretty=format:'%h %s'
+	lg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+	changelog = log --graph --pretty=format:'%Cred%h%Creset %s' --abbrev-commit
 	log-compact = log --abbrev-commit --decorate=no --pretty=format:"%h%x09%an%x09%ad%x09%s" --date=short
 	log-diff = log --abbrev-commit --decorate -p
 	log-changed = log --name-status
