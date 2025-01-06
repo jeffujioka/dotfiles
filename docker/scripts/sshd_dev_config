@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+LogLevel DEBUG2
+PermitRootLogin yes
+PasswordAuthentication yes
+Subsystem sftp /usr/lib/openssh/sftp-server
