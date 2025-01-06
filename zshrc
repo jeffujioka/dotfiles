@@ -31,12 +31,13 @@ source "${ZINIT_HOME}/zinit.zsh"
 zinit light zsh-users/zsh-syntax-highlighting
 zinit light zsh-users/zsh-completions
 zinit light zsh-users/zsh-autosuggestions
-# zinit light Aloxaf/fzf-tab
+zinit light Aloxaf/fzf-tab
 
 # Add in snippets
 zinit snippet OMZP::git
 zinit snippet OMZP::sudo
 zinit snippet OMZP::command-not-found
+zinit snippet OMZP::jira
 
 # Load completions
 autoload -Uz compinit && compinit
@@ -70,13 +71,14 @@ setopt hist_ignore_space
 setopt hist_save_no_dups
 
 # Completion styling
-# zstyle ':fzf-tab:*' popup-min-size 80 12
+zstyle ':fzf-tab:*' popup-min-size 80 12
 zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
 zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
-zstyle ':completion:*' menu select
-# zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls --color $realpath'
-# zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
-# zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
+zstyle ':completion:*' menu no
+# zstyle ':completion:*' menu select
+zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls --color $realpath'
+zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
+zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
 
 bindkey "^[[1;5C" forward-word
 bindkey "^[[1;5D" backward-word
@@ -103,6 +105,10 @@ if [ -d "${HOME}/.bashrc.d" ]; then
     fi
   done
   unset rc
+fi
+
+if [ -x "${HOME}/.bash_completion" ]; then
+  . "${HOME}/.bash_completion"
 fi
 
 export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"

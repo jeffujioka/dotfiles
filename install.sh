@@ -41,8 +41,8 @@ install_dependencies() {
     jp2a
 
   # https://gist.github.com/trungnt13/4466aa135026c6e21786ea0964f46171
-  if [ ! -f "${HOME}/.bash_completion/tmux_completion" ]; then
-    curl -o "${HOME}/.bash_completion/tmux_completion" https://raw.githubusercontent.com/imomaliev/tmux-bash-completion/master/completions/tmux
+  if [ ! -f "${HOME}/.bash_completion.d/tmux_completion" ]; then
+    curl -o "${HOME}/.bash_completion.d/tmux_completion" https://raw.githubusercontent.com/imomaliev/tmux-bash-completion/master/completions/tmux
   fi
 
   if ! command -v cargo > /dev/null 2>&1 ; then
@@ -59,7 +59,7 @@ install_dependencies() {
   fi
   
   echo "Installing Rust-based tools..."
-  cargo install alacritty procs du-dust zoxide ripgrep fd-find bat exa viu --locked
+  cargo install procs du-dust zoxide ripgrep fd-find bat exa viu --locked
 
   if [ ! -f "${USER_LOCAL_BIN}/starship" ]; then
     echo -e "\n\n"
@@ -86,22 +86,6 @@ install_dependencies() {
     popd > /dev/null 2>&1 || echo "failed to popd"
   fi
 
-  if [ ! -d ".ble.sh" ]; then
-    echo -e "\n\n"
-    echo "Cloning Ble.sh..."
-    git clone --recursive --depth 1 --shallow-submodules https://github.com/akinomyoga/ble.sh.git .ble.sh
-  fi
-
-  if [ -d ".ble.sh" ]; then
-    echo "Pulling new changes from master..."
-    pushd .ble.sh > /dev/null 2>&1 || echo "pushd .ble.sh has failed"
-    git fetch --all --prune
-    git pull --rebase origin master
-    popd > /dev/null 2>&1 || echo "popd has failed!"
-
-    make -C .ble.sh install PREFIX="${USER_LOCAL_HOME}"
-  fi
-
   if [ ! -d ".fzf" ]; then
     echo -e "\n\n"
     echo "Installing fzf..."
@@ -117,25 +101,9 @@ install_dependencies() {
     ./install --all --xdg --completion --no-zsh --no-fish --no-update-rc
     popd > /dev/null 2>&1 || echo ".fzf popd has failed"
   fi
-
-  if [ ! -d ".neofetch" ] ; then
-    echo "cloning neofetch..."
-    git clone https://github.com/dylanaraps/neofetch .neofetch
-  else
-    pushd .neofetch > /dev/null 2>&1 || echo "failed to pushd .neofetch"
-    git fetch --all --prune
-    git pull --rebase origin master
-    popd > /dev/null 2>&1 || echo ""
-  fi
-
-  if pushd .neofetch ; then
-    echo "installing.. "
-    make PREFIX="${USER_LOCAL_HOME}" install
-    popd || echo ".neofetch popd has failed!" # this only to silence the shlint as it is unlikely to occurr
-  fi
 }
 
-function create_backup() {
+function backup_this() {
   file="$1"
 
   if [ ! -e "${file}" ]; then
@@ -158,46 +126,48 @@ function create_backup() {
   mv "${file}" "${bak_dir}/${bak_name}"
 }
 
-function gen_symlinks() {
+function create_backups() {
   mkdir -p "${bak_dir}"
   
-  create_backup "${HOME}/.bashrc"
+  mkdir -p "${HOME}/.bash_completion"
+  ln -srf bash_completion "${HOME}/.bash_completion"
+  
+  backup_this "${HOME}/.bashrc"
   ln -srf bashrc "${HOME}/.bashrc"
   
-  create_backup "${HOME}/.bash_aliases"
+  backup_this "${HOME}/.zshrc"
+  ln -srf zshrc "${HOME}/.zshrc"
+  
+  backup_this "${HOME}/.bash_aliases"
   ln -srf bash_aliases "${HOME}/.bash_aliases"
   
-  create_backup "${HOME}/.bash_aliases.d"
-  ln -srf bash_aliases.d "${HOME}/.bash_aliases.d"
-  
-  mkdir -p "${HOME}/.bash_completion"
-  ln -srf bash_completion/* "${HOME}/.bash_completion/"
-  
-  create_backup "${HOME}/.bashrc.d"
+  backup_this "${HOME}/.bashrc.d"
   ln -srf bashrc.d "${HOME}/.bashrc.d"
 
-  create_backup "${XDG_CONFIG_HOME}/starship.toml"
+  ln -srf config/ascii-art-goku.txt "${XDG_CONFIG_HOME}/"
+
+  backup_this "${XDG_CONFIG_HOME}/starship.toml"
   ln -srf config/starship.toml "${XDG_CONFIG_HOME}/"
 
-  create_backup "${XDG_CONFIG_HOME}/fzf.bash"
+  backup_this "${XDG_CONFIG_HOME}/fzf/fzf.bash"
   ln -srf config/fzf.bash "${XDG_CONFIG_HOME}/"
 
-  create_backup "${XDG_CONFIG_HOME}/neofetch"
-  ln -srf config/neofetch/* "${XDG_CONFIG_HOME}/neofetch/"
+  backup_this "${XDG_CONFIG_HOME}/fzf/fzf.zsh"
+  ln -srf config/fzf.zsh "${XDG_CONFIG_HOME}/"
 
-  ln -srf bin/* "${USER_LOCAL_BIN}/"
-
-  create_backup "${HOME}/.gitignore"
+  backup_this "${HOME}/.gitignore"
   ln -srf gitignore "${HOME}/.gitignore"
 
-  create_backup "${HOME}/.gitconfig"
+  backup_this "${HOME}/.gitconfig"
   ln -srf gitconfig "${HOME}/.gitconfig"
 
-  create_backup "${HOME}/.tmux.conf"
+  backup_this "${HOME}/.tmux.conf"
   ln -srf tmux.conf "${HOME}/.tmux.conf"
 
-  create_backup "${HOME}/.vimrc"
+  backup_this "${HOME}/.vimrc"
   ln -srf vimrc "${HOME}/.vimrc"
+
+  ln -srf bin/* "${USER_LOCAL_BIN}/"
 }
 
 installAll=""
@@ -242,7 +212,7 @@ if [ -z "${installAll}" ] ; then
 fi
 
 install_dependencies "${installAll}"
-gen_symlinks
+create_backups
 
 echo ""
 echo "dotfiles have been successfully installed"

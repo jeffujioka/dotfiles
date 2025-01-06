@@ -12,7 +12,7 @@ export FZF_CTRL_R_OPTS="${FZF_CTRL_R_OPTS:+$FZF_CTRL_R_OPTS }--preview 'echo {}'
 export FZF_PREVIEW_OPTS="--preview '${FZF_PREVIEW_COMMAND}'"
 export FZF_BIND_OPTS="--bind='f3:execute(bat --style=numbers {} || less -f {}),f2:toggle-preview,ctrl-d:half-page-up,ctrl-a:select-all+accept,ctrl-y:execute-silent(echo {+} | xsel -i -b)'"
 export FZF_DEFAULT_OPTS="${FZF_GEN_OPTS} ${FZF_PREVIEW_OPTS} ${FZF_PREVIEW_WIN_OPTS} ${FZF_BIND_OPTS}"
-export FZF_DEFAULT_COMMAND='git ls-files --cached --others --exclude-standard | fd --type f --type l --type d $FD_OPTIONS'
+  # export FZF_DEFAULT_COMMAND='git ls-files --cached --others --exclude-standard | fd --type f --type l --type d $FD_OPTIONS'
 export FZF_COMPLETION_TRIGGER=";;"
 
 eval "$(fzf --zsh)"
