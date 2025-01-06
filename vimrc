@@ -52,3 +52,6 @@ nmap <C-w> :q<CR>
 
 "set timeoutlen=1000
 
+" https://wiki.archlinux.org/title/Alacritty
+set ttymouse=sgr
+set mouse=a

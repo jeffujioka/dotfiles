@@ -1,2 +1,5 @@
 *~
 *.bkp*
+
+.fzf
+.tmux
