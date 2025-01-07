@@ -124,11 +124,6 @@ if command -v starship &> /dev/null ; then
   eval "$(starship init zsh)"
 fi
 
-if command -v zoxide &> /dev/null ; then
-  echo "  󰰸 zoxide"
-  eval "$(zoxide init --cmd cd zsh)"
-fi
-
 if [[ -L "${XDG_CONFIG_HOME}/fzf/fzf.zsh" || -f "${XDG_CONFIG_HOME}/fzf/fzf.zsh" ]]; then
   echo "  󰮗 fzf"
   source "${XDG_CONFIG_HOME}/fzf/fzf.zsh"
@@ -137,4 +132,9 @@ fi
 if [[ -L "${XDG_CONFIG_HOME}/cargo/env" || -f "${XDG_CONFIG_HOME}/cargo/env" ]]; then
   echo "  󱣘 cargo"
   source "${XDG_CONFIG_HOME}/cargo/env"
+fi
+
+if command -v zoxide &> /dev/null ; then
+  echo "  󰰸 zoxide"
+  eval "$(zoxide init --cmd cd zsh)"
 fi
