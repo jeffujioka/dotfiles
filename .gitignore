@@ -1,5 +1,11 @@
 *~
 *.bkp*
 
+.gitrepos
 .fzf
 .tmux
+
+.gitconfig
+.git_extra_configs
+.git_downloads
+.config.properties

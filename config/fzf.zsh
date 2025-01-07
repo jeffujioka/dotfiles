@@ -1,8 +1,5 @@
 # Setup fzf
 # ---------
-if [[ ! "$PATH" == */lhome/jfujiok/.fzf/bin* ]]; then
-  PATH="${PATH:+${PATH}:}/lhome/jfujiok/.fzf/bin"
-fi
 
 export FD_OPTIONS="--follow --exclude .git --exclude node_modules"
 export FZF_GEN_OPTS="--height 50% -1 --reverse --multi --inline-info"

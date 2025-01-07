@@ -21,8 +21,13 @@ ARG DEV_HOME=/lhome/${DEV_USER_NAME}
 
 ENV ROOT_PWD=1234
 
-RUN groupadd -g ${DOMAINUSERS_GID} domainusers \
-    && useradd -m -d ${DEV_HOME} ${DEV_USER_NAME} -u ${DEV_UID} -g domainusers \
+RUN if ! getent group ${DOMAINUSERS_GID}; then \
+        groupadd -g ${DOMAINUSERS_GID} domainusers; \
+    else \
+        EXISTING_GROUP=$(getent group ${DOMAINUSERS_GID} | cut -d: -f1); \
+        echo "Group with GID ${DOMAINUSERS_GID} already exists as $EXISTING_GROUP"; \
+    fi \
+    && useradd -m -d ${DEV_HOME} ${DEV_USER_NAME} -u ${DEV_UID} -g ${EXISTING_GROUP:-domainusers} \
     && usermod -a -G sudo ${DEV_USER_NAME} \
     && yes ${DEV_USER_PWD} | passwd ${DEV_USER_NAME} \
     && echo 'root:'${ROOT_PWD} | chpasswd
