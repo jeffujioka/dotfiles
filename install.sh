@@ -175,6 +175,22 @@ install_dependencies() {
     ./install.sh
     popd > /dev/null 2>&1 || echo "Failed to popd"
   fi
+
+  if [ ! -d "${USER_GIT_DOWNLOADS}/mate" ]; then
+    echo "Cloning mate..."
+    git clone --depth 1 https://github.com/jeffujioka/mate.git ${USER_GIT_DOWNLOADS}/mate
+  else
+    echo "Updating mate repository..."
+    pushd "${USER_GIT_DOWNLOADS}/mate" > /dev/null 2>&1 || echo "Failed to pushd ${USER_GIT_DOWNLOADS}/mate"
+    git fetch --all --prune
+    git pull --rebase origin master
+    popd > /dev/null 2>&1 || echo "Failed to popd"
+  fi
+
+  if pushd "${USER_GIT_DOWNLOADS}/mate" ; then
+    ./install.sh
+    popd > /dev/null 2>&1 || echo "Failed to popd"
+  fi
 }
 
 function backup_this() {
