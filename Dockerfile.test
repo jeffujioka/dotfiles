@@ -1,0 +1,35 @@
+# Build and run:
+#   docker build --build-arg DEV_USER_NAME=$USER --build-arg=DEV_USER_PWD=1234 --build-arg DEV_UID=$(id -u) --build-arg DOMAINUSERS_GID=$(id -g) --rm -t dotfiles:test -f Dockerfile.test docker
+#   docker build --build-arg DEV_USER_NAME=$USER --build-arg=DEV_USER_PWD=1234 --build-arg DEV_UID=$(id -u) --build-arg DOMAINUSERS_GID=$(id -g) --rm -t dotfiles:latest -f Dockerfile docker
+#
+# ssh credentials (test user):
+#   ssh -t -p 3000 $USER@localhost "bash --login"
+#   ssh -t -p 3000 $USER@localhost "cd ~/path/to/project/ ; bash --login"
+
+FROM ubuntu:22.04
+
+# Update package lists and install SSH server
+RUN apt-get update && apt-get upgrade -y \
+    && apt-get install -y sudo zsh \
+    && apt-get clean
+
+ARG DEV_USER_NAME=dev
+ARG DEV_USER_PWD=1234
+ARG DEV_UID=365439264
+ARG DOMAINUSERS_GID=2130182657
+ARG DEV_HOME=/lhome/${DEV_USER_NAME}
+
+ENV ROOT_PWD=1234
+
+RUN if ! getent group ${DOMAINUSERS_GID}; then \
+        groupadd -g ${DOMAINUSERS_GID} domainusers; \
+    else \
+        EXISTING_GROUP=$(getent group ${DOMAINUSERS_GID} | cut -d: -f1); \
+        echo "Group with GID ${DOMAINUSERS_GID} already exists as $EXISTING_GROUP"; \
+    fi \
+    && useradd -m -d ${DEV_HOME} ${DEV_USER_NAME} -u ${DEV_UID} -g ${EXISTING_GROUP:-domainusers} \
+    && usermod -a -G sudo ${DEV_USER_NAME} \
+    && yes ${DEV_USER_PWD} | passwd ${DEV_USER_NAME} \
+    && echo 'root:'${ROOT_PWD} | chpasswd
+
+RUN usermod -s /bin/bash ${DEV_USER_NAME}
