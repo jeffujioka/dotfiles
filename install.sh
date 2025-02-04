@@ -125,6 +125,15 @@ install_dependencies() {
   fi
 
   if [ -d "${USER_GIT_DOWNLOADS}/tmux" ]; then
+    if [ ! -d "~/.tmux/plugins/tpm" ]; then
+      git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+    else
+      echo "Updating tmux tpm repository..."
+      pushd "~/.tmux/plugins/tpm" > /dev/null 2>&1 || echo "Failed to pushd .tmux/plugins/tpm"
+      git fetch --all --prune
+      git pull --rebase origin master
+      popd > /dev/null 2>&1 || echo "Failed to popd"
+    fi
     echo "Building tmux..."
     pushd "${USER_GIT_DOWNLOADS}/tmux" > /dev/null 2>&1 || echo "Failed to pushd ${USER_GIT_DOWNLOADS}/tmux"
     sh autogen.sh
