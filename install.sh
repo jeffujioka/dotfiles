@@ -52,7 +52,7 @@ install_dependencies() {
 
     # Install other dependencies
     # other_dependencies=("curl" "gawk" "git" "vim" "cmake" "pkg-config" "freetype" "fontconfig" "xcb-util-xrm" "xkbcommon" "python3" "jp2a")
-    other_dependencies=("curl" "gawk" "git" "vim" "cmake" "pkg-config" "freetype" "fontconfig" "python3" "jp2a")
+    other_dependencies=("bash" "curl" "gawk" "git" "vim" "cmake" "pkg-config" "freetype" "fontconfig" "python3" "jp2a")
 
     echo "Installing other dependencies: ${other_dependencies[*]}"
     for dependency in "${other_dependencies[@]}"; do
