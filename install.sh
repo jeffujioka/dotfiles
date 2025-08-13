@@ -1,5 +1,9 @@
 #!/bin/bash
 
+set -e
+
+. ./helper.sh
+
 timestamp=$(date +%F_%H%M%S)
 
 bak_dir="${HOME}/.dotfiles_bkp/${timestamp}"
@@ -18,6 +22,57 @@ mkdir -p "${XDG_CONFIG_HOME}"
 mkdir -p "${USER_LOCAL_BIN}"
 mkdir -p "${HOME}/.bash_completion.d"
 
+DARWIN_PACKAGES=(
+  "autoconf"                                                                  \
+  "curl"                                                                      \
+  "fontconfig"                                                                \
+  "freetype"                                                                  \
+  "gawk"                                                                      \
+  "gcc"                                                                       \
+  "git"                                                                       \
+  "jp2a"                                                                      \
+  "libevent"                                                                  \
+  "make"                                                                      \
+  "ncurses"                                                                   \
+  "pkg-config"                                                                \
+  "python3"                                                                   \
+  "utf8proc"                                                                  \
+  "zsh"                                                                       \
+)
+
+LINUX_PACKAGES="
+  autoconf                                                                    \
+  bison                                                                       \
+  build-essential                                                             \
+  curl                                                                        \
+  gawk                                                                        \
+  gcc                                                                         \
+  git                                                                         \
+  jp2a                                                                        \
+  libevent-dev                                                                \
+  libfontconfig1-dev                                                          \
+  libfreetype6-dev                                                            \
+  libncurses5-dev                                                             \
+  make                                                                        \
+  pkg-config                                                                  \
+  python3                                                                     \
+  xsel                                                                        \
+  zsh                                                                         \
+"
+# libxcb-xfixes0-dev \
+# libxkbcommon-dev \
+
+get_system_package_list() {
+  case "$OSTYPE" in
+  darwin*)
+    echo "${DARWIN_PACKAGES[@]}" | tr -s ' ' | tr ' ' '\n'
+    ;;
+  linux*)
+    echo "${LINUX_PACKAGES[@]}" | tr -s ' ' | tr ' ' '\n'
+    ;;
+  esac
+}
+
 get_cpu_count() {
     if command -v nproc &>/dev/null; then
         # Use nproc if available (common on Linux)
@@ -31,141 +86,57 @@ get_cpu_count() {
     fi
 }
 
-install_dependencies() {
-  yes="$1"
-
+install_sys_packages() {
+  set -x
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    echo "Running on macOS. Using brew for dependency installation."
+    if ! command -v brew &>/dev/null; then
+      echo "homebrew is not installed."
+      echo "trying to install it."
+      sleep 1
+      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      echo >> "$HOME/.zprofile"
+      echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> "$HOME/.zprofile"
+      eval "$(/opt/homebrew/bin/brew shellenv)"
+    fi
 
     # Update Homebrew
-    echo "Updating Homebrew..."
+    echo ""
+    sleep 1
     brew update && brew upgrade
 
-    # Install tmux dependencies
-    tmux_dependencies=("libevent" "ncurses" "automake" "bison" "byacc" "utf8proc")
-
-    echo "Installing tmux dependencies: ${tmux_dependencies[*]}"
-    for dependency in "${tmux_dependencies[@]}"; do
-      echo "Installing ${dependency}..."
-      brew install "${dependency}"
-    done
-
-    # Install other dependencies
-    # other_dependencies=("curl" "gawk" "git" "vim" "cmake" "pkg-config" "freetype" "fontconfig" "xcb-util-xrm" "xkbcommon" "python3" "jp2a")
-    other_dependencies=("bash" "curl" "gawk" "git" "vim" "cmake" "pkg-config" "freetype" "fontconfig" "python3" "jp2a")
-
-    echo "Installing other dependencies: ${other_dependencies[*]}"
-    for dependency in "${other_dependencies[@]}"; do
-      echo "Installing ${dependency}..."
-      brew install "${dependency}"
+    echo "Installing packages: ${get_system_package_list}"
+    for package in "${DARWIN_PACKAGES[@]}"; do
+      echo "Installing ${package}..."
+      brew install "${package}"
     done
 
   else
-    echo "Running on Linux. Using apt for dependency installation."
+    echo ""
+    sleep 1
+    sudo apt update && sudo apt upgrade -y
 
-    echo "sudo apt update && sudo apt upgrade ${yes}"
-    sudo apt update && sudo apt upgrade "${yes}"
-
-    tmux_dependencies="libevent-dev libncurses-dev autotools-dev automake bison byacc"
-    echo "sudo apt install ${yes} ${tmux_dependencies}"
-    sudo apt install "${yes}" ${tmux_dependencies}
-
-    sudo apt install "${yes}" \
-      curl \
-      gawk \
-      git \
-      vim \
-      cmake \
-      pkg-config \
-      libfreetype6-dev \
-      libfontconfig1-dev \
-      libxcb-xfixes0-dev \
-      libxkbcommon-dev \
-      python3 \
-      jp2a \
-      xsel
+    echo ""
+    echo "Installing packages: ${get_system_package_list}"
+    sleep 1
+    sudo apt install -y ${LINUX_PACKAGES}
   fi
+  set +x
+}
 
+install_non_asdf_tools() {
   if [ ! -f "${HOME}/.bash_completion.d/tmux_completion" ]; then
     echo "Installing tmux completion..."
     curl -o "${HOME}/.bash_completion.d/tmux_completion" https://raw.githubusercontent.com/imomaliev/tmux-bash-completion/master/completions/tmux
   fi
 
-  if ! command -v cargo > /dev/null 2>&1 ; then
-    echo "Installing Rust..."
-    export RUSTUP_HOME=${XDG_CONFIG_HOME}/rustup
-    export CARGO_HOME=${XDG_CONFIG_HOME}/cargo
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
-    
-    source "${XDG_CONFIG_HOME}/cargo/env"
-
-    rustup default stable
-  fi
-
-  rustup default stable
-
-  echo "Installing Rust-based tools..."
-  cargo install procs du-dust zoxide ripgrep fd-find bat exa viu --locked
-
-  if [ ! -f "${USER_LOCAL_BIN}/starship" ]; then
-    echo "Installing Starship..."
-    curl -fsSL https://starship.rs/install.sh | sh -s -- -y -b "${USER_LOCAL_BIN}/"
-  fi
-
-  # TODO: enhance the installation process. It's in brute-force way now
-  if [ ! -d "${USER_GIT_DOWNLOADS}/tmux" ]; then
-    echo "Cloning tmux..."
-    git clone https://github.com/tmux/tmux.git "${USER_GIT_DOWNLOADS}/tmux"
+  if [ ! -d "$HOME/.tmux/plugins/tpm" ]; then
+    echo "trying to clone tpm"
+    git clone https://github.com/tmux-plugins/tpm $HOME/.tmux/plugins/tpm
   else
-    echo "Updating tmux repository..."
-    pushd "${USER_GIT_DOWNLOADS}/tmux" > /dev/null 2>&1 || echo "Failed to pushd .tmux"
+    echo "Updating tmux tpm repository..."
+    pushd "$HOME/.tmux/plugins/tpm" > /dev/null 2>&1 || echo "Failed to pushd .tmux/plugins/tpm"
     git fetch --all --prune
     git pull --rebase origin master
-    popd > /dev/null 2>&1 || echo "Failed to popd"
-  fi
-
-  if [ -d "${USER_GIT_DOWNLOADS}/tmux" ]; then
-    if [ ! -d "~/.tmux/plugins/tpm" ]; then
-      git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
-    else
-      echo "Updating tmux tpm repository..."
-      pushd "~/.tmux/plugins/tpm" > /dev/null 2>&1 || echo "Failed to pushd .tmux/plugins/tpm"
-      git fetch --all --prune
-      git pull --rebase origin master
-      popd > /dev/null 2>&1 || echo "Failed to popd"
-    fi
-    echo "Building tmux..."
-    pushd "${USER_GIT_DOWNLOADS}/tmux" > /dev/null 2>&1 || echo "Failed to pushd ${USER_GIT_DOWNLOADS}/tmux"
-    sh autogen.sh
-    local enable_utf8_proc=""
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-      enable_utf8_proc="--enable-utf8proc"
-    fi
-    # Get the number of CPUs, subtract 2, and ensure it's at least 1
-    cpu_count=$(( $(get_cpu_count) - 2 ))
-    if (( cpu_count < 1 )); then
-        cpu_count=1
-    fi
-    ./configure --prefix="${USER_LOCAL_HOME}" "$enable_utf8_proc" \
-      && make -j$cpu_count \
-      && make install
-    popd > /dev/null 2>&1 || echo "Failed to popd"
-  fi
-
-  if [ ! -d "${USER_GIT_DOWNLOADS}/fzf" ]; then
-    echo "Installing fzf..."
-    git clone --depth 1 https://github.com/junegunn/fzf.git "${USER_GIT_DOWNLOADS}/fzf"
-  else
-    echo "Updating fzf repository..."
-    pushd "${USER_GIT_DOWNLOADS}/fzf" > /dev/null 2>&1 || echo "Failed to pushd .fzf"
-    git fetch --all --prune
-    git pull --rebase origin master
-    popd > /dev/null 2>&1 || echo "Failed to popd"
-  fi
-
-  if pushd "${USER_GIT_DOWNLOADS}/fzf" ; then
-    ./install --all --xdg --completion --no-bash --no-zsh --no-fish --no-update-rc
-    ln -sf "$(readlink -f bin)"/* "${HOME}/.local/bin/"
     popd > /dev/null 2>&1 || echo "Failed to popd"
   fi
 
@@ -192,7 +163,7 @@ install_dependencies() {
     echo "Updating mate repository..."
     pushd "${USER_GIT_DOWNLOADS}/mate" > /dev/null 2>&1 || echo "Failed to pushd ${USER_GIT_DOWNLOADS}/mate"
     git fetch --all --prune
-    git pull --rebase origin master
+    git pull --rebase origin main
     popd > /dev/null 2>&1 || echo "Failed to popd"
   fi
 
@@ -272,6 +243,9 @@ function create_backups() {
   backup_this "${HOME}/.tmux.conf"
   ln -sf "$(readlink -f tmux.conf)" "${HOME}/.tmux.conf"
 
+  backup_this "${HOME}/.tool-versions"
+  ln -sf "$(readlink -f .tool-versions)" "${HOME}/.tool-versions"
+
   backup_this "${HOME}/.vimrc"
   ln -sf "$(readlink -f vimrc)" "${HOME}/.vimrc"
 
@@ -305,69 +279,90 @@ function check_config_properties() {
   fi
 }
 
-install_deps="1"
-no_backups="1"
-install_all=""
+check_config_properties
+
+install_asdf=true
+install_asdf_plugins=true
+install_non_asdf_tools=true
+create_backups=true
+no_sudo_install=false
 
 while [ -n "$1" ]
 do
   case "$1" in
-    --no-install-deps)
-      install_deps=""
-      echo "it won't install deps!!!"
+    --no-install-asdf)
+      install_asdf=false
+      echo "It won't install asdf!!!"
+      shift
+      ;;
+    --no-install-asdf-plugins)
+      install_asdf_plugins=false
+      echo "It won't install asdf plugins!!!"
+      shift
+      ;;
+    --no-install-non-asdf-tools)
+      install_non_asdf_tools=false
+      echo "It won't install non-asdf tools such as tpm, nerd-fonts, mate, etc.!!!"
       shift
       ;;
     --no-backups)
-      no_backups=""
+      create_backups=false
       shift
       ;;
-    --install-all)
-      install_all="--yes"
+    --no-sudo-install)
+      no_sudo_install=true
       shift
       ;;
     *)
       echo "Invalid option"
+      echo "Usage: $0 [--no-install-asdf] [--no-install-asdf-plugins] [--no-backups] [--no-sudo]"
       exit 1
       ;;
   esac
 done
 
-check_config_properties
-
-if [ -n "$install_deps" ]; then
-  if [ -z "${install_all}" ] ; then
-    echo "This script will install the following additional packages:"
-    echo '  automake
-    autotools-dev
-    bison
-    byacc
-    cmake
-    curl
-    gawk
-    git
-    jp2a
-    libevent-dev
-    libfontconfig1-dev
-    libfreetype6-dev
-    libncurses-dev
-    libxcb-xfixes0-dev
-    libxkbcommon-dev
-    pkg-config
-    python3
-    vim'
-    read -rp "Do you want to continue? [Y/n] " response
-
-    response=$(echo "$response" | tr '[:upper:]' '[:lower:]')
-    if [[ "${response}" != "y" && "${response}" != "yes" ]]; then
-      echo "Thank you. Goodbye!"
-      exit 1
-    fi
-  fi
-  install_dependencies "${install_all}"
+if [ $create_backups ]; then
+  set +e
+  create_backups
+  set -e
 fi
 
-if [ -n "$no_backups" ]; then
-  create_backups
+if [ $install_asdf ]; then
+  ./install-asdf.sh
+fi
+
+if [ "$no_sudo_install" == "false" ]; then
+  # print a big warning ASCII message before printing the prompt_msg
+  echo "********************************************************************************"
+  echo "********************************************************************************"
+  prompt_msg="\nThis script requires the following system packages on your environment: "
+  prompt_msg="${prompt_msg}$(get_system_package_list)\n\n"
+  prompt_msg="${prompt_msg}If they are not installed, the script can install them for you.\n"
+  prompt_msg="${prompt_msg}However, it requires sudo privileges.\n"
+  prompt_msg="${prompt_msg}Please, ask your system administrator to install them for you in case you do not have sudo privileges.\n"
+  prompt_msg="${prompt_msg}Would you like to proceed and install them on your environment? (y/n)\n"
+
+  if yes_or_no "$prompt_msg"; then
+    echo "********************************************************************************"
+    echo "********************************************************************************"
+    echo "Great! Let's install the necessary packages."
+    echo ""
+    install_sys_packages
+  else
+    echo "********************************************************************************"
+    echo "********************************************************************************"
+    echo -e "\nSkipping system package installation as you do not have sudo privileges."
+    echo "You should ask your system administrator to install them for you."
+    no_sudo_install=true
+  fi
+fi
+
+if [ $install_non_asdf_tools ]; then
+  install_non_asdf_tools
+fi
+
+if [ $install_asdf_plugins ]; then
+  ./install-asdf-plugins.sh
 fi
 
 echo ""
