@@ -208,8 +208,11 @@ function create_backups() {
   backup_this "${HOME}/.zshrc"
   ln -sf "$(readlink -f zshrc)" "${HOME}/.zshrc"
   
-  backup_this "${HOME}/.bash_aliases"
-  ln -sf "$(readlink -f bash_aliases)" "${HOME}/.bash_aliases"
+  backup_this "${HOME}/.zsh_aliases"
+  ln -sf "$(readlink -f zsh_aliases)" "${HOME}/.zsh_aliases"
+  
+  backup_this "${HOME}/.zsh_completions"
+  ln -sf "$(readlink -f zsh_completions)" "${HOME}/.zsh_completions"
   
   backup_this "${HOME}/.bashrc.d"
   ln -sf "$(readlink -f bashrc.d)" "${HOME}/"
@@ -218,9 +221,6 @@ function create_backups() {
 
   backup_this "${XDG_CONFIG_HOME}/starship.toml"
   ln -sf "$(readlink -f config/starship.toml)" "${XDG_CONFIG_HOME}/"
-
-  # backup_this "${XDG_CONFIG_HOME}/fzf/fzf.bash"
-  # ln -sf "$(readlink -f config/fzf.bash)" "${XDG_CONFIG_HOME}/fzf/"
 
   backup_this "${XDG_CONFIG_HOME}/fzf/fzf.zsh"
   ln -sf "$(readlink -f config/fzf.zsh)" "${XDG_CONFIG_HOME}/fzf/"
@@ -321,17 +321,17 @@ do
   esac
 done
 
-if [ $create_backups ]; then
+if [ "$create_backups" = "true" ]; then
   set +e
   create_backups
   set -e
 fi
 
-if [ $install_asdf ]; then
+if [ "$install_asdf" = "true" ]; then
   ./install-asdf.sh
 fi
 
-if [ "$no_sudo_install" == "false" ]; then
+if [ "$no_sudo_install" = "false" ]; then
   # print a big warning ASCII message before printing the prompt_msg
   echo "********************************************************************************"
   echo "********************************************************************************"
@@ -357,11 +357,11 @@ if [ "$no_sudo_install" == "false" ]; then
   fi
 fi
 
-if [ $install_non_asdf_tools ]; then
+if [ "$install_non_asdf_tools" = "true" ]; then
   install_non_asdf_tools
 fi
 
-if [ $install_asdf_plugins ]; then
+if [ "$install_asdf_plugins" = "true" ]; then
   ./install-asdf-plugins.sh
 fi
 

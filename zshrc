@@ -15,6 +15,19 @@ if [ -z "${XDG_CONFIG_HOME}" ]; then
    export XDG_CONFIG_HOME="$HOME/.config"
 fi
 
+if [[ ! "$PATH" == *${HOME}/.local/bin* ]]; then
+  export PATH="$HOME/.local/bin:${PATH:+${PATH}:}"
+fi
+if [[ ! "$PATH" == *.scripts* ]]; then
+  export PATH="$HOME/.scripts:${PATH:+${PATH}:}"
+fi
+if [[ ! "$PATH" == *${HOME}/.cargo/bin* ]]; then
+  export PATH="$HOME/.cargo/bin:${PATH:+${PATH}:}"
+fi
+if [[ ! "$PATH" == *${HOME}/.asdf/shims* ]]; then
+  export PATH="$HOME/.asdf/shims:${PATH:+${PATH}:}"
+fi
+
 # Download Zinit, if it's not there yet
 if [ ! -d "$ZINIT_HOME" ]; then
    mkdir -p "$(dirname $ZINIT_HOME)"
@@ -38,15 +51,21 @@ zinit snippet OMZP::git
 zinit snippet OMZP::sudo
 zinit snippet OMZP::command-not-found
 zinit snippet OMZP::jira
-zinit snippet OMZP::asdf
+
+if [ command -v asdf &> /dev/null ]; then
+  # OMZP does not create the completions directory, so we have to do it ourselves
+  if [ -z "${ZSH_CACHE_DIR}" ]; then
+    mkdir -p $HOME/.cache/zinit/completions
+  else
+    mkdir -p $ZSH_CACHE_DIR/completions
+  fi
+  zinit snippet OMZP::asdf
+fi
 
 # Load completions
 autoload -Uz compinit && compinit
 
 zinit cdreplay -q
-
-# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-# [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 cat ~/.config/ascii-art-goku.txt
 
@@ -84,20 +103,7 @@ zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
 bindkey "^[[1;5C" forward-word
 bindkey "^[[1;5D" backward-word
 
-if [[ ! "$PATH" == *${HOME}/.local/bin* ]]; then
-  export PATH="$HOME/.local/bin:${PATH:+${PATH}:}"
-fi
-if [[ ! "$PATH" == *.scripts* ]]; then
-  export PATH="$HOME/.scripts:${PATH:+${PATH}:}"
-fi
-if [[ ! "$PATH" == *${HOME}/.cargo/bin* ]]; then
-  export PATH="$HOME/.cargo/bin:${PATH:+${PATH}:}"
-fi
-if [[ ! "$PATH" == *${HOME}/.asdf/shims* ]]; then
-  export PATH="$HOME/.asdf/shims:${PATH:+${PATH}:}"
-fi
-
-# TODO move to .bashrc.d
+# TODO move to .zshrc.d
 if command -v exa &> /dev/null ; then
   alias ls="exa"
   alias ll="exa -l"
@@ -106,22 +112,13 @@ if command -v exa &> /dev/null ; then
   alias treel="exa -Tl"
 fi
 
-if [ -d "${HOME}/.bashrc.d" ]; then
-  for rc in "${HOME}"/.bashrc.d/*.sh; do
-    if [ -x "$rc" ]; then
-      #echo "Reading bashrc file: $rc"
-      . $rc
-    fi
-  done
-  unset rc
+if [ -r "${HOME}/.zsh_aliases" ]; then
+  . "${HOME}/.zsh_aliases"
 fi
 
-if [ -r "${HOME}/.bash_completion" ]; then
-  . "${HOME}/.bash_completion"
+if [ -r "${HOME}/.zsh_completion" ]; then
+  . "${HOME}/.zsh_completion"
 fi
-
-# export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
-# [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
 
 unsetopt pathdirs
 
