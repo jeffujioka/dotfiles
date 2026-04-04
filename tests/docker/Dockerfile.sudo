@@ -1,0 +1,17 @@
+FROM ubuntu:24.04
+
+RUN apt-get update && apt-get upgrade -y \
+    && apt-get install -y sudo curl git python3 \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+ARG TEST_USER=testuser
+ARG TEST_UID=1000
+
+RUN useradd -m -d /home/${TEST_USER} -s /bin/bash -u ${TEST_UID} ${TEST_USER} \
+    && printf '%s ALL=(ALL) NOPASSWD:ALL\n' "${TEST_USER}" > /etc/sudoers.d/99-testuser \
+    && chmod 0440 /etc/sudoers.d/99-testuser
+
+USER ${TEST_USER}
+WORKDIR /home/${TEST_USER}
+RUN mkdir -p /home/${TEST_USER}/.local/bin
+ENV PATH="/home/${TEST_USER}/.local/bin:${PATH}"

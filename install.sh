@@ -16,7 +16,7 @@ USER_GIT_DOWNLOADS=".git_downloads"
 
 mkdir -p "${XDG_CONFIG_HOME}"
 mkdir -p "${USER_LOCAL_BIN}"
-mkdir -p "${HOME}/.bash_completion.d"
+mkdir -p "${HOME}/.zsh_completion.d"
 
 get_system_package_list() {
   if [[ "$OSTYPE" == darwin* ]]; then
@@ -135,9 +135,9 @@ install_dependencies() {
 
   install_sys_packages
 
-  if [ ! -f "${HOME}/.bash_completion.d/tmux_completion" ]; then
+  if [ ! -f "${HOME}/.zsh_completion.d/tmux_completion" ]; then
     echo "Installing tmux completion..."
-    curl -o "${HOME}/.bash_completion.d/tmux_completion" https://raw.githubusercontent.com/imomaliev/tmux-bash-completion/master/completions/tmux
+    curl -o "${HOME}/.zsh_completion.d/tmux_completion" https://raw.githubusercontent.com/imomaliev/tmux-bash-completion/master/completions/tmux
   fi
 
   if ! command -v cargo > /dev/null 2>&1 ; then
