@@ -14,10 +14,9 @@ expand_path() {
     echo "${1/#\~/$HOME}"
 }
 
-"$REPO_ROOT/helpers/read-manifest.py" symlinks --format jsonl | while IFS= read -r line; do
-    src=$(printf '%s' "$line" | python3 -c "import sys,json; print(json.load(sys.stdin)['source'])")
-    tgt=$(printf '%s' "$line" | python3 -c "import sys,json; print(json.load(sys.stdin)['target'])")
-    typ=$(printf '%s' "$line" | python3 -c "import sys,json; print(json.load(sys.stdin).get('type','symlink'))")
+"$REPO_ROOT/helpers/read-manifest.py" symlinks --format tsv \
+    --fields "source,target,type:symlink" \
+    | while IFS=$'\t' read -r src tgt typ; do
     tgt=$(expand_path "$tgt")
 
     case "$typ" in

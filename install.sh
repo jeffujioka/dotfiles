@@ -70,28 +70,23 @@ install_sys_packages() {
 }
 
 install_non_asdf_tools() {
-  "$script_dir/helpers/read-manifest.py" resources --format jsonl | while IFS= read -r line; do
-    name=$(printf '%s' "$line" | python3 -c "import sys,json; print(json.load(sys.stdin)['name'])")
-    rtype=$(printf '%s' "$line" | python3 -c "import sys,json; print(json.load(sys.stdin)['type'])")
-    rpath=$(printf '%s' "$line" | python3 -c "import sys,json; print(json.load(sys.stdin)['path'])")
-    url=$(printf '%s' "$line" | python3 -c "import sys,json; print(json.load(sys.stdin)['url'])")
-    branch=$(printf '%s' "$line" | python3 -c "import sys,json; print(json.load(sys.stdin).get('branch','main'))")
-    shallow=$(printf '%s' "$line" | python3 -c "import sys,json; print('true' if json.load(sys.stdin).get('shallow', False) else 'false')")
-    post_install=$(printf '%s' "$line" | python3 -c "import sys,json; print(json.load(sys.stdin).get('post_install',''))")
+  "$script_dir/helpers/read-manifest.py" resources --format tsv \
+      --fields "name,type,path,url,branch:main,shallow:false,post_install:" \
+      | while IFS=$'\t' read -r name rtype rpath url branch shallow post_install; do
 
-    # Expand ~ and resolve relative paths
+    # Expand ~ to $HOME
     rpath="${rpath/#\~/$HOME}"
 
     case "$rtype" in
       git-clone)
-        clone_args=""
+        local clone_args=()
         if [ "$shallow" = "true" ]; then
-          clone_args="--depth 1"
+          clone_args+=(--depth 1)
         fi
 
         if [ ! -d "$rpath" ]; then
           echo "Cloning $name..."
-          git clone $clone_args "$url" "$rpath"
+          git clone "${clone_args[@]}" "$url" "$rpath"
         else
           echo "Updating $name..."
           pushd "$rpath" > /dev/null 2>&1 || { echo "Failed to pushd $rpath"; continue; }
@@ -179,15 +174,13 @@ function backup_this() {
 function create_backups() {
   mkdir -p "${bak_dir}"
 
-  "$script_dir/helpers/read-manifest.py" symlinks --format jsonl | while IFS= read -r line; do
-    src=$(printf '%s' "$line" | python3 -c "import sys,json; print(json.load(sys.stdin)['source'])")
-    tgt=$(printf '%s' "$line" | python3 -c "import sys,json; print(json.load(sys.stdin)['target'])")
-    typ=$(printf '%s' "$line" | python3 -c "import sys,json; print(json.load(sys.stdin).get('type','symlink'))")
-    should_backup=$(printf '%s' "$line" | python3 -c "import sys,json; print('true' if json.load(sys.stdin).get('backup', True) else 'false')")
+  "$script_dir/helpers/read-manifest.py" symlinks --format tsv \
+      --fields "source,target,type:symlink,backup:true" \
+      | while IFS=$'\t' read -r src tgt typ should_backup; do
 
     # Expand ~ to $HOME
     tgt="${tgt/#\~/$HOME}"
-    # Resolve src relative to repo root (not $PWD)
+    # Resolve src relative to repo root (not $PWD) — C2 fix
     if [[ "$src" != /* ]]; then src="$script_dir/$src"; fi
 
     # Ensure parent directory exists
