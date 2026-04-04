@@ -35,6 +35,11 @@ get_version() {
     esac
 }
 
+if [ ! -f "$REPO_ROOT/.tool-versions" ]; then
+    warn ".tool-versions not found — skipping asdf version checks"
+    exit 0
+fi
+
 while IFS= read -r line; do
     # Skip comments and blank lines
     case "$line" in \#*|"") continue ;; esac
