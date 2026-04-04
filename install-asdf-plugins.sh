@@ -20,13 +20,13 @@ install_asdf_plugin() {
   plugin_name=$1
   release=$2
 
-  if ! asdf plugin list | rg -q "^$plugin_name$"; then
-    asdf plugin add $plugin_name
+  if ! asdf plugin list | grep -q "^${plugin_name}$"; then
+    asdf plugin add "$plugin_name"
   fi
-  asdf install $plugin_name $release
+  asdf install "$plugin_name" "$release"
   # get all installed versions of the given plugin, remove '*', sort and get the latest
-  version=$(asdf list $plugin_name | sed 's/[* ]//g' | sort -V | tail -n 1)
-  asdf set $plugin_name $version
+  version=$(asdf list "$plugin_name" | sed 's/[* ]//g' | sort -V | tail -n 1)
+  asdf set "$plugin_name" "$version"
 }
 
 # Ask before installing tmux (it is a heavier build dependency)
@@ -71,7 +71,7 @@ install_asdf_plugin rust latest
 
 rust_version=$(asdf list rust | sed 's/[* ]//g' | sort -V | tail -1)
 # shellcheck disable=SC1090
-. "$HOME/.asdf/installs/rust/${rust_version}/env"
+. "${ASDF_DATA_DIR:-$HOME/.asdf}/installs/rust/${rust_version}/env"
 rustup default stable
 
 install_asdf_plugin fzf latest
