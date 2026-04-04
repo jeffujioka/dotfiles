@@ -20,10 +20,9 @@ expand_path() {
     echo "$p"
 }
 
-"$REPO_ROOT/helpers/read-manifest.py" resources --format jsonl | while IFS= read -r line; do
-    name=$(printf '%s' "$line" | python3 -c "import sys,json; print(json.load(sys.stdin)['name'])")
-    rtype=$(printf '%s' "$line" | python3 -c "import sys,json; print(json.load(sys.stdin)['type'])")
-    rpath=$(printf '%s' "$line" | python3 -c "import sys,json; print(json.load(sys.stdin)['path'])")
+"$REPO_ROOT/helpers/read-manifest.py" resources --format tsv \
+    --fields "name,type,path" \
+    | while IFS=$'\t' read -r name rtype rpath; do
     rpath=$(expand_path "$rpath")
 
     case "$rtype" in
