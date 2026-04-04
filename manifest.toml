@@ -1,0 +1,138 @@
+# manifest.toml — Single source of truth for all installed packages,
+# tools, symlinks, and resources.
+#
+# Consumed by: install.sh, install-asdf-plugins.sh, test.sh, tests/*.sh
+# Parsed via:  helpers/read-manifest.py (Python 3.11+ tomllib)
+
+[packages.linux]
+# Installed via: sudo apt install
+list = [
+  "autoconf",
+  "bison",
+  "build-essential",
+  "curl",
+  "gawk",
+  "gcc",
+  "git",
+  "jp2a",
+  "libevent-dev",
+  "libfontconfig1-dev",
+  "libfreetype6-dev",
+  "libncurses-dev",
+  "make",
+  "pkg-config",
+  "python3",
+  "xsel",
+  "zsh",
+]
+
+[packages.darwin]
+# Installed via: brew install
+list = [
+  "autoconf",
+  "curl",
+  "fontconfig",
+  "freetype",
+  "gawk",
+  "gcc",
+  "git",
+  "jp2a",
+  "libevent",
+  "make",
+  "ncurses",
+  "pkg-config",
+  "python3",
+  "utf8proc",
+  "zsh",
+]
+
+[cargo]
+# Installed via: cargo install <tool>
+tools = ["eza", "zoxide"]
+
+[[resources]]
+name = "tpm"
+type = "git-clone"
+path = "~/.tmux/plugins/tpm"
+url = "https://github.com/tmux-plugins/tpm"
+branch = "master"
+
+[[resources]]
+name = "nerd-fonts"
+type = "git-clone"
+path = ".git_downloads/nerd-fonts"
+url = "https://github.com/ryanoasis/nerd-fonts"
+branch = "master"
+shallow = true
+post_install = "./install.sh"
+
+[[resources]]
+name = "mate"
+type = "git-clone"
+path = ".git_downloads/mate"
+url = "https://github.com/jeffujioka/mate"
+branch = "main"
+shallow = true
+post_install = "./install.sh"
+
+[[resources]]
+name = "tmux-completion"
+type = "file-download"
+path = "~/.bash_completion.d/tmux_completion"
+url = "https://raw.githubusercontent.com/imomaliev/tmux-bash-completion/master/completions/tmux"
+
+[[symlinks]]
+source = "zshrc"
+target = "~/.zshrc"
+
+[[symlinks]]
+source = "zsh_aliases"
+target = "~/.zsh_aliases"
+
+[[symlinks]]
+source = "zsh_completions"
+target = "~/.zsh_completions"
+
+[[symlinks]]
+source = "zsh_aliases.d"
+target = "~/.zsh_aliases.d"
+
+[[symlinks]]
+source = "zsh_completion.d"
+target = "~/.zsh_completion.d"
+backup = false
+
+[[symlinks]]
+source = "config/starship.toml"
+target = "~/.config/starship.toml"
+
+[[symlinks]]
+source = "config/fzf.zsh"
+target = "~/.config/fzf/fzf.zsh"
+
+[[symlinks]]
+source = "config/ascii-art-goku.txt"
+target = "~/.config/ascii-art-goku.txt"
+backup = false
+
+[[symlinks]]
+source = "gitignore"
+target = "~/.gitignore"
+
+[[symlinks]]
+source = "tmux.conf"
+target = "~/.tmux.conf"
+
+[[symlinks]]
+source = "vimrc"
+target = "~/.vimrc"
+
+[[symlinks]]
+source = "gitconfig"
+target = "~/.gitconfig"
+type = "copy"
+
+[[symlinks]]
+source = "bin/*"
+target = "~/.local/bin/*"
+type = "glob"
