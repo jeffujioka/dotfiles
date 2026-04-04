@@ -78,7 +78,7 @@ post_install = "./install.sh"
 [[resources]]
 name = "tmux-completion"
 type = "file-download"
-path = "~/.bash_completion.d/tmux_completion"
+path = "~/.zsh_completion.d/tmux_completion"
 url = "https://raw.githubusercontent.com/imomaliev/tmux-bash-completion/master/completions/tmux"
 
 [[symlinks]]
