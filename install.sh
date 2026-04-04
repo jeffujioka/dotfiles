@@ -280,8 +280,8 @@ check_config_properties
 
 install_asdf=true
 install_asdf_plugins=true
-install_non_asdf_tools=true
-create_backups=true
+should_install_non_asdf_tools=true
+should_create_backups=true
 no_sudo_install=false
 
 while [ -n "$1" ]
@@ -298,12 +298,12 @@ do
       shift
       ;;
     --no-install-non-asdf-tools)
-      install_non_asdf_tools=false
+      should_install_non_asdf_tools=false
       echo "It won't install non-asdf tools such as tpm, nerd-fonts, mate, etc.!!!"
       shift
       ;;
     --no-backups)
-      create_backups=false
+      should_create_backups=false
       shift
       ;;
     --no-sudo-install)
@@ -318,7 +318,7 @@ do
   esac
 done
 
-if [ "$create_backups" = "true" ]; then
+if [ "$should_create_backups" = "true" ]; then
   set +e
   create_backups
   set -e
@@ -328,7 +328,7 @@ if [ "$install_asdf" = "true" ]; then
   ./install-asdf.sh
 fi
 
-if [ "$no_sudo_install" == "false" ]; then
+if [ "$no_sudo_install" = "false" ]; then
   # print a big warning ASCII message before printing the prompt_msg
   echo "********************************************************************************"
   echo "********************************************************************************"
@@ -354,7 +354,7 @@ if [ "$no_sudo_install" == "false" ]; then
   fi
 fi
 
-if [ "$install_non_asdf_tools" = "true" ]; then
+if [ "$should_install_non_asdf_tools" = "true" ]; then
   install_non_asdf_tools
 fi
 
