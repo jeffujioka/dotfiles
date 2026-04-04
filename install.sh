@@ -302,7 +302,7 @@ if [ -n "$install_deps" ]; then
       exit 1
     fi
   fi
-  install_dependencies "${install_all}"
+  install_dependencies
 fi
 
 if [ -n "$no_backups" ]; then
