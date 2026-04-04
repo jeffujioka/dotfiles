@@ -26,6 +26,13 @@ get_system_package_list() {
   fi
 }
 
+resolve_path() {
+    # Portable readlink -f: works on both Linux (GNU) and macOS ARM (BSD).
+    # Falls back to Python when GNU coreutils are unavailable.
+    readlink -f "$1" 2>/dev/null \
+        || python3 -c "import os,sys; print(os.path.realpath(sys.argv[1]))" "$1"
+}
+
 get_cpu_count() {
     if command -v nproc &>/dev/null; then
         # Use nproc if available (common on Linux)
@@ -221,39 +228,44 @@ function backup_this() {
 
 function create_backups() {
   mkdir -p "${bak_dir}"
-  
-  mkdir -p "${HOME}/.zsh_completion.d"
-  ln -sf "$(readlink -f zsh_completion.d)" "${HOME}/.zsh_completion.d"
-  
-  # backup_this "${HOME}/.bashrc"
-  # ln -sf "$(readlink -f bashrc)" "${HOME}/.bashrc"
-  
-  backup_this "${HOME}/.zshrc"
-  ln -sf "$(readlink -f zshrc)" "${HOME}/.zshrc"
-  
-  backup_this "${HOME}/.zsh_aliases"
-  ln -sf "$(readlink -f zsh_aliases)" "${HOME}/.zsh_aliases"
-  
-  backup_this "${HOME}/.zsh_completions"
-  ln -sf "$(readlink -f zsh_completions)" "${HOME}/.zsh_completions"
-  
-  backup_this "${HOME}/.zsh_aliases.d"
-  ln -sf "$(readlink -f zsh_aliases.d)" "${HOME}/"
 
-  ln -sf "$(readlink -f config/ascii-art-goku.txt)" "${XDG_CONFIG_HOME}/"
+  "$script_dir/helpers/read-manifest.py" symlinks --format jsonl | while IFS= read -r line; do
+    src=$(printf '%s' "$line" | python3 -c "import sys,json; print(json.load(sys.stdin)['source'])")
+    tgt=$(printf '%s' "$line" | python3 -c "import sys,json; print(json.load(sys.stdin)['target'])")
+    typ=$(printf '%s' "$line" | python3 -c "import sys,json; print(json.load(sys.stdin).get('type','symlink'))")
+    should_backup=$(printf '%s' "$line" | python3 -c "import sys,json; print('true' if json.load(sys.stdin).get('backup', True) else 'false')")
 
-  backup_this "${XDG_CONFIG_HOME}/starship.toml"
-  ln -sf "$(readlink -f config/starship.toml)" "${XDG_CONFIG_HOME}/"
+    # Expand ~ to $HOME
+    tgt="${tgt/#\~/$HOME}"
 
-  backup_this "${XDG_CONFIG_HOME}/fzf/fzf.zsh"
-  ln -sf "$(readlink -f config/fzf.zsh)" "${XDG_CONFIG_HOME}/fzf/"
+    # Ensure parent directory exists
+    mkdir -p "$(dirname "$tgt")"
 
-  backup_this "${HOME}/.gitignore"
-  ln -sf "$(readlink -f gitignore)" "${HOME}/.gitignore"
+    case "$typ" in
+      symlink)
+        if [ "$should_backup" = "true" ]; then
+          backup_this "$tgt"
+        fi
+        ln -sf "$(resolve_path "$src")" "$tgt"
+        ;;
+      copy)
+        if [ "$should_backup" = "true" ]; then
+          backup_this "$tgt"
+        fi
+        cp "$src" "$tgt"
+        ;;
+      glob)
+        for f in $src; do
+          tgt_dir="${tgt%/\*}"
+          tgt_dir="${tgt_dir/#\~/$HOME}"
+          mkdir -p "$tgt_dir"
+          ln -sf "$(resolve_path "$f")" "$tgt_dir/"
+        done
+        ;;
+    esac
+  done
 
-  backup_this "${HOME}/.gitconfig"
-  cp gitconfig "${HOME}/.gitconfig"
-  # ln -sf "$(readlink -f gitconfig)" "${HOME}/.gitconfig"
+  # gitconfig special handling: set user name/email after copy
   if [ -n "$GIT_USER_NAME" ]; then
     echo "setting git user.name to $GIT_USER_NAME"
     git config --global user.name "$GIT_USER_NAME"
@@ -262,14 +274,6 @@ function create_backups() {
     echo "setting git user.email to $GIT_USER_EMAIL"
     git config --global user.email "$GIT_USER_EMAIL"
   fi
-
-  backup_this "${HOME}/.tmux.conf"
-  ln -sf "$(readlink -f tmux.conf)" "${HOME}/.tmux.conf"
-
-  backup_this "${HOME}/.vimrc"
-  ln -sf "$(readlink -f vimrc)" "${HOME}/.vimrc"
-
-  ln -sf "$(readlink -f bin)/*" "${USER_LOCAL_BIN}/"
 }
 
 function check_config_properties() {
