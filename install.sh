@@ -228,8 +228,8 @@ function backup_this() {
 function create_backups() {
   mkdir -p "${bak_dir}"
   
-  mkdir -p "${HOME}/.bash_completion"
-  ln -sf "$(readlink -f bash_completion)" "${HOME}/.bash_completion"
+  mkdir -p "${HOME}/.zsh_completion.d"
+  ln -sf "$(readlink -f zsh_completion.d)" "${HOME}/.zsh_completion.d"
   
   # backup_this "${HOME}/.bashrc"
   # ln -sf "$(readlink -f bashrc)" "${HOME}/.bashrc"
@@ -237,19 +237,19 @@ function create_backups() {
   backup_this "${HOME}/.zshrc"
   ln -sf "$(readlink -f zshrc)" "${HOME}/.zshrc"
   
-  backup_this "${HOME}/.bash_aliases"
-  ln -sf "$(readlink -f bash_aliases)" "${HOME}/.bash_aliases"
+  backup_this "${HOME}/.zsh_aliases"
+  ln -sf "$(readlink -f zsh_aliases)" "${HOME}/.zsh_aliases"
   
-  backup_this "${HOME}/.bashrc.d"
-  ln -sf "$(readlink -f bashrc.d)" "${HOME}/"
+  backup_this "${HOME}/.zsh_completions"
+  ln -sf "$(readlink -f zsh_completions)" "${HOME}/.zsh_completions"
+  
+  backup_this "${HOME}/.zsh_aliases.d"
+  ln -sf "$(readlink -f zsh_aliases.d)" "${HOME}/"
 
   ln -sf "$(readlink -f config/ascii-art-goku.txt)" "${XDG_CONFIG_HOME}/"
 
   backup_this "${XDG_CONFIG_HOME}/starship.toml"
   ln -sf "$(readlink -f config/starship.toml)" "${XDG_CONFIG_HOME}/"
-
-  # backup_this "${XDG_CONFIG_HOME}/fzf/fzf.bash"
-  # ln -sf "$(readlink -f config/fzf.bash)" "${XDG_CONFIG_HOME}/fzf/"
 
   backup_this "${XDG_CONFIG_HOME}/fzf/fzf.zsh"
   ln -sf "$(readlink -f config/fzf.zsh)" "${XDG_CONFIG_HOME}/fzf/"

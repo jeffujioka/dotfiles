@@ -1,7 +1,7 @@
 ##!/bin/bash
 
-if [ -d ~/.bash_aliases.d ]; then
-  for alias_file in ~/.bash_aliases.d/*.sh; do
+if [ -d ~/.zsh_aliases.d ]; then
+  for alias_file in ~/.zsh_aliases.d/*.sh; do
     if [ -x $alias_file ]; then
 #      echo "Importing aliases from: $alias_file"
       . $alias_file
