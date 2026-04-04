@@ -66,6 +66,7 @@ run_local_checks() {
 
     export SANITY_COUNTERS_FILE
     SANITY_COUNTERS_FILE=$(mktemp)
+    trap 'rm -f "$SANITY_COUNTERS_FILE"' EXIT
     printf '0 0 0' > "$SANITY_COUNTERS_FILE"
 
     if [ "$target" != "no-sudo" ]; then
@@ -80,7 +81,6 @@ run_local_checks() {
     . "$SCRIPT_DIR/tests/helpers.sh"
     summary || rc=1
 
-    rm -f "$SANITY_COUNTERS_FILE"
     return "$rc"
 }
 
