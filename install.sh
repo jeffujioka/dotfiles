@@ -187,6 +187,8 @@ function create_backups() {
 
     # Expand ~ to $HOME
     tgt="${tgt/#\~/$HOME}"
+    # Resolve src relative to repo root (not $PWD)
+    if [[ "$src" != /* ]]; then src="$script_dir/$src"; fi
 
     # Ensure parent directory exists
     mkdir -p "$(dirname "$tgt")"
