@@ -62,9 +62,6 @@ summary() {
     [ "$f" -eq 0 ]
 }
 
-resolve_path() {
-    # Portable readlink -f: works on both Linux (GNU) and macOS ARM (BSD).
-    # Falls back to Python when GNU coreutils are unavailable.
-    readlink -f "$1" 2>/dev/null \
-        || python3 -c "import os,sys; print(os.path.realpath(sys.argv[1]))" "$1"
-}
+# shellcheck source=../helpers/shell-utils.sh
+_SCRIPT_DIR_HELPERS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$_SCRIPT_DIR_HELPERS/../helpers/shell-utils.sh"
