@@ -33,19 +33,6 @@ resolve_path() {
         || python3 -c "import os,sys; print(os.path.realpath(sys.argv[1]))" "$1"
 }
 
-get_cpu_count() {
-    if command -v nproc &>/dev/null; then
-        # Use nproc if available (common on Linux)
-        nproc
-    elif sysctl -n hw.logicalcpu &>/dev/null || sysctl -n hw.ncpu &>/dev/null ; then
-        # Use sysctl for systems where it's available (e.g., macOS/ARM)
-        sysctl -n hw.logicalcpu 2>/dev/null || sysctl -n hw.ncpu
-    else
-        # Fallback to checking /proc/cpuinfo (Linux systems)
-        echo "10"
-    fi
-}
-
 install_sys_packages() {
   set -x
   if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -135,11 +122,6 @@ install_dependencies() {
 
   install_sys_packages
 
-  if [ ! -f "${HOME}/.zsh_completion.d/tmux_completion" ]; then
-    echo "Installing tmux completion..."
-    curl -o "${HOME}/.zsh_completion.d/tmux_completion" https://raw.githubusercontent.com/imomaliev/tmux-bash-completion/master/completions/tmux
-  fi
-
   if ! command -v cargo > /dev/null 2>&1 ; then
     echo "Installing Rust..."
     export RUSTUP_HOME=${XDG_CONFIG_HOME}/rustup
@@ -154,7 +136,14 @@ install_dependencies() {
   rustup default stable
 
   echo "Installing Rust-based tools..."
-  cargo install procs du-dust zoxide ripgrep fd-find bat exa viu --locked
+  "$script_dir/helpers/read-manifest.py" cargo.tools | while IFS= read -r tool; do
+    if command -v "$tool" > /dev/null 2>&1; then
+      echo "'$tool' is already installed."
+    else
+      echo "Installing $tool via cargo..."
+      cargo install "$tool"
+    fi
+  done
 
   if [ ! -f "${USER_LOCAL_BIN}/starship" ]; then
     echo "Installing Starship..."
