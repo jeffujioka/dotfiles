@@ -171,7 +171,7 @@ function backup_this() {
   mv "${file}" "${bak_dir}/${bak_name}"
 }
 
-function create_backups() {
+function apply_dotfiles() {
   mkdir -p "${bak_dir}"
 
   "$script_dir/helpers/read-manifest.py" symlinks --format tsv \
@@ -299,7 +299,7 @@ if [ -n "$install_deps" ]; then
 fi
 
 if [ -n "$no_backups" ]; then
-  create_backups
+  apply_dotfiles
 fi
 
 echo ""
