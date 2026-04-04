@@ -39,6 +39,16 @@ zinit snippet OMZP::sudo
 zinit snippet OMZP::command-not-found
 zinit snippet OMZP::jira
 
+if command -v asdf > /dev/null 2>&1; then
+  # OMZP does not create the completions directory, so we have to do it ourselves
+  if [ -z "${ZSH_CACHE_DIR}" ]; then
+    mkdir -p "$HOME/.cache/zinit/completions"
+  else
+    mkdir -p "$ZSH_CACHE_DIR/completions"
+  fi
+  zinit snippet OMZP::asdf
+fi
+
 # Load completions
 autoload -Uz compinit && compinit
 
@@ -83,18 +93,26 @@ zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
 bindkey "^[[1;5C" forward-word
 bindkey "^[[1;5D" backward-word
 
-# Aliases
-alias ls="exa"
-alias ll="exa -l"
-alias lla="exa -la"
-alias tree="exa -T"
-alias treel="exa -Tl"
-
 if [[ ! "$PATH" == *${HOME}/.local/bin* ]]; then
   export PATH="$HOME/.local/bin:${PATH:+${PATH}:}"
 fi
 if [[ ! "$PATH" == *.scripts* ]]; then
   export PATH="$HOME/.scripts:${PATH:+${PATH}:}"
+fi
+if [[ ! "$PATH" == *${HOME}/.cargo/bin* ]]; then
+  export PATH="$HOME/.cargo/bin:${PATH:+${PATH}:}"
+fi
+if [[ ! "$PATH" == *${HOME}/.asdf/shims* ]]; then
+  export PATH="$HOME/.asdf/shims:${PATH:+${PATH}:}"
+fi
+
+# TODO move to .zshrc.d
+if command -v exa &> /dev/null ; then
+  alias ls="exa"
+  alias ll="exa -l"
+  alias lla="exa -la"
+  alias tree="exa -T"
+  alias treel="exa -Tl"
 fi
 
 if [ -r "${HOME}/.zsh_aliases" ]; then
@@ -105,8 +123,8 @@ if [ -r "${HOME}/.zsh_completions" ]; then
   . "${HOME}/.zsh_completions"
 fi
 
-export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
+# export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
+# [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
 
 unsetopt pathdirs
 
@@ -123,9 +141,8 @@ if [[ -L "${XDG_CONFIG_HOME}/fzf/fzf.zsh" || -f "${XDG_CONFIG_HOME}/fzf/fzf.zsh"
   source "${XDG_CONFIG_HOME}/fzf/fzf.zsh"
 fi
 
-if [[ -L "${XDG_CONFIG_HOME}/cargo/env" || -f "${XDG_CONFIG_HOME}/cargo/env" ]]; then
-  echo "  󱣘 cargo"
-  source "${XDG_CONFIG_HOME}/cargo/env"
+if command -v cargo &> /dev/null ; then
+  echo "  󰡨 cargo"
 fi
 
 if command -v zoxide &> /dev/null ; then
