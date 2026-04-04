@@ -102,7 +102,7 @@ install_non_asdf_tools() {
 
         if [ -n "$post_install" ] && pushd "$rpath" > /dev/null 2>&1; then
           echo "Running post-install for $name..."
-          $post_install
+          eval "$post_install"
           popd > /dev/null 2>&1 || echo "Failed to popd"
         fi
         ;;
