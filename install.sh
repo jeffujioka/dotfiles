@@ -34,7 +34,7 @@ resolve_path() {
 }
 
 install_sys_packages() {
-  set -x
+  [ -n "${DEBUG:-}" ] && set -x
   if [[ "$OSTYPE" == "darwin"* ]]; then
     if ! command -v brew &>/dev/null; then
       echo "homebrew is not installed."
@@ -66,7 +66,7 @@ install_sys_packages() {
     sleep 1
     sudo apt install -y $(get_system_package_list | tr '\n' ' ')
   fi
-  set +x
+  [ -n "${DEBUG:-}" ] && set +x
 }
 
 install_non_asdf_tools() {
