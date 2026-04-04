@@ -293,24 +293,7 @@ check_config_properties
 if [ -n "$install_deps" ]; then
   if [ -z "${install_all}" ] && [ -z "$no_sudo_install" ]; then
     echo "This script will install the following additional packages:"
-    echo '  automake
-    autotools-dev
-    bison
-    byacc
-    cmake
-    curl
-    gawk
-    git
-    jp2a
-    libevent-dev
-    libfontconfig1-dev
-    libfreetype6-dev
-    libncurses-dev
-    libxcb-xfixes0-dev
-    libxkbcommon-dev
-    pkg-config
-    python3
-    vim'
+    get_system_package_list | sed 's/^/  /'
     read -rp "Do you want to continue? [Y/n] " response
 
     response=$(echo "$response" | tr '[:upper:]' '[:lower:]')
