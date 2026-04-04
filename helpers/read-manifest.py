@@ -42,14 +42,41 @@ def get_nested(data, key_path):
     return current
 
 
+def _parse_field_specs(spec_str):
+    """Parse 'name,type:symlink,backup:true' into [(field, default_or_None), ...]."""
+    specs = []
+    for token in spec_str.split(","):
+        if ":" in token:
+            field, default = token.split(":", 1)
+        else:
+            field, default = token, None
+        specs.append((field.strip(), default))
+    return specs
+
+
+def _get_field_value(item, field, default):
+    """Get a field from a dict, converting booleans to 'true'/'false'."""
+    if field not in item:
+        return default if default is not None else ""
+    val = item[field]
+    if isinstance(val, bool):
+        return "true" if val else "false"
+    return str(val)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Read manifest.toml values")
     parser.add_argument("key", help="Dot-separated key path (e.g., packages.linux.list)")
     parser.add_argument(
         "--format",
-        choices=["plain", "jsonl"],
+        choices=["plain", "jsonl", "tsv"],
         default="plain",
         help="Output format (default: plain)",
+    )
+    parser.add_argument(
+        "--fields",
+        default=None,
+        help="Comma-separated fields for --format tsv: 'field' or 'field:default'",
     )
     parser.add_argument(
         "--manifest",
@@ -72,6 +99,17 @@ def main():
                 print(json.dumps(item))
         else:
             print(json.dumps(value))
+    elif args.format == "tsv":
+        if not args.fields:
+            print("Error: --fields is required with --format tsv", file=sys.stderr)
+            sys.exit(1)
+        if not isinstance(value, list):
+            print("Error: --format tsv only supports list values", file=sys.stderr)
+            sys.exit(1)
+        field_specs = _parse_field_specs(args.fields)
+        for item in value:
+            parts = [_get_field_value(item, f, d) for f, d in field_specs]
+            print("\t".join(parts))
     else:
         if isinstance(value, list):
             for item in value:
