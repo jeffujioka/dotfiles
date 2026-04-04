@@ -82,6 +82,54 @@ install_sys_packages() {
   set +x
 }
 
+install_non_asdf_tools() {
+  "$script_dir/helpers/read-manifest.py" resources --format jsonl | while IFS= read -r line; do
+    name=$(printf '%s' "$line" | python3 -c "import sys,json; print(json.load(sys.stdin)['name'])")
+    rtype=$(printf '%s' "$line" | python3 -c "import sys,json; print(json.load(sys.stdin)['type'])")
+    rpath=$(printf '%s' "$line" | python3 -c "import sys,json; print(json.load(sys.stdin)['path'])")
+    url=$(printf '%s' "$line" | python3 -c "import sys,json; print(json.load(sys.stdin)['url'])")
+    branch=$(printf '%s' "$line" | python3 -c "import sys,json; print(json.load(sys.stdin).get('branch','main'))")
+    shallow=$(printf '%s' "$line" | python3 -c "import sys,json; print('true' if json.load(sys.stdin).get('shallow', False) else 'false')")
+    post_install=$(printf '%s' "$line" | python3 -c "import sys,json; print(json.load(sys.stdin).get('post_install',''))")
+
+    # Expand ~ and resolve relative paths
+    rpath="${rpath/#\~/$HOME}"
+
+    case "$rtype" in
+      git-clone)
+        clone_args=""
+        if [ "$shallow" = "true" ]; then
+          clone_args="--depth 1"
+        fi
+
+        if [ ! -d "$rpath" ]; then
+          echo "Cloning $name..."
+          git clone $clone_args "$url" "$rpath"
+        else
+          echo "Updating $name..."
+          pushd "$rpath" > /dev/null 2>&1 || { echo "Failed to pushd $rpath"; continue; }
+          git fetch --all --prune
+          git pull --rebase origin "$branch"
+          popd > /dev/null 2>&1 || echo "Failed to popd"
+        fi
+
+        if [ -n "$post_install" ] && pushd "$rpath" > /dev/null 2>&1; then
+          echo "Running post-install for $name..."
+          $post_install
+          popd > /dev/null 2>&1 || echo "Failed to popd"
+        fi
+        ;;
+      file-download)
+        mkdir -p "$(dirname "$rpath")"
+        if [ ! -f "$rpath" ]; then
+          echo "Downloading $name..."
+          curl -o "$rpath" "$url"
+        fi
+        ;;
+    esac
+  done
+}
+
 install_dependencies() {
   yes="$1"
 
@@ -113,94 +161,7 @@ install_dependencies() {
     curl -fsSL https://starship.rs/install.sh | sh -s -- -y -b "${USER_LOCAL_BIN}/"
   fi
 
-  # TODO: enhance the installation process. It's in brute-force way now
-  if [ ! -d "${USER_GIT_DOWNLOADS}/tmux" ]; then
-    echo "Cloning tmux..."
-    git clone https://github.com/tmux/tmux.git "${USER_GIT_DOWNLOADS}/tmux"
-  else
-    echo "Updating tmux repository..."
-    pushd "${USER_GIT_DOWNLOADS}/tmux" > /dev/null 2>&1 || echo "Failed to pushd .tmux"
-    git fetch --all --prune
-    git pull --rebase origin master
-    popd > /dev/null 2>&1 || echo "Failed to popd"
-  fi
-
-  if [ -d "${USER_GIT_DOWNLOADS}/tmux" ]; then
-    if [ ! -d "~/.tmux/plugins/tpm" ]; then
-      git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
-    else
-      echo "Updating tmux tpm repository..."
-      pushd "~/.tmux/plugins/tpm" > /dev/null 2>&1 || echo "Failed to pushd .tmux/plugins/tpm"
-      git fetch --all --prune
-      git pull --rebase origin master
-      popd > /dev/null 2>&1 || echo "Failed to popd"
-    fi
-    echo "Building tmux..."
-    pushd "${USER_GIT_DOWNLOADS}/tmux" > /dev/null 2>&1 || echo "Failed to pushd ${USER_GIT_DOWNLOADS}/tmux"
-    sh autogen.sh
-    local enable_utf8_proc=""
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-      enable_utf8_proc="--enable-utf8proc"
-    fi
-    # Get the number of CPUs, subtract 2, and ensure it's at least 1
-    cpu_count=$(( $(get_cpu_count) - 2 ))
-    if (( cpu_count < 1 )); then
-        cpu_count=1
-    fi
-    ./configure --prefix="${USER_LOCAL_HOME}" "$enable_utf8_proc" \
-      && make -j$cpu_count \
-      && make install
-    popd > /dev/null 2>&1 || echo "Failed to popd"
-  fi
-
-  if [ ! -d "${USER_GIT_DOWNLOADS}/fzf" ]; then
-    echo "Installing fzf..."
-    git clone --depth 1 https://github.com/junegunn/fzf.git "${USER_GIT_DOWNLOADS}/fzf"
-  else
-    echo "Updating fzf repository..."
-    pushd "${USER_GIT_DOWNLOADS}/fzf" > /dev/null 2>&1 || echo "Failed to pushd .fzf"
-    git fetch --all --prune
-    git pull --rebase origin master
-    popd > /dev/null 2>&1 || echo "Failed to popd"
-  fi
-
-  if pushd "${USER_GIT_DOWNLOADS}/fzf" ; then
-    ./install --all --xdg --completion --no-bash --no-zsh --no-fish --no-update-rc
-    ln -sf "$(readlink -f bin)"/* "${HOME}/.local/bin/"
-    popd > /dev/null 2>&1 || echo "Failed to popd"
-  fi
-
-  if [ ! -d "${USER_GIT_DOWNLOADS}/nerd-fonts" ]; then
-    echo "Cloning nerd-fonts..."
-    git clone --depth 1 https://github.com/ryanoasis/nerd-fonts.git ${USER_GIT_DOWNLOADS}/nerd-fonts
-  else
-    echo "Updating nerd-fonts repository..."
-    pushd "${USER_GIT_DOWNLOADS}/nerd-fonts" > /dev/null 2>&1 || echo "Failed to pushd ${USER_GIT_DOWNLOADS}/nerd-fonts"
-    git fetch --all --prune
-    git pull --rebase origin master
-    popd > /dev/null 2>&1 || echo "Failed to popd"
-  fi
-
-  if pushd "${USER_GIT_DOWNLOADS}/nerd-fonts" ; then
-    ./install.sh
-    popd > /dev/null 2>&1 || echo "Failed to popd"
-  fi
-
-  if [ ! -d "${USER_GIT_DOWNLOADS}/mate" ]; then
-    echo "Cloning mate..."
-    git clone --depth 1 https://github.com/jeffujioka/mate.git ${USER_GIT_DOWNLOADS}/mate
-  else
-    echo "Updating mate repository..."
-    pushd "${USER_GIT_DOWNLOADS}/mate" > /dev/null 2>&1 || echo "Failed to pushd ${USER_GIT_DOWNLOADS}/mate"
-    git fetch --all --prune
-    git pull --rebase origin master
-    popd > /dev/null 2>&1 || echo "Failed to popd"
-  fi
-
-  if pushd "${USER_GIT_DOWNLOADS}/mate" ; then
-    ./install.sh
-    popd > /dev/null 2>&1 || echo "Failed to popd"
-  fi
+  install_non_asdf_tools
 }
 
 function backup_this() {
