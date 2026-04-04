@@ -118,9 +118,9 @@ install_non_asdf_tools() {
 }
 
 install_dependencies() {
-  yes="$1"
-
-  install_sys_packages
+  if [ -z "$no_sudo_install" ]; then
+    install_sys_packages
+  fi
 
   if ! command -v cargo > /dev/null 2>&1 ; then
     echo "Installing Rust..."
@@ -254,6 +254,7 @@ function check_config_properties() {
 }
 
 install_deps="1"
+no_sudo_install=""
 no_backups="1"
 install_all=""
 
@@ -263,6 +264,11 @@ do
     --no-install-deps)
       install_deps=""
       echo "it won't install deps!!!"
+      shift
+      ;;
+    --no-sudo-install)
+      no_sudo_install="1"
+      echo "skipping system package installation (no sudo)"
       shift
       ;;
     --no-backups)
@@ -283,7 +289,7 @@ done
 check_config_properties
 
 if [ -n "$install_deps" ]; then
-  if [ -z "${install_all}" ] ; then
+  if [ -z "${install_all}" ] && [ -z "$no_sudo_install" ]; then
     echo "This script will install the following additional packages:"
     echo '  automake
     autotools-dev
