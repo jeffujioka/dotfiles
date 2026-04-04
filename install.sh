@@ -18,6 +18,14 @@ mkdir -p "${XDG_CONFIG_HOME}"
 mkdir -p "${USER_LOCAL_BIN}"
 mkdir -p "${HOME}/.bash_completion.d"
 
+get_system_package_list() {
+  if [[ "$OSTYPE" == darwin* ]]; then
+    "$script_dir/helpers/read-manifest.py" packages.darwin.list
+  elif [[ "$OSTYPE" == linux* ]]; then
+    "$script_dir/helpers/read-manifest.py" packages.linux.list
+  fi
+}
+
 get_cpu_count() {
     if command -v nproc &>/dev/null; then
         # Use nproc if available (common on Linux)
@@ -31,60 +39,46 @@ get_cpu_count() {
     fi
 }
 
-install_dependencies() {
-  yes="$1"
-
+install_sys_packages() {
+  set -x
   if [[ "$OSTYPE" == "darwin"* ]]; then
-    echo "Running on macOS. Using brew for dependency installation."
+    if ! command -v brew &>/dev/null; then
+      echo "homebrew is not installed."
+      echo "trying to install it."
+      sleep 1
+      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      echo >> "$HOME/.zprofile"
+      echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> "$HOME/.zprofile"
+      eval "$(/opt/homebrew/bin/brew shellenv)"
+    fi
 
-    # Update Homebrew
-    echo "Updating Homebrew..."
+    echo ""
+    sleep 1
     brew update && brew upgrade
 
-    # Install tmux dependencies
-    tmux_dependencies=("libevent" "ncurses" "automake" "bison" "byacc" "utf8proc")
-
-    echo "Installing tmux dependencies: ${tmux_dependencies[*]}"
-    for dependency in "${tmux_dependencies[@]}"; do
-      echo "Installing ${dependency}..."
-      brew install "${dependency}"
-    done
-
-    # Install other dependencies
-    # other_dependencies=("curl" "gawk" "git" "vim" "cmake" "pkg-config" "freetype" "fontconfig" "xcb-util-xrm" "xkbcommon" "python3" "jp2a")
-    other_dependencies=("bash" "curl" "gawk" "git" "vim" "cmake" "pkg-config" "freetype" "fontconfig" "python3" "jp2a")
-
-    echo "Installing other dependencies: ${other_dependencies[*]}"
-    for dependency in "${other_dependencies[@]}"; do
-      echo "Installing ${dependency}..."
-      brew install "${dependency}"
+    echo "Installing packages:"
+    get_system_package_list | while IFS= read -r package; do
+      echo "Installing ${package}..."
+      brew install "${package}"
     done
 
   else
-    echo "Running on Linux. Using apt for dependency installation."
+    echo ""
+    sleep 1
+    sudo apt update && sudo apt upgrade -y
 
-    echo "sudo apt update && sudo apt upgrade ${yes}"
-    sudo apt update && sudo apt upgrade "${yes}"
-
-    tmux_dependencies="libevent-dev libncurses-dev autotools-dev automake bison byacc"
-    echo "sudo apt install ${yes} ${tmux_dependencies}"
-    sudo apt install "${yes}" ${tmux_dependencies}
-
-    sudo apt install "${yes}" \
-      curl \
-      gawk \
-      git \
-      vim \
-      cmake \
-      pkg-config \
-      libfreetype6-dev \
-      libfontconfig1-dev \
-      libxcb-xfixes0-dev \
-      libxkbcommon-dev \
-      python3 \
-      jp2a \
-      xsel
+    echo ""
+    echo "Installing packages:"
+    sleep 1
+    sudo apt install -y $(get_system_package_list | tr '\n' ' ')
   fi
+  set +x
+}
+
+install_dependencies() {
+  yes="$1"
+
+  install_sys_packages
 
   if [ ! -f "${HOME}/.bash_completion.d/tmux_completion" ]; then
     echo "Installing tmux completion..."
