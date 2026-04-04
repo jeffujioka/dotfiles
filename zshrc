@@ -107,12 +107,12 @@ if [[ ! "$PATH" == *${HOME}/.asdf/shims* ]]; then
 fi
 
 # TODO move to .zshrc.d
-if command -v exa &> /dev/null ; then
-  alias ls="exa"
-  alias ll="exa -l"
-  alias lla="exa -la"
-  alias tree="exa -T"
-  alias treel="exa -Tl"
+if command -v eza &> /dev/null ; then
+  alias ls="eza"
+  alias ll="eza -l"
+  alias lla="eza -la"
+  alias tree="eza -T"
+  alias treel="eza -Tl"
 fi
 
 if [ -r "${HOME}/.zsh_aliases" ]; then

@@ -81,19 +81,19 @@ install_asdf_plugin starship latest
 install_asdf_plugin fd latest
 install_asdf_plugin vim latest
 
-# Note: I'm installing zoxide and exa using cargo instead of asdf plugins
+# Note: I'm installing zoxide and eza using cargo instead of asdf plugins
 # because the plugin repositories are currently unavailable
 # https://github.com/nyrst/asdf-zoxide
-# https://github.com/nyrst/asdf-exa
+# https://github.com/nyrst/asdf-eza
 # install_asdf_plugin zoxide latest
-# install_asdf_plugin exa latest
+# install_asdf_plugin eza latest
 
 if command -v cargo > /dev/null; then
-    if command -v exa > /dev/null; then
-        echo "'exa $(exa --version | grep "^v")' is already installed."
+    if command -v eza > /dev/null; then
+        echo "'eza $(eza --version | head -1)' is already installed."
     else
-        echo "Installing exa via cargo..."
-        cargo install exa
+        echo "Installing eza via cargo..."
+        cargo install eza
     fi
     if command -v zoxide > /dev/null; then
         echo "'$(zoxide --version)' is already installed."
