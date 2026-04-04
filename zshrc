@@ -97,18 +97,12 @@ if [[ ! "$PATH" == *.scripts* ]]; then
   export PATH="$HOME/.scripts:${PATH:+${PATH}:}"
 fi
 
-if [ -d "${HOME}/.bashrc.d" ]; then
-  for rc in "${HOME}"/.bashrc.d/*.sh; do
-    if [ -x "$rc" ]; then
-      #echo "Reading bashrc file: $rc"
-      . $rc
-    fi
-  done
-  unset rc
+if [ -r "${HOME}/.zsh_aliases" ]; then
+  . "${HOME}/.zsh_aliases"
 fi
 
-if [ -x "${HOME}/.bash_completion" ]; then
-  . "${HOME}/.bash_completion"
+if [ -r "${HOME}/.zsh_completions" ]; then
+  . "${HOME}/.zsh_completions"
 fi
 
 export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
