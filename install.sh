@@ -40,35 +40,35 @@ DARWIN_PACKAGES=(
   "zsh"                                                                       \
 )
 
-LINUX_PACKAGES="
-  autoconf                                                                    \
-  bison                                                                       \
-  build-essential                                                             \
-  curl                                                                        \
-  gawk                                                                        \
-  gcc                                                                         \
-  git                                                                         \
-  jp2a                                                                        \
-  libevent-dev                                                                \
-  libfontconfig1-dev                                                          \
-  libfreetype6-dev                                                            \
-  libncurses5-dev                                                             \
-  make                                                                        \
-  pkg-config                                                                  \
-  python3                                                                     \
-  xsel                                                                        \
-  zsh                                                                         \
-"
-# libxcb-xfixes0-dev \
-# libxkbcommon-dev \
+LINUX_PACKAGES=(
+  "autoconf"
+  "bison"
+  "build-essential"
+  "curl"
+  "gawk"
+  "gcc"
+  "git"
+  "jp2a"
+  "libevent-dev"
+  "libfontconfig1-dev"
+  "libfreetype6-dev"
+  "libncurses5-dev"
+  "make"
+  "pkg-config"
+  "python3"
+  "xsel"
+  "zsh"
+)
+# libxcb-xfixes0-dev
+# libxkbcommon-dev
 
 get_system_package_list() {
   case "$OSTYPE" in
   darwin*)
-    echo "${DARWIN_PACKAGES[@]}" | tr -s ' ' | tr ' ' '\n'
+    printf '%s\n' "${DARWIN_PACKAGES[@]}"
     ;;
   linux*)
-    echo "${LINUX_PACKAGES[@]}" | tr -s ' ' | tr ' ' '\n'
+    printf '%s\n' "${LINUX_PACKAGES[@]}"
     ;;
   esac
 }
@@ -118,7 +118,7 @@ install_sys_packages() {
     echo ""
     echo "Installing packages: $(get_system_package_list)"
     sleep 1
-    sudo apt install -y ${LINUX_PACKAGES}
+    sudo apt install -y "${LINUX_PACKAGES[@]}"
   fi
   set +x
 }
@@ -276,8 +276,6 @@ function check_config_properties() {
   fi
 }
 
-check_config_properties
-
 install_asdf=true
 install_asdf_plugins=true
 should_install_non_asdf_tools=true
@@ -317,6 +315,8 @@ do
       ;;
   esac
 done
+
+check_config_properties
 
 if [ "$should_create_backups" = "true" ]; then
   set +e
