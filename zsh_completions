@@ -2,10 +2,7 @@
 
 if [ -d "${HOME}/.zsh_completion.d" ]; then
   for completion in "${HOME}"/.zsh_completion.d/*; do
-    if [ -f "$completion" ] && [ -x "$completion" ]; then
-      #echo "Reading completion file: $completion"
-      . "$completion"
-    elif [ -f "$completion" ]; then
+    if [ -f "$completion" ]; then
       . "$completion"
     fi
   done

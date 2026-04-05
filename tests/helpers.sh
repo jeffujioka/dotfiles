@@ -19,6 +19,8 @@ if [ ! -s "$SANITY_COUNTERS_FILE" ]; then
 fi
 
 _update_counter() {
+    # NOTE: Non-atomic read-modify-write — check scripts must run sequentially.
+    # Parallelising them (e.g. with &) would corrupt counter state.
     local field="$1"  # 1=pass, 2=fail, 3=warn
     local counters
     counters=$(cat "$SANITY_COUNTERS_FILE")

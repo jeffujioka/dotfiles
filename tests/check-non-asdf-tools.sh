@@ -1,7 +1,7 @@
 #!/bin/bash
 # Check that non-asdf resources from manifest.toml are present.
 
-set -e
+set -eo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"

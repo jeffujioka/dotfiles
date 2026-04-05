@@ -1,4 +1,5 @@
 #!/bin/bash
+set -o pipefail
 
 timestamp=$(date +%F_%H%M%S)
 
@@ -27,6 +28,10 @@ get_system_package_list() {
 
 # shellcheck source=helpers/shell-utils.sh
 . "$(dirname "$(readlink -f "$0")")/helpers/shell-utils.sh"
+
+# Validate manifest.toml before doing any destructive work.
+"$script_dir/helpers/read-manifest.py" cargo.tools --format tsv --fields "crate,binary:" > /dev/null \
+  || { echo "Error: manifest.toml is missing or invalid. Aborting."; exit 1; }
 
 install_sys_packages() {
   [ -n "${DEBUG:-}" ] && set -x
@@ -92,6 +97,7 @@ install_non_asdf_tools() {
 
         if [ -n "$post_install" ] && pushd "$rpath" > /dev/null 2>&1; then
           echo "Running post-install for $name..."
+          # Intentional: post_install is a trusted shell snippet from manifest.toml
           eval "$post_install"
           popd > /dev/null 2>&1 || echo "Failed to popd"
         fi
@@ -130,19 +136,16 @@ install_dependencies() {
   echo "Installing Rust-based tools..."
   export TMPDIR=${XDG_CONFIG_HOME}/tmp
   mkdir -p "$TMPDIR"
-  "$script_dir/helpers/read-manifest.py" cargo.tools | while IFS= read -r tool; do
-    if command -v "$tool" > /dev/null 2>&1; then
-      echo "'$tool' is already installed."
+  "$script_dir/helpers/read-manifest.py" cargo.tools --format tsv --fields "crate,binary:" \
+    | while IFS=$'\t' read -r crate binary; do
+    binary="${binary:-$crate}"
+    if command -v "$binary" > /dev/null 2>&1; then
+      echo "'$binary' is already installed."
     else
-      echo "Installing $tool via cargo..."
-      cargo install "$tool"
+      echo "Installing $crate via cargo..."
+      cargo install --locked "$crate"
     fi
   done
-
-  if [ ! -f "${USER_LOCAL_BIN}/starship" ]; then
-    echo "Installing Starship..."
-    curl -fsSL https://starship.rs/install.sh | sh -s -- -y -b "${USER_LOCAL_BIN}/"
-  fi
 
   install_non_asdf_tools
 }

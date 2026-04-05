@@ -1,7 +1,7 @@
 #!/bin/bash
 # Check that asdf tools from .tool-versions are installed with expected versions.
 
-set -e
+set -eo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
