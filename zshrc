@@ -83,13 +83,6 @@ zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
 bindkey "^[[1;5C" forward-word
 bindkey "^[[1;5D" backward-word
 
-# Aliases
-alias ls="exa"
-alias ll="exa -l"
-alias lla="exa -la"
-alias tree="exa -T"
-alias treel="exa -Tl"
-
 if [[ ! "$PATH" == *${HOME}/.local/bin* ]]; then
   export PATH="$HOME/.local/bin:${PATH:+${PATH}:}"
 fi

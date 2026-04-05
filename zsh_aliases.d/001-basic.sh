@@ -140,12 +140,15 @@ function fqi() {
 ##
 ################################################################################
 
-# Use exa instead of ls
-alias ls="exa"
-alias ll="exa -l"
-alias lla="exa -la"
-alias tree="exa -T"
-alias treel="exa -Tl"
+# Use eza instead of ls (modern replacement for exa)
+alias ls="eza --icons --group-directories-first"
+alias ll="eza -l --icons --group-directories-first"
+alias lla="eza -la --icons --group-directories-first"
+alias llt="eza -lT --icons --group-directories-first"
+alias llta="eza -lTa --icons --group-directories-first"
+alias tree="eza -T --icons --group-directories-first"
+alias treel="eza -lT --icons --group-directories-first"
+alias treela="eza -lTa --icons --group-directories-first"
 
 # FZF
 alias fprv="fzf --preview 'bat --color=always --style=numbers {}'"
