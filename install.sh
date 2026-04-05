@@ -16,7 +16,6 @@ USER_GIT_DOWNLOADS=".git_downloads"
 
 mkdir -p "${XDG_CONFIG_HOME}"
 mkdir -p "${USER_LOCAL_BIN}"
-mkdir -p "${HOME}/.zsh_completion.d"
 
 get_system_package_list() {
   if [[ "$OSTYPE" == darwin* ]]; then
@@ -117,6 +116,8 @@ install_dependencies() {
     echo "Installing Rust..."
     export RUSTUP_HOME=${XDG_CONFIG_HOME}/rustup
     export CARGO_HOME=${XDG_CONFIG_HOME}/cargo
+    export TMPDIR=${XDG_CONFIG_HOME}/tmp
+    mkdir -p "$TMPDIR"
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
     
     source "${XDG_CONFIG_HOME}/cargo/env"
@@ -127,6 +128,8 @@ install_dependencies() {
   rustup default stable
 
   echo "Installing Rust-based tools..."
+  export TMPDIR=${XDG_CONFIG_HOME}/tmp
+  mkdir -p "$TMPDIR"
   "$script_dir/helpers/read-manifest.py" cargo.tools | while IFS= read -r tool; do
     if command -v "$tool" > /dev/null 2>&1; then
       echo "'$tool' is already installed."

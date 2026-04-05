@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 
-if [ -d "${HOME}/.bash_completion.d" ]; then
-  for completion in "${HOME}"/.bash_completion.d/*.sh; do
-    if [ -x "$completion" ]; then
+if [ -d "${HOME}/.zsh_completion.d" ]; then
+  for completion in "${HOME}"/.zsh_completion.d/*; do
+    if [ -f "$completion" ] && [ -x "$completion" ]; then
       #echo "Reading completion file: $completion"
-      . $completion
+      . "$completion"
+    elif [ -f "$completion" ]; then
+      . "$completion"
     fi
   done
   unset completion

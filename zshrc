@@ -123,9 +123,17 @@ if [[ -L "${XDG_CONFIG_HOME}/fzf/fzf.zsh" || -f "${XDG_CONFIG_HOME}/fzf/fzf.zsh"
   source "${XDG_CONFIG_HOME}/fzf/fzf.zsh"
 fi
 
-if [[ -L "${XDG_CONFIG_HOME}/cargo/env" || -f "${XDG_CONFIG_HOME}/cargo/env" ]]; then
-  echo "  󱣘 cargo"
-  source "${XDG_CONFIG_HOME}/cargo/env"
+# Setup cargo (required for all environments: docker, ubuntu, mac, vm, qemu, etc.)
+# Source cargo/env if it exists, otherwise set CARGO_HOME and add to PATH
+CARGO_HOME="${XDG_CONFIG_HOME}/cargo"
+CARGO_ENV="${CARGO_HOME}/env"
+if [ -f "${CARGO_ENV}" ]; then
+  source "${CARGO_ENV}"
+elif [ -d "${CARGO_HOME}/bin" ]; then
+  # Fallback: add cargo/bin to PATH directly if env file doesn't exist
+  if [[ ! "$PATH" == *"${CARGO_HOME}/bin"* ]]; then
+    export PATH="${CARGO_HOME}/bin:${PATH}"
+  fi
 fi
 
 if command -v zoxide &> /dev/null ; then
