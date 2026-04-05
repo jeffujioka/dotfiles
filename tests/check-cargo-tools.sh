@@ -1,7 +1,7 @@
 #!/bin/bash
 # Check that cargo-installed tools from manifest.toml are available.
 
-set -e
+set -eo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -15,11 +15,13 @@ if ! command -v cargo &>/dev/null; then
     exit 0
 fi
 
-"$REPO_ROOT/helpers/read-manifest.py" cargo.tools | while IFS= read -r tool; do
-    if command -v "$tool" &>/dev/null; then
-        version=$("$tool" --version 2>/dev/null | head -1)
-        pass "$tool ($version)"
+"$REPO_ROOT/helpers/read-manifest.py" cargo.tools --format tsv --fields "crate,binary:" \
+    | while IFS=$'\t' read -r crate binary; do
+    binary="${binary:-$crate}"
+    if command -v "$binary" &>/dev/null; then
+        version=$("$binary" --version 2>/dev/null | head -1)
+        pass "$crate ($version)"
     else
-        fail "$tool not found"
+        fail "$crate not found (binary: $binary)"
     fi
 done
