@@ -69,6 +69,17 @@ run_local_checks() {
     trap 'rm -f "$SANITY_COUNTERS_FILE"' EXIT
     printf '0 0 0' > "$SANITY_COUNTERS_FILE"
 
+    # Source shell config to ensure PATH is set up correctly
+    # Try zshrc for zsh shells, bashrc for bash shells
+    if [ -n "$ZSH_VERSION" ] && [ -f "$HOME/.zshrc" ]; then
+        source "$HOME/.zshrc" 2>/dev/null || true
+    elif [ -z "$ZSH_VERSION" ] && [ -f "$HOME/.bashrc" ]; then
+        source "$HOME/.bashrc" 2>/dev/null || true
+    fi
+    # Also ensure cargo is in PATH (for non-interactive shells)
+    CARGO_HOME="${XDG_CONFIG_HOME:-$HOME/.config}/cargo"
+    [ -d "${CARGO_HOME}/bin" ] && export PATH="${CARGO_HOME}/bin:$PATH"
+
     if [ "$target" != "no-sudo" ]; then
         "$SCRIPT_DIR/tests/check-system-packages.sh" || rc=1
     fi
