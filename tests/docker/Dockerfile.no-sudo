@@ -19,7 +19,8 @@ RUN apt-get update \
 ARG TEST_USER=testuser
 ARG TEST_UID=1000
 
-RUN useradd -m -d /home/${TEST_USER} -s /bin/bash -u ${TEST_UID} ${TEST_USER}
+RUN useradd -m -d /home/${TEST_USER} -s /bin/bash -u ${TEST_UID} ${TEST_USER} 2>/dev/null || \
+    useradd -m -d /home/${TEST_USER} -s /bin/bash ${TEST_USER}
 
 USER ${TEST_USER}
 WORKDIR /home/${TEST_USER}
