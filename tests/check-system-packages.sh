@@ -1,7 +1,7 @@
 #!/bin/bash
 # Check that system packages from manifest.toml are installed.
 
-set -e
+set -eo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"

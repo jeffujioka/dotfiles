@@ -46,9 +46,35 @@ list = [
   "zsh",
 ]
 
-[cargo]
-# Installed via: cargo install <tool>
-tools = ["eza", "zoxide"]
+[[cargo.tools]]
+crate = "bat"
+
+[[cargo.tools]]
+crate = "du-dust"
+binary = "dust"
+
+[[cargo.tools]]
+crate = "eza"
+
+[[cargo.tools]]
+crate = "fd-find"
+binary = "fd"
+
+[[cargo.tools]]
+crate = "procs"
+
+[[cargo.tools]]
+crate = "ripgrep"
+binary = "rg"
+
+[[cargo.tools]]
+crate = "starship"
+
+[[cargo.tools]]
+crate = "viu"
+
+[[cargo.tools]]
+crate = "zoxide"
 
 [[resources]]
 name = "tpm"
