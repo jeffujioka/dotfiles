@@ -14,8 +14,17 @@ if [[ "$OSTYPE" == darwin* ]]; then
     manifest_key="packages.darwin.list"
     check_installed() { brew list "$1" &>/dev/null; }
 elif [[ "$OSTYPE" == linux* ]]; then
-    manifest_key="packages.linux.list"
-    check_installed() { dpkg -s "$1" &>/dev/null; }
+    if [[ "${HOMEBREW_PREFIX:-}" == "${HOME}/.homebrew" ]]; then
+        manifest_key="packages.linux_brew.list"
+        if ! command -v brew &>/dev/null; then
+            fail "HOMEBREW_PREFIX is \$HOME/.homebrew but brew not found in PATH"
+            exit 1
+        fi
+        check_installed() { brew list "$1" &>/dev/null; }
+    else
+        manifest_key="packages.linux.list"
+        check_installed() { dpkg -s "$1" &>/dev/null; }
+    fi
 else
     fail "Unsupported OS: $OSTYPE"
     exit 1
