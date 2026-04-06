@@ -1,7 +1,9 @@
 FROM ubuntu:24.04
 
-# Bootstrap: python3 to parse manifest, curl+git for Homebrew and asdf
-RUN apt-get update && apt-get install -y python3 curl git \
+# Bootstrap: python3 to parse manifest, curl+git for Homebrew and asdf,
+# build-essential because Homebrew on Linux requires a C compiler for
+# source builds when bottles are unavailable.
+RUN apt-get update && apt-get install -y python3 curl git build-essential \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 ARG TEST_USER=testuser
