@@ -116,6 +116,9 @@ install_sys_packages() {
   elif [[ "$OSTYPE" == linux* ]]; then
     install_linux_brew
     eval "$("$HOME/.homebrew/bin/brew" shellenv)"
+    # Homebrew's OpenSSL/curl/git need the system CA bundle explicitly
+    export SSL_CERT_FILE="${SSL_CERT_FILE:-/etc/ssl/certs/ca-certificates.crt}"
+    export CURL_CA_BUNDLE="${CURL_CA_BUNDLE:-/etc/ssl/certs/ca-certificates.crt}"
 
     if [ -z "$no_sudo_install" ]; then
       echo ""
@@ -185,20 +188,26 @@ install_non_asdf_tools() {
 install_dependencies() {
   install_sys_packages
 
-  if ! command -v cargo > /dev/null 2>&1 ; then
-    echo "Installing Rust..."
-    export RUSTUP_HOME=${XDG_CONFIG_HOME}/rustup
-    export CARGO_HOME=${XDG_CONFIG_HOME}/cargo
-    export TMPDIR=${XDG_CONFIG_HOME}/tmp
-    mkdir -p "$TMPDIR"
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
+  # Only install Rust if there are cargo tools defined in the manifest
+  local _cargo_tool_count
+  _cargo_tool_count=$("$script_dir/helpers/read-manifest.py" cargo.tools --format tsv \
+    --fields "crate,binary:" 2>/dev/null | wc -l)
+  if [ "$_cargo_tool_count" -gt 0 ]; then
+    if ! command -v cargo > /dev/null 2>&1 ; then
+      echo "Installing Rust..."
+      export RUSTUP_HOME=${XDG_CONFIG_HOME}/rustup
+      export CARGO_HOME=${XDG_CONFIG_HOME}/cargo
+      export TMPDIR=${XDG_CONFIG_HOME}/tmp
+      mkdir -p "$TMPDIR"
+      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
 
-    source "${XDG_CONFIG_HOME}/cargo/env"
+      source "${XDG_CONFIG_HOME}/cargo/env"
+
+      rustup default stable
+    fi
 
     rustup default stable
   fi
-
-  rustup default stable
 
   install_brew_tools
 
