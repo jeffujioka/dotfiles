@@ -26,23 +26,80 @@ get_system_package_list() {
   fi
 }
 
+get_brew_package_list() {
+  "$script_dir/helpers/read-manifest.py" packages.linux_brew.list
+}
+
+install_linux_brew() {
+  if command -v brew &>/dev/null; then
+    echo "Homebrew already installed at $(brew --prefix)."
+    return 0
+  fi
+  echo "Installing Homebrew to $HOME/.homebrew..."
+  mkdir -p "$HOME/.homebrew"
+  curl -fsSL https://github.com/Homebrew/brew/tarball/master \
+    | tar xz --strip-components 1 -C "$HOME/.homebrew" \
+    || { echo "Error: Homebrew installation failed. Aborting."; exit 1; }
+  eval "$("$HOME/.homebrew/bin/brew" shellenv)"
+  brew update --force --quiet
+  chmod -R go-w "$(brew --prefix)/share/zsh" 2>/dev/null || true
+  echo "Homebrew installed to $HOME/.homebrew."
+}
+
+cleanup_cargo_tools() {
+  if ! command -v cargo &>/dev/null; then
+    return 0
+  fi
+  echo "Cleaning up previously cargo-installed tools..."
+  "$script_dir/helpers/read-manifest.py" brew.tools --format tsv \
+      --fields "formula,cargo_crate:,binary:" \
+    | while IFS=$'\t' read -r formula cargo_crate binary; do
+      local uninstall_name="${cargo_crate:-${binary:-$formula}}"
+      echo "Uninstalling cargo package: $uninstall_name"
+      cargo uninstall "$uninstall_name" 2>/dev/null || true
+    done
+}
+
+install_brew_tools() {
+  echo "Installing brew tools..."
+  local failed_installs=0
+
+  while IFS=$'\t' read -r formula binary flags; do
+    binary="${binary:-$formula}"
+    if command -v "$binary" &>/dev/null; then
+      echo "'$binary' is already installed."
+    else
+      echo "Installing $formula via brew..."
+      # shellcheck disable=SC2086
+      brew install $flags "$formula" \
+        || { echo "Warning: Failed to install $formula"; failed_installs=$((failed_installs + 1)); }
+    fi
+  done < <("$script_dir/helpers/read-manifest.py" brew.tools --format tsv \
+              --fields "formula,binary:,flags:")
+
+  if [ "$failed_installs" -eq 0 ]; then
+    cleanup_cargo_tools
+  else
+    echo "Warning: $failed_installs brew tool(s) failed to install. Skipping cargo cleanup; existing cargo binaries remain usable."
+  fi
+}
+
 # shellcheck source=helpers/shell-utils.sh
 . "$(dirname "$(readlink -f "$0")")/helpers/shell-utils.sh"
 
 # Validate manifest.toml before doing any destructive work.
-"$script_dir/helpers/read-manifest.py" cargo.tools --format tsv --fields "crate,binary:" > /dev/null \
+"$script_dir/helpers/read-manifest.py" brew.tools --format tsv --fields "formula,binary:,flags:,cargo_crate:" > /dev/null \
   || { echo "Error: manifest.toml is missing or invalid. Aborting."; exit 1; }
 
 install_sys_packages() {
   [ -n "${DEBUG:-}" ] && set -x
+
   if [[ "$OSTYPE" == "darwin"* ]]; then
     if ! command -v brew &>/dev/null; then
-      echo "homebrew is not installed."
-      echo "trying to install it."
-      sleep 1
-      /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-      echo >> "$HOME/.zprofile"
-      echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> "$HOME/.zprofile"
+      echo "Homebrew is not installed. Installing..."
+      NONINTERACTIVE=1 /bin/bash -c \
+        "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" \
+        || { echo "Error: Homebrew installation failed. Aborting."; exit 1; }
       eval "$(/opt/homebrew/bin/brew shellenv)"
     fi
 
@@ -56,16 +113,28 @@ install_sys_packages() {
       brew install "${package}"
     done
 
-  else
-    echo ""
-    sleep 1
-    sudo apt update && sudo apt upgrade -y
+  elif [[ "$OSTYPE" == linux* ]]; then
+    install_linux_brew
+    eval "$("$HOME/.homebrew/bin/brew" shellenv)"
 
-    echo ""
-    echo "Installing packages:"
-    sleep 1
-    sudo apt install -y $(get_system_package_list | tr '\n' ' ')
+    if [ -z "$no_sudo_install" ]; then
+      echo ""
+      sleep 1
+      sudo apt update && sudo apt upgrade -y
+
+      echo ""
+      echo "Installing packages:"
+      sleep 1
+      sudo apt install -y $(get_system_package_list | tr '\n' ' ')
+    else
+      echo "Installing system packages via Homebrew:"
+      get_brew_package_list | while IFS= read -r package; do
+        echo "Installing ${package}..."
+        brew install "${package}"
+      done
+    fi
   fi
+
   [ -n "${DEBUG:-}" ] && set +x
 }
 
@@ -114,9 +183,7 @@ install_non_asdf_tools() {
 }
 
 install_dependencies() {
-  if [ -z "$no_sudo_install" ]; then
-    install_sys_packages
-  fi
+  install_sys_packages
 
   if ! command -v cargo > /dev/null 2>&1 ; then
     echo "Installing Rust..."
@@ -125,7 +192,7 @@ install_dependencies() {
     export TMPDIR=${XDG_CONFIG_HOME}/tmp
     mkdir -p "$TMPDIR"
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
-    
+
     source "${XDG_CONFIG_HOME}/cargo/env"
 
     rustup default stable
@@ -133,19 +200,7 @@ install_dependencies() {
 
   rustup default stable
 
-  echo "Installing Rust-based tools..."
-  export TMPDIR=${XDG_CONFIG_HOME}/tmp
-  mkdir -p "$TMPDIR"
-  "$script_dir/helpers/read-manifest.py" cargo.tools --format tsv --fields "crate,binary:" \
-    | while IFS=$'\t' read -r crate binary; do
-    binary="${binary:-$crate}"
-    if command -v "$binary" > /dev/null 2>&1; then
-      echo "'$binary' is already installed."
-    else
-      echo "Installing $crate via cargo..."
-      cargo install --locked "$crate"
-    fi
-  done
+  install_brew_tools
 
   install_non_asdf_tools
 }
@@ -286,15 +341,25 @@ done
 check_config_properties
 
 if [ -n "$install_deps" ]; then
-  if [ -z "${install_all}" ] && [ -z "$no_sudo_install" ]; then
-    echo "This script will install the following additional packages:"
-    get_system_package_list | sed 's/^/  /'
-    read -rp "Do you want to continue? [Y/n] " response
-
-    response=$(echo "$response" | tr '[:upper:]' '[:lower:]')
-    if [[ "${response}" != "y" && "${response}" != "yes" ]]; then
-      echo "Thank you. Goodbye!"
-      exit 1
+  if [ -z "${install_all}" ]; then
+    if [[ "$OSTYPE" == linux* ]] && [ -n "$no_sudo_install" ]; then
+      echo "This script will install the following packages via Homebrew:"
+      get_brew_package_list | sed 's/^/  /'
+      read -rp "Do you want to continue? [Y/n] " response
+      response=$(echo "$response" | tr '[:upper:]' '[:lower:]')
+      if [[ "${response}" != "y" && "${response}" != "yes" ]]; then
+        echo "Thank you. Goodbye!"
+        exit 1
+      fi
+    elif [ -z "$no_sudo_install" ]; then
+      echo "This script will install the following additional packages:"
+      get_system_package_list | sed 's/^/  /'
+      read -rp "Do you want to continue? [Y/n] " response
+      response=$(echo "$response" | tr '[:upper:]' '[:lower:]')
+      if [[ "${response}" != "y" && "${response}" != "yes" ]]; then
+        echo "Thank you. Goodbye!"
+        exit 1
+      fi
     fi
   fi
   install_dependencies
