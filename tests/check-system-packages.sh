@@ -14,10 +14,10 @@ if [[ "$OSTYPE" == darwin* ]]; then
     manifest_key="packages.darwin.list"
     check_installed() { brew list "$1" &>/dev/null; }
 elif [[ "$OSTYPE" == linux* ]]; then
-    if [[ "${HOMEBREW_PREFIX:-}" == "${HOME}/.homebrew" ]]; then
+    if [[ -n "${NO_SUDO_INSTALL:-}" ]]; then
         manifest_key="packages.linux_brew.list"
         if ! command -v brew &>/dev/null; then
-            fail "HOMEBREW_PREFIX is \$HOME/.homebrew but brew not found in PATH"
+            fail "NO_SUDO_INSTALL is set but brew not found in PATH"
             exit 1
         fi
         check_installed() { brew list "$1" &>/dev/null; }
