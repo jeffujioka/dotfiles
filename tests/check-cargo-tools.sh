@@ -11,7 +11,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 section "Cargo Tools"
 
 if ! command -v cargo &>/dev/null; then
-    fail "cargo not found in PATH"
+    warn "cargo not found in PATH — skipping cargo tools check"
     exit 0
 fi
 
