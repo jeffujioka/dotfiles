@@ -80,14 +80,17 @@ run_local_checks() {
     CARGO_HOME="${XDG_CONFIG_HOME:-$HOME/.config}/cargo"
     [ -d "${CARGO_HOME}/bin" ] && export PATH="${CARGO_HOME}/bin:$PATH"
 
-    if [ "$target" != "no-sudo" ]; then
-        "$SCRIPT_DIR/tests/check-system-packages.sh" || rc=1
+    # Ensure Homebrew is in PATH (Linux user-local install)
+    if [ -x "$HOME/.homebrew/bin/brew" ]; then
+        eval "$("$HOME/.homebrew/bin/brew" shellenv)"
     fi
 
-    "$SCRIPT_DIR/tests/check-asdf-tools.sh"     || rc=1
-    "$SCRIPT_DIR/tests/check-cargo-tools.sh"     || rc=1
-    "$SCRIPT_DIR/tests/check-non-asdf-tools.sh"  || rc=1
-    "$SCRIPT_DIR/tests/check-symlinks.sh"        || rc=1
+    "$SCRIPT_DIR/tests/check-system-packages.sh" || rc=1
+    "$SCRIPT_DIR/tests/check-asdf-tools.sh"      || rc=1
+    "$SCRIPT_DIR/tests/check-cargo-tools.sh"      || rc=1
+    "$SCRIPT_DIR/tests/check-brew-tools.sh"       || rc=1
+    "$SCRIPT_DIR/tests/check-non-asdf-tools.sh"   || rc=1
+    "$SCRIPT_DIR/tests/check-symlinks.sh"         || rc=1
 
     . "$SCRIPT_DIR/tests/helpers.sh"
     summary || rc=1
