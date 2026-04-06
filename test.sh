@@ -85,6 +85,11 @@ run_local_checks() {
         eval "$("$HOME/.homebrew/bin/brew" shellenv)"
     fi
 
+    # Propagate install mode to check scripts
+    if [ "$target" = "no-sudo" ]; then
+        export NO_SUDO_INSTALL=1
+    fi
+
     "$SCRIPT_DIR/tests/check-system-packages.sh" || rc=1
     "$SCRIPT_DIR/tests/check-asdf-tools.sh"      || rc=1
     "$SCRIPT_DIR/tests/check-cargo-tools.sh"      || rc=1
