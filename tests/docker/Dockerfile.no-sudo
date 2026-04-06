@@ -1,20 +1,8 @@
 FROM ubuntu:24.04
 
-# Bootstrap: install python3 first so we can parse manifest.toml
+# Bootstrap: python3 to parse manifest, curl+git for Homebrew and asdf
 RUN apt-get update && apt-get install -y python3 curl git \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Copy manifest + helper to parse package list
-COPY manifest.toml /tmp/manifest.toml
-COPY helpers/read-manifest.py /tmp/read-manifest.py
-
-# Install all system packages from manifest
-RUN apt-get update \
-    && apt-get install -y $(python3 /tmp/read-manifest.py \
-         --manifest /tmp/manifest.toml packages.linux.list \
-         | tr '\n' ' ') \
-    && apt-get clean && rm -rf /var/lib/apt/lists/* \
-    && rm /tmp/manifest.toml /tmp/read-manifest.py
 
 ARG TEST_USER=testuser
 ARG TEST_UID=1000
