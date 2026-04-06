@@ -21,7 +21,6 @@ list = [
   "libncurses-dev",
   "make",
   "pkg-config",
-  "python3",
   "xsel",
   "zsh",
 ]
@@ -41,40 +40,67 @@ list = [
   "make",
   "ncurses",
   "pkg-config",
-  "python3",
   "utf8proc",
   "zsh",
 ]
 
-[[cargo.tools]]
-crate = "bat"
+[packages.linux_brew]
+# Installed via: brew install (Linux, no-sudo path)
+list = [
+  "autoconf",
+  "bison",
+  "curl",
+  "fontconfig",
+  "freetype",
+  "gawk",
+  "gcc",
+  "git",
+  "jp2a",
+  "libevent",
+  "make",
+  "ncurses",
+  "pkg-config",
+  "zsh",
+]
 
-[[cargo.tools]]
-crate = "du-dust"
-binary = "dust"
+[cargo]
+# Forward-compatibility placeholder — tools migrated to brew.tools.
+tools = []
 
-[[cargo.tools]]
-crate = "eza"
+[[brew.tools]]
+formula = "bat"
 
-[[cargo.tools]]
-crate = "fd-find"
-binary = "fd"
+[[brew.tools]]
+formula = "dust"
+cargo_crate = "du-dust"
 
-[[cargo.tools]]
-crate = "procs"
+[[brew.tools]]
+formula = "eza"
 
-[[cargo.tools]]
-crate = "ripgrep"
+[[brew.tools]]
+formula = "fd"
+cargo_crate = "fd-find"
+
+[[brew.tools]]
+formula = "procs"
+
+[[brew.tools]]
+formula = "ripgrep"
 binary = "rg"
 
-[[cargo.tools]]
-crate = "starship"
+[[brew.tools]]
+formula = "starship"
 
-[[cargo.tools]]
-crate = "viu"
+[[brew.tools]]
+formula = "viu"
 
-[[cargo.tools]]
-crate = "zoxide"
+[[brew.tools]]
+formula = "zoxide"
+
+[[brew.tools]]
+formula = "python@3.14"
+binary = "python3"
+flags = "--force-bottle"
 
 [[resources]]
 name = "tpm"
