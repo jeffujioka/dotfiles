@@ -46,20 +46,6 @@ install_linux_brew() {
   echo "Homebrew installed to $HOME/.homebrew."
 }
 
-cleanup_cargo_tools() {
-  if ! command -v cargo &>/dev/null; then
-    return 0
-  fi
-  echo "Cleaning up previously cargo-installed tools..."
-  "$script_dir/helpers/read-manifest.py" brew.tools --format tsv \
-      --fields "formula,cargo_crate:,binary:" \
-    | while IFS=$'\t' read -r formula cargo_crate binary; do
-      local uninstall_name="${cargo_crate:-${binary:-$formula}}"
-      echo "Uninstalling cargo package: $uninstall_name"
-      cargo uninstall "$uninstall_name" 2>/dev/null || true
-    done
-}
-
 install_brew_tools() {
   echo "Installing brew tools..."
   local failed_installs=0
@@ -77,10 +63,8 @@ install_brew_tools() {
   done < <("$script_dir/helpers/read-manifest.py" brew.tools --format tsv \
               --fields "formula,binary:,flags:")
 
-  if [ "$failed_installs" -eq 0 ]; then
-    cleanup_cargo_tools
-  else
-    echo "Warning: $failed_installs brew tool(s) failed to install. Skipping cargo cleanup; existing cargo binaries remain usable."
+  if [ "$failed_installs" -gt 0 ]; then
+    echo "Warning: $failed_installs brew tool(s) failed to install."
   fi
 }
 
@@ -88,7 +72,7 @@ install_brew_tools() {
 . "$(dirname "$(readlink -f "$0")")/helpers/shell-utils.sh"
 
 # Validate manifest.toml before doing any destructive work.
-"$script_dir/helpers/read-manifest.py" brew.tools --format tsv --fields "formula,binary:,flags:,cargo_crate:" > /dev/null \
+"$script_dir/helpers/read-manifest.py" brew.tools --format tsv --fields "formula,binary:,flags:" > /dev/null \
   || { echo "Error: manifest.toml is missing or invalid. Aborting."; exit 1; }
 
 install_sys_packages() {
@@ -186,28 +170,38 @@ install_non_asdf_tools() {
 }
 
 install_dependencies() {
+  # On Linux, install Homebrew and zsh BEFORE install_sys_packages.
+  # zsh must be built before Homebrew's ncurses is installed — once
+  # $HOME/.homebrew/include/ncursesw/ exists, zsh's source build hits a
+  # boolcodes redeclaration conflict. Installing zsh first avoids this.
+  if [[ "$OSTYPE" == linux* ]]; then
+    install_linux_brew
+    eval "$("$HOME/.homebrew/bin/brew" shellenv)"
+    export SSL_CERT_FILE="${SSL_CERT_FILE:-/etc/ssl/certs/ca-certificates.crt}"
+    export CURL_CA_BUNDLE="${CURL_CA_BUNDLE:-/etc/ssl/certs/ca-certificates.crt}"
+    if ! command -v zsh &>/dev/null; then
+      echo "Pre-installing zsh (before ncurses to avoid header conflict)..."
+      brew install zsh \
+        || echo "Warning: zsh pre-install failed; will retry in brew tools pass"
+    fi
+  fi
+
   install_sys_packages
 
-  # Only install Rust if there are cargo tools defined in the manifest
-  local _cargo_tool_count
-  _cargo_tool_count=$("$script_dir/helpers/read-manifest.py" cargo.tools --format tsv \
-    --fields "crate,binary:" 2>/dev/null | wc -l)
-  if [ "$_cargo_tool_count" -gt 0 ]; then
-    if ! command -v cargo > /dev/null 2>&1 ; then
-      echo "Installing Rust..."
-      export RUSTUP_HOME=${XDG_CONFIG_HOME}/rustup
-      export CARGO_HOME=${XDG_CONFIG_HOME}/cargo
-      export TMPDIR=${XDG_CONFIG_HOME}/tmp
-      mkdir -p "$TMPDIR"
-      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
+  if ! command -v cargo > /dev/null 2>&1 ; then
+    echo "Installing Rust..."
+    export RUSTUP_HOME=${XDG_CONFIG_HOME}/rustup
+    export CARGO_HOME=${XDG_CONFIG_HOME}/cargo
+    export TMPDIR=${XDG_CONFIG_HOME}/tmp
+    mkdir -p "$TMPDIR"
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
 
-      source "${XDG_CONFIG_HOME}/cargo/env"
-
-      rustup default stable
-    fi
+    source "${XDG_CONFIG_HOME}/cargo/env"
 
     rustup default stable
   fi
+
+  rustup default stable
 
   install_brew_tools
 
