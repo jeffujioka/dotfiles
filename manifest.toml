@@ -22,7 +22,6 @@ list = [
   "make",
   "pkg-config",
   "xsel",
-  "zsh",
 ]
 
 [packages.darwin]
@@ -41,19 +40,20 @@ list = [
   "ncurses",
   "pkg-config",
   "utf8proc",
-  "zsh",
 ]
 
 [packages.linux_brew]
 # Installed via: brew install (Linux, no-sudo path)
-# Note: gawk and zsh are excluded — they require source builds that fail with
-# a non-standard $HOME/.homebrew prefix; they should be pre-installed on the system.
+# gawk builds from source (non-standard prefix); requires LC_ALL=en_US.UTF-8
+# for make check to pass. See Dockerfile.no-sudo for the locale setup.
+# zsh is managed via brew.tools (installed before ncurses to avoid build conflict).
 list = [
   "autoconf",
   "bison",
   "curl",
   "fontconfig",
   "freetype",
+  "gawk",
   "gcc",
   "git",
   "jp2a",
@@ -64,7 +64,8 @@ list = [
 ]
 
 [cargo]
-# Forward-compatibility placeholder — tools migrated to brew.tools.
+# Placeholder — add entries here for any future cargo tools.
+# Rust/cargo is always installed; this list drives cargo install runs.
 tools = []
 
 [[brew.tools]]
@@ -72,14 +73,12 @@ formula = "bat"
 
 [[brew.tools]]
 formula = "dust"
-cargo_crate = "du-dust"
 
 [[brew.tools]]
 formula = "eza"
 
 [[brew.tools]]
 formula = "fd"
-cargo_crate = "fd-find"
 
 [[brew.tools]]
 formula = "procs"
@@ -101,6 +100,9 @@ formula = "zoxide"
 formula = "python@3.14"
 binary = "python3"
 flags = "--force-bottle"
+
+[[brew.tools]]
+formula = "zsh"
 
 [[resources]]
 name = "tpm"
