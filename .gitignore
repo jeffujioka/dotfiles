@@ -1,6 +1,8 @@
 *~
 *.bkp*
 
+config/starship.toml
+
 .gitrepos
 .fzf
 .tmux

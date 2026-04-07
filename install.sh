@@ -212,6 +212,14 @@ function apply_dotfiles() {
     esac
   done
 
+  # Initialize default Starship preset
+  backup_this "${XDG_CONFIG_HOME}/starship.toml"
+  default_preset="config/starship/presets/starship-clean-gradient-aurora.toml"
+  if [ -f "$default_preset" ]; then
+    ln -sf "$(readlink -f "$default_preset")" "config/starship.toml"
+  fi
+  ln -sf "$(readlink -f config/starship.toml)" "${XDG_CONFIG_HOME}/"
+
   # gitconfig special handling: set user name/email after copy
   if [ -n "$GIT_USER_NAME" ]; then
     echo "setting git user.name to $GIT_USER_NAME"
