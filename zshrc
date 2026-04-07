@@ -83,18 +83,39 @@ zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
 bindkey "^[[1;5C" forward-word
 bindkey "^[[1;5D" backward-word
 
-# Homebrew
+# PATH priority (highest → lowest): .local/bin > .scripts > Homebrew > NVM > cargo
+# Each block PREPENDs — the LAST one to run ends up at the FRONT of PATH.
+
+# cargo — lowest priority (Rust toolchain, manual use)
+CARGO_HOME="${XDG_CONFIG_HOME}/cargo"
+CARGO_ENV="${CARGO_HOME}/env"
+if [ -f "${CARGO_ENV}" ]; then
+  source "${CARGO_ENV}"
+elif [ -d "${CARGO_HOME}/bin" ]; then
+  if [[ ! "$PATH" == *"${CARGO_HOME}/bin"* ]]; then
+    export PATH="${CARGO_HOME}/bin:${PATH}"
+  fi
+fi
+
+# NVM — above cargo
+export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+# Homebrew — above NVM
 if [[ "$OSTYPE" == darwin* ]] && [[ -x /opt/homebrew/bin/brew ]]; then
   eval "$(/opt/homebrew/bin/brew shellenv)"
 elif [[ "$OSTYPE" == linux* ]] && [[ -x "$HOME/.homebrew/bin/brew" ]]; then
   eval "$($HOME/.homebrew/bin/brew shellenv)"
 fi
 
-if [[ ! "$PATH" == *${HOME}/.local/bin* ]]; then
-  export PATH="$HOME/.local/bin:${PATH:+${PATH}:}"
-fi
+# .scripts — above Homebrew
 if [[ ! "$PATH" == *.scripts* ]]; then
   export PATH="$HOME/.scripts:${PATH:+${PATH}:}"
+fi
+
+# .local/bin — highest priority
+if [[ ! "$PATH" == *${HOME}/.local/bin* ]]; then
+  export PATH="$HOME/.local/bin:${PATH:+${PATH}:}"
 fi
 
 if [ -r "${HOME}/.zsh_aliases" ]; then
@@ -105,8 +126,8 @@ if [ -r "${HOME}/.zsh_completions" ]; then
   . "${HOME}/.zsh_completions"
 fi
 
-export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
+
+
 
 unsetopt pathdirs
 
@@ -123,18 +144,8 @@ if [[ -L "${XDG_CONFIG_HOME}/fzf/fzf.zsh" || -f "${XDG_CONFIG_HOME}/fzf/fzf.zsh"
   source "${XDG_CONFIG_HOME}/fzf/fzf.zsh"
 fi
 
-# Setup cargo (required for all environments: docker, ubuntu, mac, vm, qemu, etc.)
-# Source cargo/env if it exists, otherwise set CARGO_HOME and add to PATH
-CARGO_HOME="${XDG_CONFIG_HOME}/cargo"
-CARGO_ENV="${CARGO_HOME}/env"
-if [ -f "${CARGO_ENV}" ]; then
-  source "${CARGO_ENV}"
-elif [ -d "${CARGO_HOME}/bin" ]; then
-  # Fallback: add cargo/bin to PATH directly if env file doesn't exist
-  if [[ ! "$PATH" == *"${CARGO_HOME}/bin"* ]]; then
-    export PATH="${CARGO_HOME}/bin:${PATH}"
-  fi
-fi
+
+
 
 if command -v zoxide &> /dev/null ; then
   echo "  󰰸 zoxide"
