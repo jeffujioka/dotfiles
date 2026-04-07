@@ -1,0 +1,208 @@
+# ~/.config/starship.toml — clean · Aurora gradient  (Tokyo Night style)
+# deep crimson → dark violet → royal blue → deep cobalt
+# Swap: cp starship-clean-gradient-aurora.toml starship.toml
+
+add_newline = true
+command_timeout = 1000
+
+format = """
+[░▒▓](#c00a7a)\
+[ $os ](bg:#c00a7a fg:#0a0a0a)\
+[](bg:#380525 fg:#c00a7a)\
+$username\
+$hostname\
+$directory\
+[](fg:#380525 bg:#250540)\
+${custom.giticon}\
+$git_branch\
+$git_status\
+[](fg:#250540 bg:#050e50)\
+${custom.tmux_zoom}\
+$python\
+$nodejs\
+$rust\
+$java\
+$c\
+${custom.cpp}\
+${custom.vpn}\
+$docker_context\
+[](fg:#050e50 bg:#051e3a)\
+$cmd_duration\
+$battery\
+$time\
+[](fg:#051e3a)\
+\n$character"""
+
+continuation_prompt = '[▶▶](#c00a7a) '
+
+[fill]
+symbol = '─'
+style = '#1a0a3a'
+
+[character]
+success_symbol = '[❯](bold #ff80cc)'
+error_symbol = '[❯](bold #ff4444)'
+
+[os]
+style = 'bg:#c00a7a'
+format = '$symbol'
+disabled = false
+
+[os.symbols]
+Macos = '󰀵'
+Ubuntu = ""
+Linux = ""
+
+[username]
+style_user = 'fg:#ff60c0'
+style_root = 'bold fg:#ff4444'
+format = '[[ $user ](fg:#ff60c0 bg:#380525)]($style)'
+disabled = false
+show_always = false
+
+[hostname]
+ssh_only = true
+style = 'bg:#380525'
+format = '[[@$hostname ](fg:#ff60c0 bg:#380525)]($style)'
+disabled = false
+
+[directory]
+style = 'bg:#380525'
+format = '[[ $path ](fg:#ff60c0 bg:#380525)]($style)'
+truncation_length = 4
+truncation_symbol = '…/'
+fish_style_pwd_dir_length = 2
+home_symbol = '󰋜 ~'
+read_only = ' 󰌾'
+read_only_style = 'fg:#ff60c0 bg:#380525'
+
+[directory.substitutions]
+"Documents" = "󰈙 "
+"Downloads" = " "
+"Music" = " "
+"Pictures" = " "
+
+[git_branch]
+symbol = " "
+style = 'bg:#250540'
+format = '[[ $symbol$branch ](fg:#b060ff bg:#250540)]($style)'
+truncation_symbol = '…/'
+
+[git_status]
+style = 'bg:#250540'
+format = '[[($all_status$ahead_behind )](fg:#b060ff bg:#250540)]($style)'
+up_to_date = ''
+ahead = '⇡${count}'
+diverged = '⇕⇡${ahead_count}⇣${behind_count}'
+behind = '⇣${count}'
+staged = '+${count} '
+modified = '~${count} '
+untracked = '?${count} '
+deleted = '-${count} '
+conflicted = '!${count} '
+stashed = '\$${count} '
+
+[python]
+symbol = " "
+style = 'bg:#050e50'
+format = '[[ $symbol($version )(\($virtualenv\) )](fg:#6090ff bg:#050e50)]($style)'
+pyenv_version_name = true
+
+[nodejs]
+symbol = " "
+style = 'bg:#050e50'
+format = '[[ $symbol ($version) ](fg:#6090ff bg:#050e50)]($style)'
+
+[rust]
+symbol = " "
+style = 'bg:#050e50'
+format = '[[ $symbol ($version) ](fg:#6090ff bg:#050e50)]($style)'
+
+[java]
+symbol = " "
+style = 'bg:#050e50'
+format = '[[ $symbol ($version) ](fg:#6090ff bg:#050e50)]($style)'
+
+[c]
+symbol = " "
+style = 'bg:#050e50'
+format = '[[ $symbol ($version) ](fg:#6090ff bg:#050e50)]($style)'
+detect_extensions = ['.c']
+
+[docker_context]
+symbol = " "
+style = 'bg:#050e50'
+format = '[[ $symbol $context ](fg:#6090ff bg:#050e50)]($style)'
+
+[cmd_duration]
+min_time = 2000
+style = 'bg:#051e3a'
+format = '[[ ⏱ $duration ](fg:#40b0e0 bg:#051e3a)]($style)'
+
+[time]
+disabled = false
+time_format = "%d/%m/%y %H:%M"
+style = 'bg:#051e3a'
+format = '[[  $time ](fg:#40b0e0 bg:#051e3a)]($style)'
+
+[battery]
+disabled = false
+full_symbol = '󱊣'
+charging_symbol = '󱊦'
+discharging_symbol = '󱊣'
+format = '[[ $symbol$percentage ](fg:#40b0e0 bg:#051e3a)]($style)'
+
+[[battery.display]]
+threshold = 100
+style = 'bg:#051e3a'
+
+[[battery.display]]
+threshold = 50
+charging_symbol = '󱊥'
+discharging_symbol = '󱊢'
+style = 'bg:#051e3a'
+
+[[battery.display]]
+threshold = 20
+charging_symbol = '󱊤'
+discharging_symbol = '󱊡'
+style = 'bg:#051e3a'
+
+[[battery.display]]
+threshold = 10
+charging_symbol = '󰨜'
+discharging_symbol = '󴃍'
+style = 'bg:#c0392b'
+
+[custom.giticon]
+disabled = false
+description = "Display symbol for remote Git server"
+command = "check-git-remote.sh"
+when = 'git rev-parse --is-inside-work-tree 2> /dev/null'
+shell = ["bash", "--noprofile", "--norc"]
+style = 'bg:#250540'
+format = '[[ $output ](fg:#b060ff bg:#250540)]($style)'
+
+[custom.cpp]
+description = "custom C++ config"
+command = 'echo '
+detect_extensions = ['.h', '.hpp', 'cpp', '.cc']
+style = 'bg:#050e50'
+format = '[[ $output ](fg:#6090ff bg:#050e50)]($style)'
+when = true
+
+[custom.vpn]
+disabled = false
+command = 'echo  󰓄'
+style = 'bg:#050e50'
+format = '[[ $output ](fg:#6090ff bg:#050e50)]($style)'
+when = 'ip route show | grep zcctun | awk "{ print $1 }" | grep "^53\." || daimler-vpn -s | grep -w "Connection Established"'
+
+[custom.tmux_zoom]
+disabled = false
+description = "Show indicator when tmux pane is zoomed"
+command = 'echo "󰖗 zoom"'
+style = 'bg:#050e50'
+when = '[ -n "$TMUX" ] && [ "$(tmux display-message -p "#{window_zoomed_flag}")" = "1" ]'
+format = '[[ $output ](fg:#6090ff bg:#050e50)]($style)'
+shell = ["bash", "--noprofile", "--norc"]
