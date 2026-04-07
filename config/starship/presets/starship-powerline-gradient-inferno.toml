@@ -1,0 +1,210 @@
+# ~/.config/starship.toml — powerline · Inferno palette
+# Fire spectrum: yellow-ember → orange → red → crimson
+# Swap: cp starship-powerline-gradient-inferno.toml starship.toml
+
+add_newline = true
+command_timeout = 1000
+
+format = """
+[](#302008)\
+$os\
+$username\
+$hostname\
+[](bg:#301408 fg:#302008)\
+$directory\
+[](fg:#301408 bg:#280808)\
+${custom.giticon}\
+$git_branch\
+$git_status\
+[](fg:#280808 bg:#200808)\
+${custom.tmux_zoom}\
+$python\
+$nodejs\
+$rust\
+$java\
+$c\
+${custom.cpp}\
+${custom.vpn}\
+$docker_context\
+[](fg:#200808)\
+$fill\
+[](fg:#180808)\
+$cmd_duration\
+$battery\
+$time\
+[](fg:#180808)\
+\n$character"""
+
+continuation_prompt = '[▶▶](#e05050) '
+
+[fill]
+symbol = '─'
+style = '#180808'
+
+[character]
+success_symbol = '[❯](bold #ffc830)'
+error_symbol = '[❯](bold #ff4444)'
+
+[os]
+style = 'bg:#302008'
+format = '[ $symbol ]($style)'
+disabled = false
+
+[os.symbols]
+Macos = '󰀵'
+Ubuntu = ""
+Linux = ""
+
+[username]
+style_user = 'bg:#302008'
+style_root = 'bg:#302008'
+format = '[$user ]($style)'
+disabled = false
+show_always = false
+
+[hostname]
+ssh_only = true
+style = 'bg:#302008'
+format = '[@$hostname ]($style)'
+disabled = false
+
+[directory]
+style = 'bg:#301408'
+format = '[ $path ]($style)'
+truncation_length = 4
+truncation_symbol = '…/'
+fish_style_pwd_dir_length = 2
+home_symbol = '󰋜 ~'
+read_only = ' 󰌾 '
+read_only_style = 'bg:#301408'
+
+[directory.substitutions]
+"Documents" = "󰈙 "
+"Downloads" = " "
+"Music" = " "
+"Pictures" = " "
+
+[git_branch]
+symbol = " "
+style = 'bg:#280808'
+format = '[ $symbol$branch ](fg:#ffc060 bg:#280808)'
+truncation_symbol = '…/'
+
+[git_status]
+style = 'bg:#280808'
+format = '[$all_status$ahead_behind ](fg:#ffc060 bg:#280808)'
+up_to_date = ''
+ahead = '⇡${count}'
+diverged = '⇕⇡${ahead_count}⇣${behind_count}'
+behind = '⇣${count}'
+staged = '+${count} '
+modified = '~${count} '
+untracked = '?${count} '
+deleted = '-${count} '
+conflicted = '!${count} '
+stashed = '\$${count} '
+
+[python]
+symbol = " "
+style = 'bg:#200808'
+format = '[ $symbol($version )(\($virtualenv\) )]($style)'
+pyenv_version_name = true
+
+[nodejs]
+symbol = " "
+style = 'bg:#200808'
+format = '[ $symbol ($version) ]($style)'
+
+[rust]
+symbol = " "
+style = 'bg:#200808'
+format = '[ $symbol ($version) ]($style)'
+
+[java]
+symbol = " "
+style = 'bg:#200808'
+format = '[ $symbol ($version) ]($style)'
+
+[c]
+symbol = " "
+style = 'bg:#200808'
+format = '[ $symbol ($version) ]($style)'
+detect_extensions = ['.c']
+
+[docker_context]
+symbol = " "
+style = 'bg:#200808'
+format = '[ $symbol $context ]($style)'
+
+[cmd_duration]
+min_time = 2000
+style = 'bg:#180808'
+format = '[ ⏱ $duration ]($style)'
+
+[time]
+disabled = false
+time_format = "%d/%m/%y %H:%M"
+style = 'bg:#180808'
+format = '[ 󱑍 $time ]($style)'
+
+[battery]
+disabled = false
+full_symbol = '󱊣'
+charging_symbol = '󱊦'
+discharging_symbol = '󱊣'
+format = '[ $symbol$percentage ]($style)'
+
+[[battery.display]]
+threshold = 100
+style = 'bg:#180808'
+
+[[battery.display]]
+threshold = 50
+charging_symbol = '󱊥'
+discharging_symbol = '󱊢'
+style = 'bg:#180808'
+
+[[battery.display]]
+threshold = 20
+charging_symbol = '󱊤'
+discharging_symbol = '󱊡'
+style = 'bg:#180808'
+
+[[battery.display]]
+threshold = 10
+charging_symbol = '󰨜'
+discharging_symbol = '󴃍'
+style = 'bg:#c0392b'
+
+[custom.giticon]
+disabled = false
+description = "Display symbol for remote Git server"
+command = "check-git-remote.sh"
+when = 'git rev-parse --is-inside-work-tree 2> /dev/null'
+shell = ["bash", "--noprofile", "--norc"]
+style = 'bg:#280808'
+format = '[ $output ](fg:#ffc060 bg:#280808)'
+
+[custom.cpp]
+description = "custom C++ config"
+command = 'echo '
+detect_extensions = ['.h', '.hpp', 'cpp', '.cc']
+style = 'bg:#200808'
+format = '[ $output ]($style)'
+when = true
+
+[custom.vpn]
+disabled = false
+command = 'echo  󰓄'
+style = 'bg:#200808'
+format = '[ $output ]($style)'
+when = 'ip route show | grep zcctun | awk "{ print $1 }" | grep "^53\." || daimler-vpn -s | grep -w "Connection Established"'
+
+[custom.tmux_zoom]
+disabled = false
+description = "Show indicator when tmux pane is zoomed"
+command = 'echo "󰖗 zoom"'
+style = 'bg:#200808'
+when = '[ -n "$TMUX" ] && [ "$(tmux display-message -p "#{window_zoomed_flag}")" = "1" ]'
+format = '[ $output ]($style)'
+shell = ["bash", "--noprofile", "--norc"]
