@@ -1,10 +1,18 @@
 FROM ubuntu:24.04
 
-# Bootstrap: python3 to parse manifest, curl+git for Homebrew and asdf,
-# build-essential because Homebrew on Linux requires a C compiler for
-# source builds when bottles are unavailable.
-RUN apt-get update && apt-get install -y python3 curl git build-essential \
+# Bootstrap: python3 to parse manifest, curl+git for Homebrew and asdf.
+# build-essential: C compiler for Homebrew source builds.
+# libncurses-dev: system ncurses headers; zsh must build against these
+#   (not Homebrew's) to avoid a boolcodes redeclaration conflict.
+# locales + en_US.UTF-8: gawk's make check validates unicode escape
+#   sequences and fails silently without a UTF-8 locale.
+RUN apt-get update \
+    && apt-get install -y python3 curl git build-essential libncurses-dev locales \
+    && locale-gen en_US.UTF-8 \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+ENV LC_ALL=en_US.UTF-8
+ENV LANG=en_US.UTF-8
 
 ARG TEST_USER=testuser
 ARG TEST_UID=1000
