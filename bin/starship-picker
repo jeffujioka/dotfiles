@@ -1,0 +1,235 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Preview handler — fzf calls this script with --_preview <config-path>.
+# Runs in a subprocess; _PYTHON_PROJECT_DIR is passed via exported env var.
+if [[ "${1:-}" == "--_preview" ]]; then
+  config="$2"
+  cols=${FZF_PREVIEW_COLUMNS:-80}
+
+  _starship_render() {
+    STARSHIP_CONFIG="$config" starship prompt --terminal-width "$cols" \
+      | sed 's/%{//g;s/%}//g'
+  }
+
+  printf '\033[90m┌─ In current directory\033[0m\n'
+  (cd "$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")" && _starship_render)
+  echo ""
+  printf '\033[90m┌─ In %s\033[0m\n' "$HOME"
+  (cd "$HOME" && _starship_render)
+  echo ""
+  printf '\033[90m┌─ Python project (git · venv 3.14.0)\033[0m\n'
+  (cd "$_PYTHON_PROJECT_DIR" && PYENV_VERSION=3.14.0 VIRTUAL_ENV="$_PYTHON_PROJECT_DIR/.venv" _starship_render)
+  echo ""
+  printf '\033[90m┌─ SSH session (simulated env)\033[0m\n'
+  (cd "$HOME" && SSH_CONNECTION="10.0.2.1 54321 192.168.1.100 22" SSH_CLIENT="10.0.2.1 54321 22" _starship_render)
+  exit 0
+fi
+
+usage() {
+  cat <<EOF
+Usage: $(basename "$0") [-h|--help] [-l|--list]
+
+Pick a starship preset from the config directory and apply it.
+
+Options:
+  -h, --help    Show this help message and exit
+  -l, --list    List all available preset names and exit
+EOF
+  exit 0
+}
+
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help) usage ;;
+  esac
+done
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || dirname "$SCRIPT_DIR")"
+CONFIG_DIR="$REPO_ROOT/config"
+STARSHIP_TOML="$CONFIG_DIR/starship.toml"
+PRESETS_DIR="$CONFIG_DIR/starship/presets"
+
+# If starship.toml doesn't exist, create a symlink to the first preset
+if [[ ! -f "$STARSHIP_TOML" ]]; then
+  if [[ ! -d "$PRESETS_DIR" ]]; then
+    echo "Error: Presets directory not found at $PRESETS_DIR" >&2
+    exit 1
+  fi
+  
+  # Find first preset and create symlink
+  first_preset=$(ls "$PRESETS_DIR"/starship-*.toml 2>/dev/null | sort | head -1)
+  if [[ -z "$first_preset" ]]; then
+    echo "Error: No preset files (starship-*.toml) found in $PRESETS_DIR" >&2
+    exit 1
+  fi
+  
+  ln -s "$first_preset" "$STARSHIP_TOML"
+fi
+
+PRESETS=()
+while IFS= read -r f; do
+  PRESETS+=("$f")
+done < <(ls "$PRESETS_DIR"/starship-*.toml 2>/dev/null | sort)
+
+if [[ "${1:-}" =~ ^(-l|--list)$ ]]; then
+  for f in "${PRESETS[@]}"; do
+    basename "$f" .toml | sed 's/^starship-//'
+  done
+  exit 0
+fi
+
+if [[ ${#PRESETS[@]} -eq 0 ]]; then
+  echo "Error: no starship preset files (starship-*.toml) found in $CONFIG_DIR" >&2
+  exit 1
+fi
+
+BACKUP="$STARSHIP_TOML.bak"
+ORIGINAL_SYMLINK_TARGET=""
+
+# Save the original symlink target (if it is a symlink)
+if [[ -L "$STARSHIP_TOML" ]]; then
+  ORIGINAL_SYMLINK_TARGET=$(readlink "$STARSHIP_TOML")
+fi
+
+# EXIT trap covers ALL exit paths: Ctrl+C, Ctrl+D, Esc, errors, normal exit.
+# On confirm we remove $BACKUP first, so the trap becomes a no-op.
+_cleanup_on_exit() {
+  if [[ -f "$BACKUP" ]]; then
+    # Restore the original symlink or file
+    rm -f "$STARSHIP_TOML"
+    if [[ -n "$ORIGINAL_SYMLINK_TARGET" ]]; then
+      ln -s "$ORIGINAL_SYMLINK_TARGET" "$STARSHIP_TOML"
+    else
+      cp "$BACKUP" "$STARSHIP_TOML"
+    fi
+    rm -f "$BACKUP"
+    echo ""
+    echo "✗ Cancelled, restored original"
+  fi
+  _cleanup_test_dirs
+}
+trap '_cleanup_on_exit' EXIT
+
+# Backup the original state (content or symlink target)
+if [[ -L "$STARSHIP_TOML" ]]; then
+  echo "$(readlink "$STARSHIP_TOML")" > "$BACKUP"
+else
+  cp "$STARSHIP_TOML" "$BACKUP"
+fi
+
+# Create test directories upfront for fast previews (no runtime flicker)
+_TEST_DIR=""
+_PYTHON_PROJECT_DIR=""
+
+_setup_test_dirs() {
+  _TEST_DIR=$(mktemp -d)
+  _PYTHON_PROJECT_DIR=$(mktemp -d)
+  
+  # Initialize Python test project
+  touch "$_PYTHON_PROJECT_DIR/main.py"
+  (cd "$_PYTHON_PROJECT_DIR" && git init -q 2>/dev/null && git symbolic-ref HEAD refs/heads/main 2>/dev/null || true)
+  (cd "$_PYTHON_PROJECT_DIR" && git add . 2>/dev/null || true)
+}
+
+_cleanup_test_dirs() {
+  [[ -n "$_TEST_DIR" && -d "$_TEST_DIR" ]] && rm -rf "$_TEST_DIR"
+  [[ -n "$_PYTHON_PROJECT_DIR" && -d "$_PYTHON_PROJECT_DIR" ]] && rm -rf "$_PYTHON_PROJECT_DIR"
+}
+
+
+# Extract metadata from preset file header
+_extract_preset_info() {
+  local preset_file="$1"
+  
+  # Parse style and description from comments
+  # Line 1: "# ~/.config/starship.toml — clean · Aurora gradient  (Tokyo Night style)"
+  # Extract just the style part after the — separator
+  local style_info=$(head -1 "$preset_file" | sed 's/^# .*— //' | sed 's/  .*//')
+  
+  # Line 2: color palette description
+  local color_info=$(sed -n '2p' "$preset_file" | sed 's/^# //')
+  
+  printf "%s\n%s" "$style_info" "$color_info"
+}
+
+# Build display name with category badge
+_format_preset_display() {
+  local name="$1"
+  local style_info="$2"
+  
+  # Extract category from style info (before · separator)
+  local category=$(echo "$style_info" | sed 's/ ·.*//' | tr '[:lower:]' '[:upper:]')
+  
+  # Create category badge
+  local badge=""
+  case "$category" in
+    CLEAN) badge="🎨" ;;
+    POWERLINE) badge="⚡" ;;
+    *) badge="✦" ;;
+  esac
+  
+  printf "%s %s" "$badge" "$name"
+}
+
+_pick_with_fzf() {
+  # Build items: "badge name TAB full-path"
+  local items=()
+  for f in "${PRESETS[@]}"; do
+    local name
+    name=$(basename "$f" .toml | sed 's/^starship-//')
+
+    local info
+    info=$(_extract_preset_info "$f")
+    local style_info=$(echo "$info" | head -1)
+
+    local display
+    display=$(_format_preset_display "$name" "$style_info")
+
+    items+=("${display}"$'\t'"${f}")
+  done
+
+  local selected
+  selected=$(
+    printf '%s\n' "${items[@]}" | \
+    fzf \
+      --prompt="Starship Preset ❯ " \
+      --height=100% \
+      --border=rounded \
+      --header="↑↓ navigate · Enter confirm · Esc cancel · Type to search" \
+      --delimiter=$'\t' \
+      --with-nth=1 \
+      --ansi \
+      --preview="\"$SCRIPT_DIR/starship-picker\" --_preview {2}" \
+      --preview-label=" Preset Details " \
+      --preview-window="bottom:70%:wrap" \
+      --bind='focus:execute-silent(rm -f "'"$STARSHIP_TOML"'" && ln -s {2} "'"$STARSHIP_TOML"'")'
+  ) || true  # fzf exits 130 on Esc — absorb it
+
+  # Return only the clean name (first field before TAB)
+  printf '%s' "${selected%%$'\t'*}" | sed 's/^[🎨⚡✦] //'
+}
+
+if ! command -v fzf &>/dev/null; then
+  echo "Error: fzf is required but not installed." >&2
+  echo "Please install fzf to use this tool." >&2
+  exit 1
+fi
+
+if ! command -v starship &>/dev/null; then
+  echo "Error: starship is required but not installed." >&2
+  exit 1
+fi
+
+_setup_test_dirs
+export _PYTHON_PROJECT_DIR
+
+SELECTED=""
+SELECTED=$(_pick_with_fzf)
+
+if [[ -n "$SELECTED" ]]; then
+  rm -f "$BACKUP"  # clear backup → EXIT trap becomes no-op
+  echo "✓ Applied: $SELECTED"
+fi
+# If SELECTED is empty (Esc/Ctrl+C), EXIT trap restores backup
