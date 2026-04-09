@@ -270,6 +270,12 @@ function apply_dotfiles() {
     esac
   done
 
+  # Remove old dangling symlink if it exists
+  if [ -L "config/starship.toml" ]; then
+    echo "Removing old symlink config/starship.toml"
+    rm "config/starship.toml"
+  fi
+
   # Initialize default Starship preset (only if not already configured)
   if [ ! -e "config/starship/config.toml" ]; then
     default_preset="config/starship/presets/starship-powerline-solar.toml"
