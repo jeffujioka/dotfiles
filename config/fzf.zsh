@@ -12,4 +12,4 @@ export FZF_DEFAULT_OPTS="${FZF_GEN_OPTS} ${FZF_PREVIEW_OPTS} ${FZF_PREVIEW_WIN_O
   # export FZF_DEFAULT_COMMAND='git ls-files --cached --others --exclude-standard | fd --type f --type l --type d $FD_OPTIONS'
 export FZF_COMPLETION_TRIGGER=";;"
 
-eval "$(fzf --zsh)"
+# eval "$(fzf --zsh)"  # key bindings handled by television; re-enable to restore fzf ^T/^R/Alt+C

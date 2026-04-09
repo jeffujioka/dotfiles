@@ -144,8 +144,10 @@ if [[ -L "${XDG_CONFIG_HOME}/fzf/fzf.zsh" || -f "${XDG_CONFIG_HOME}/fzf/fzf.zsh"
   source "${XDG_CONFIG_HOME}/fzf/fzf.zsh"
 fi
 
-
-
+if command -v tv &> /dev/null ; then
+  echo "   television"
+  eval "$(tv init zsh)"
+fi
 
 if command -v zoxide &> /dev/null ; then
   echo "  󰰸 zoxide"
