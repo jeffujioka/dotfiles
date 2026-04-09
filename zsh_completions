@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 
 if [ -d "${HOME}/.zsh_completion.d" ]; then
+  setopt nullglob
   for completion in "${HOME}"/.zsh_completion.d/*; do
     if [ -f "$completion" ]; then
       . "$completion"
     fi
   done
+  unsetopt nullglob
   unset completion
 fi
