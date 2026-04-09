@@ -1,7 +1,7 @@
 *~
 *.bkp*
 
-config/starship.toml
+config/starship/config.toml
 
 .gitrepos
 .fzf
