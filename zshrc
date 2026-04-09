@@ -1,19 +1,11 @@
 #!/usr/bin/zsh
 
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
-# Initialization code that may require console input (password prompts, [y/n]
-# confirmations, etc.) must go above this block; everything else may go below.
-# if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-#   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-# fi
-
-# Set the directory we want to store zinit and plugins
-ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
-
-
 if [ -z "${XDG_CONFIG_HOME}" ]; then
    export XDG_CONFIG_HOME="$HOME/.config"
 fi
+
+# Set the directory we want to store zinit and plugins
+ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 
 # Download Zinit, if it's not there yet
 if [ ! -d "$ZINIT_HOME" ]; then
@@ -23,9 +15,6 @@ fi
 
 # Source/Load zinit
 source "${ZINIT_HOME}/zinit.zsh"
-
-# Add in Powerlevel10k
-# zinit ice depth=1; zinit light romkatv/powerlevel10k
 
 # Add in zsh plugins
 zinit light zsh-users/zsh-syntax-highlighting
@@ -44,11 +33,6 @@ autoload -Uz compinit && compinit
 
 zinit cdreplay -q
 
-# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-# [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
-
-cat ~/.config/ascii-art-goku.txt
-
 # Keybindings
 bindkey -e
 bindkey '^p' history-search-backward
@@ -59,14 +43,9 @@ bindkey '^[w' kill-region
 HISTSIZE=10000
 HISTFILE=~/.zsh_history
 SAVEHIST=$HISTSIZE
-HISTDUP=erase
-setopt appendhistory
-# setopt sharehistory
-setopt HIST_EXPIRE_DUPS_FIRST
-setopt HIST_FIND_NO_DUPS
+setopt hist_expire_dups_first
 setopt hist_find_no_dups
 setopt hist_ignore_all_dups
-setopt hist_ignore_dups
 setopt hist_ignore_space
 setopt hist_save_no_dups
 
@@ -126,10 +105,9 @@ if [ -r "${HOME}/.zsh_completions" ]; then
   . "${HOME}/.zsh_completions"
 fi
 
-
-
-
 unsetopt pathdirs
+
+cat ~/.config/ascii-art-goku.txt
 
 echo "setting up..."
 
@@ -140,16 +118,16 @@ if command -v starship &> /dev/null ; then
 fi
 
 if [[ -L "${XDG_CONFIG_HOME}/fzf/fzf.zsh" || -f "${XDG_CONFIG_HOME}/fzf/fzf.zsh" ]]; then
-  echo "  󰮗 fzf"
+  echo "   fzf"
   source "${XDG_CONFIG_HOME}/fzf/fzf.zsh"
 fi
 
 if command -v tv &> /dev/null ; then
-  echo "   television"
+  echo "   television"
   eval "$(tv init zsh)"
 fi
 
 if command -v zoxide &> /dev/null ; then
-  echo "  󰰸 zoxide"
+  echo "  󰆤 zoxide"
   eval "$(zoxide init --cmd cd zsh)"
 fi
