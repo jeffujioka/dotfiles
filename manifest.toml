@@ -151,8 +151,8 @@ target = "~/.zsh_completion.d"
 backup = false
 
 [[symlinks]]
-source = "config/starship.toml"
-target = "~/.config/starship.toml"
+source = "config/starship/config.toml"
+target = "~/.config/starship/config.toml"
 
 [[symlinks]]
 source = "config/fzf.zsh"

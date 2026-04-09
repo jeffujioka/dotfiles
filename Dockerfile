@@ -41,6 +41,6 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no
 COPY docker/scripts/sshd_dev_config /etc/ssh/
 COPY docker/scripts/init_dev_docker.sh /usr/bin/
 COPY bashrc ${DEV_HOME}/.bashrc
-COPY config/starship.toml ${DEV_HOME}/.config/starship.toml
+COPY config/starship/config.toml ${DEV_HOME}/.config/starship/config.toml
  
 CMD ["/usr/bin/init_dev_docker.sh"]
