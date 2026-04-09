@@ -135,7 +135,7 @@ echo "setting up..."
 
 if command -v starship &> /dev/null ; then
   echo "   starship"
-  export STARSHIP_CONFIG="${XDG_CONFIG_HOME}/starship.toml"
+  export STARSHIP_CONFIG="${XDG_CONFIG_HOME}/starship/config.toml"
   eval "$(starship init zsh)"
 fi
 
