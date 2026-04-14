@@ -40,6 +40,7 @@ list = [
   "ncurses",
   "pkg-config",
   "utf8proc",
+  "television",
 ]
 
 [packages.linux_brew]
@@ -61,6 +62,7 @@ list = [
   "make",
   "ncurses",
   "pkg-config",
+  "television",
 ]
 
 [cargo]
@@ -161,6 +163,11 @@ target = "~/.config/starship/presets"
 [[symlinks]]
 source = "config/fzf.zsh"
 target = "~/.config/fzf/fzf.zsh"
+
+[[symlinks]]
+source = "config/television/cable/*"
+target = "~/.config/television/cable/*"
+type = "glob"
 
 [[symlinks]]
 source = "config/ascii-art-goku.txt"

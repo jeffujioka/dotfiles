@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Smart preview for sesh-eza television cable.
+# Usage: tv-sesh-preview <mode> <path-or-session>
+#   mode: "tree" (eza tree view) or "long" (eza long listing)
+#   path-or-session: directory path (~/...) or tmux session name
+
+mode="${1:?Usage: tv-sesh-preview <tree|long> <path>}"
+target="${2:?Usage: tv-sesh-preview <tree|long> <path>}"
+
+# Expand tilde — shell doesn't expand ~ inside quoted variables
+expanded="${target/#\~/$HOME}"
+
+if [ -d "$expanded" ]; then
+  case "$mode" in
+    tree)
+      eza --icons --color=always -a --tree --level=2 \
+        --group-directories-first "$expanded"
+      ;;
+    long)
+      eza --icons --color=always -lah --git \
+        --group-directories-first --time-style=relative \
+        --no-user "$expanded"
+      ;;
+    *)
+      echo "Unknown mode: $mode (expected tree or long)" >&2
+      exit 1
+      ;;
+  esac
+else
+  sesh preview "$target"
+fi
