@@ -45,10 +45,10 @@ for arg in "$@"; do
   esac
 done
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || dirname "$SCRIPT_DIR")"
 CONFIG_DIR="$REPO_ROOT/config"
-STARSHIP_TOML="$CONFIG_DIR/starship.toml"
+STARSHIP_TOML="$CONFIG_DIR/starship/config.toml"
 PRESETS_DIR="$CONFIG_DIR/starship/presets"
 
 # If starship.toml doesn't exist, create a symlink to the first preset
@@ -117,6 +117,16 @@ if [[ -L "$STARSHIP_TOML" ]]; then
   echo "$(readlink "$STARSHIP_TOML")" > "$BACKUP"
 else
   cp "$STARSHIP_TOML" "$BACKUP"
+fi
+
+# Self-heal: ~/.config/starship/config.toml must chain through the repo's
+# config.toml, not point directly to a preset. A previous install using
+# readlink -f would have bypassed the chain, making picker updates invisible
+# to starship and breaking live preview.
+_XDG_STARSHIP="${XDG_CONFIG_HOME:-$HOME/.config}/starship/config.toml"
+if [[ "$(readlink "$_XDG_STARSHIP" 2>/dev/null)" != "$STARSHIP_TOML" ]]; then
+  mkdir -p "$(dirname "$_XDG_STARSHIP")"
+  ln -sf "$STARSHIP_TOML" "$_XDG_STARSHIP"
 fi
 
 # Create test directories upfront for fast previews (no runtime flicker)
