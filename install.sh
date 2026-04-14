@@ -271,21 +271,23 @@ function apply_dotfiles() {
   done
 
   # Remove old dangling symlink if it exists
-  if [ -L "config/starship.toml" ]; then
+  if [ -L "$script_dir/config/starship.toml" ]; then
     echo "Removing old symlink config/starship.toml"
-    rm "config/starship.toml"
+    rm "$script_dir/config/starship.toml"
   fi
 
-  # Initialize default Starship preset (only if not already configured)
-  if [ ! -e "config/starship/config.toml" ]; then
-    default_preset="config/starship/presets/starship-powerline-solar.toml"
+  # Initialize the repo-side symlink (only if not already configured).
+  # The manifest-driven loop above creates:
+  #   ~/.config/starship/config.toml → <repo>/config/starship/config.toml
+  # This step ensures the repo-side symlink exists so starship can read it
+  # immediately after install. starship-picker later re-points it to any
+  # chosen preset: <repo>/config/starship/config.toml → presets/<chosen>.toml
+  if [ ! -e "$script_dir/config/starship/config.toml" ]; then
+    default_preset="$script_dir/config/starship/presets/starship-powerline-solar.toml"
     if [ -f "$default_preset" ]; then
-      ln -sf "$(readlink -f "$default_preset")" "config/starship/config.toml"
+      ln -s "$default_preset" "$script_dir/config/starship/config.toml"
     fi
   fi
-  backup_this "${XDG_CONFIG_HOME}/starship/config.toml"
-  mkdir -p "${XDG_CONFIG_HOME}/starship"
-  ln -sf "$(readlink -f config/starship/config.toml)" "${XDG_CONFIG_HOME}/starship/"
 
   # gitconfig special handling: set user name/email after copy
   if [ -n "$GIT_USER_NAME" ]; then

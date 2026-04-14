@@ -155,6 +155,10 @@ source = "config/starship/config.toml"
 target = "~/.config/starship/config.toml"
 
 [[symlinks]]
+source = "config/starship/presets"
+target = "~/.config/starship/presets"
+
+[[symlinks]]
 source = "config/fzf.zsh"
 target = "~/.config/fzf/fzf.zsh"
 
