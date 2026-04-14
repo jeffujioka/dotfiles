@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Combined source for sesh-eza television cable.
+# Outputs three sections (concatenated):
+#   1. MRU tmux sessions  (sesh list -t --icons)
+#   2. Zoxide directories (sesh list -z --icons, frecency-ordered)
+#   3. Undiscovered dirs   (fd under $HOME, filtered against zoxide)
+
+# --- Section 1: MRU tmux sessions ---
+sesh list -t --icons 2>/dev/null || true
+
+# --- Section 2: Zoxide directories ---
+sesh list -z --icons 2>/dev/null || true
+
+# --- Section 3: Undiscovered directories ---
+# Extract the folder icon+color prefix from sesh's zoxide output so our
+# undiscovered dirs look identical in the picker.
+icon_prefix=$(sesh list -z --icons 2>/dev/null | head -1 | sed 's/\(.*[^ ]\) \(~\|\/\).*/\1 /')
+
+if [ -z "$icon_prefix" ]; then
+  # Fallback: plain cyan folder icon if sesh returned nothing
+  icon_prefix=$'\033[36m\033[39m '
+fi
+
+# fd returns absolute paths; zoxide query --list also returns absolute paths.
+# comm -23 removes any path already tracked by zoxide.
+comm -23 \
+  <(fd -H -d 3 -t d -E .Trash -E .git -E node_modules -E .cache . "$HOME" 2>/dev/null | sort) \
+  <(zoxide query --list 2>/dev/null | sort) \
+| sed "s|^$HOME|~|" \
+| while IFS= read -r dir; do
+    printf '%s%s\n' "$icon_prefix" "$dir"
+  done

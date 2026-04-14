@@ -1,0 +1,36 @@
+# Custom sesh cable with eza-powered directory previews.
+# Invoke with: tv sesh-smart
+# Tmux binding: Ctrl+Alt+s (see tmux.conf)
+
+[metadata]
+name = "sesh-smart"
+description = "Session picker with eza directory previews"
+requirements = ["sesh", "eza", "fd", "zoxide", "tmux"]
+
+[source]
+command = "tv-sesh-source"
+ansi = true
+output = "{strip_ansi|split: :1..|join: }"
+
+[preview]
+command = [
+  "tv-sesh-preview long '{strip_ansi|split: :1..|join: }'",
+  "tv-sesh-preview tree '{strip_ansi|split: :1..|join: }'"
+]
+
+[ui]
+preview_panel = { size = 70 }
+
+[keybindings]
+enter = "actions:connect"
+ctrl-d = ["actions:kill_session", "reload_source"]
+
+[actions.connect]
+description = "Connect to selected session or directory"
+command = "sesh connect '{strip_ansi|split: :1..|join: }'"
+mode = "execute"
+
+[actions.kill_session]
+description = "Kill selected tmux session (Ctrl+R to reload)"
+command = "tmux kill-session -t '{strip_ansi|split: :1..|join: }'"
+mode = "fork"
