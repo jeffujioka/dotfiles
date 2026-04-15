@@ -294,42 +294,6 @@ function apply_dotfiles() {
     fi
   fi
 
-  # gitconfig special handling: set user name/email after copy
-  if [ -n "$GIT_USER_NAME" ]; then
-    echo "setting git user.name to $GIT_USER_NAME"
-    git config --global user.name "$GIT_USER_NAME"
-  fi
-  if [ -n "$GIT_USER_EMAIL" ]; then
-    echo "setting git user.email to $GIT_USER_EMAIL"
-    git config --global user.email "$GIT_USER_EMAIL"
-  fi
-}
-
-function check_config_properties() {
-  if [ -f ".config.properties" ]; then
-      echo "exporting vars"
-      set -a  # Automatically export all variables
-      . .config.properties
-      set +a  # Turn off auto-export
-  else
-      echo "Properties file '.config.properties' not found!"
-      exit 1
-  fi
-
-  error=0
-
-  if [ -z "$GIT_USER_NAME" ]; then
-      echo "Please set GIT_USER_NAME environment variable!"
-      error=1
-  fi
-  if [ -z "$GIT_USER_EMAIL" ]; then
-      echo "Please set GIT_USER_EMAIL environment variable!"
-      error=1
-  fi
-
-  if [ $error -eq 1 ]; then
-      exit 1
-  fi
 }
 
 install_deps="1"
@@ -364,8 +328,6 @@ do
       ;;
   esac
 done
-
-check_config_properties
 
 if [ -n "$install_deps" ]; then
   if [ -z "${install_all}" ]; then
