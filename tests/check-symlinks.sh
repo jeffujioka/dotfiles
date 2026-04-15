@@ -29,6 +29,14 @@ expand_path() {
                 else
                     fail "$tgt → $(basename "$actual") (expected $src)"
                 fi
+                # Guard against ln -sf creating a nested symlink inside
+                # a directory-targeting symlink (recursive symlink bug).
+                if [ -d "$REPO_ROOT/$src" ]; then
+                    base=$(basename "$src")
+                    if [ -L "$REPO_ROOT/$src/$base" ]; then
+                        fail "$src/$base is a recursive symlink (ln -sfn missing?)"
+                    fi
+                fi
             elif [ -e "$tgt" ]; then
                 fail "$tgt exists but is not a symlink"
             else
@@ -46,17 +54,32 @@ expand_path() {
             src_pattern="$REPO_ROOT/$src"
             tgt_dir=$(dirname "$tgt")
             matches=0
+            failures=0
             for f in $src_pattern; do
                 [ -e "$f" ] || continue
                 base=$(basename "$f")
-                if [ -e "$tgt_dir/$base" ] || [ -L "$tgt_dir/$base" ]; then
-                    matches=$((matches + 1))
+                link="$tgt_dir/$base"
+                if [ -L "$link" ]; then
+                    actual=$(resolve_path "$link")
+                    expected=$(resolve_path "$f")
+                    if [ "$actual" = "$expected" ]; then
+                        matches=$((matches + 1))
+                    else
+                        fail "$link → $(readlink "$link") (expected $f)"
+                        failures=$((failures + 1))
+                    fi
+                elif [ -e "$link" ]; then
+                    fail "$link exists but is not a symlink"
+                    failures=$((failures + 1))
+                else
+                    fail "$link missing"
+                    failures=$((failures + 1))
                 fi
             done
-            if [ "$matches" -gt 0 ]; then
+            if [ "$failures" -eq 0 ] && [ "$matches" -gt 0 ]; then
                 pass "$tgt ($matches files linked)"
-            else
-                fail "$tgt: no matching files found"
+            elif [ "$matches" -eq 0 ] && [ "$failures" -eq 0 ]; then
+                fail "$tgt: no matching source files"
             fi
             ;;
         *)

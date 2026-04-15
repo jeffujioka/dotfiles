@@ -128,9 +128,13 @@ run_docker_scenario() {
         --tmpfs /tmp \
         "$image" \
         bash -c "
-            cp -r /home/testuser/.dotfiles /home/testuser/dotfiles-work
+            mkdir -p /home/testuser/dotfiles-work
+            tar -C /home/testuser/.dotfiles --exclude=.git_downloads --exclude=.git -cf - . \
+                | tar -C /home/testuser/dotfiles-work -xf -
             cd /home/testuser/dotfiles-work
             printf 'GIT_USER_NAME=\"Test User\"\nGIT_USER_EMAIL=\"test@test.com\"\n' > .config.properties
+            yes y | ./install.sh $install_flags || true
+            echo '--- Re-running install to verify idempotency ---'
             yes y | ./install.sh $install_flags || true
             ./test.sh sanity-check $check_target
         "
