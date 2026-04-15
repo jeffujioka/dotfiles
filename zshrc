@@ -29,6 +29,7 @@ zinit snippet OMZP::command-not-found
 zinit snippet OMZP::jira
 
 # Load completions
+fpath=(~/.zsh_completions.d $fpath)
 autoload -Uz compinit && compinit
 
 zinit cdreplay -q
@@ -99,10 +100,6 @@ fi
 
 if [ -r "${HOME}/.zsh_aliases" ]; then
   . "${HOME}/.zsh_aliases"
-fi
-
-if [ -r "${HOME}/.zsh_completions" ]; then
-  . "${HOME}/.zsh_completions"
 fi
 
 unsetopt pathdirs
