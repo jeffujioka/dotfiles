@@ -13,3 +13,6 @@ config/starship/config.toml
 .config.properties
 
 .worktrees
+
+# Override global _* ignore for zsh completion files
+!zsh_completions.d/_*
