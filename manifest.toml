@@ -148,8 +148,8 @@ source = "zsh_aliases.d"
 target = "~/.zsh_aliases.d"
 
 [[symlinks]]
-source = "zsh_completion.d"
-target = "~/.zsh_completion.d"
+source = "zsh_completions.d"
+target = "~/.zsh_completions.d"
 backup = false
 
 [[symlinks]]

@@ -251,6 +251,11 @@ function apply_dotfiles() {
         if [ "$should_backup" = "true" ]; then
           backup_this "$tgt"
         fi
+        # ln -sfn cannot replace a real directory; remove it first.
+        if [ -d "$tgt" ] && [ ! -L "$tgt" ]; then
+          echo "Removing stale directory $tgt (replacing with symlink)"
+          rm -rf "$tgt"
+        fi
         ln -sfn "$(resolve_path "$src")" "$tgt"
         ;;
       copy)
