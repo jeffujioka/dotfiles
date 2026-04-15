@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-if [ -d "${HOME}/.zsh_completion.d" ]; then
+if [ -d "${HOME}/.zsh_completions.d" ]; then
   setopt nullglob
-  for completion in "${HOME}"/.zsh_completion.d/*; do
+  for completion in "${HOME}"/.zsh_completions.d/*; do
     if [ -f "$completion" ]; then
       . "$completion"
     fi
