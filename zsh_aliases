@@ -1,10 +1,9 @@
-##!/bin/bash
+#!/bin/bash
 
 if [ -d ~/.zsh_aliases.d ]; then
   for alias_file in ~/.zsh_aliases.d/*.sh; do
-    if [ -x $alias_file ]; then
-#      echo "Importing aliases from: $alias_file"
-      . $alias_file
+    if [ -x "$alias_file" ]; then
+      . "$alias_file"
     fi
   done
   unset alias_file
