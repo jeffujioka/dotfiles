@@ -251,7 +251,7 @@ function apply_dotfiles() {
         if [ "$should_backup" = "true" ]; then
           backup_this "$tgt"
         fi
-        ln -sf "$(resolve_path "$src")" "$tgt"
+        ln -sfn "$(resolve_path "$src")" "$tgt"
         ;;
       copy)
         if [ "$should_backup" = "true" ]; then
@@ -264,7 +264,7 @@ function apply_dotfiles() {
           tgt_dir="${tgt%/\*}"
           tgt_dir="${tgt_dir/#\~/$HOME}"
           mkdir -p "$tgt_dir"
-          ln -sf "$(resolve_path "$f")" "$tgt_dir/"
+          ln -sfn "$(resolve_path "$f")" "$tgt_dir/"
         done
         ;;
     esac
