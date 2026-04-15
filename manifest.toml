@@ -140,10 +140,6 @@ source = "zsh_aliases"
 target = "~/.zsh_aliases"
 
 [[symlinks]]
-source = "zsh_completions"
-target = "~/.zsh_completions"
-
-[[symlinks]]
 source = "zsh_aliases.d"
 target = "~/.zsh_aliases.d"
 
