@@ -28,14 +28,14 @@ ${custom.vpn}\
 $docker_context\
 [](fg:#180c38)\
 $fill\
-[](fg:#0c1030)\
+[](fg:#0c1030)\
 $cmd_duration\
 $battery\
 $time\
-[](fg:#0c1030)\
+[](fg:#0c1030)\
 \n$character"""
 
-continuation_prompt = '[▶▶](#d04880) '
+continuation_prompt = '[](#d04880) '
 
 [fill]
 symbol = '─'
@@ -52,13 +52,13 @@ disabled = false
 
 [os.symbols]
 Macos = '󰀵'
-Ubuntu = ""
-Linux = ""
+Ubuntu = ""
+Linux = ""
 
 [username]
 style_user = 'bg:#381018'
 style_root = 'bg:#381018'
-format = '[$user ]($style)'
+format = '[ $user]($style)'
 disabled = false
 show_always = false
 

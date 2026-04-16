@@ -51,13 +51,13 @@ disabled = false
 
 [os.symbols]
 Macos = '󰀵'
-Ubuntu = ""
-Linux = ""
+Ubuntu = ""
+Linux = ""
 
 [username]
 style_user = 'bg:#8840bf'
 style_root = 'bg:#8840bf'
-format = '[$user ]($style)'
+format = '[ $user]($style)'
 disabled = false
 show_always = false
 
