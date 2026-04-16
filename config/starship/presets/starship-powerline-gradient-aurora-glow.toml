@@ -1,22 +1,22 @@
-# ~/.config/starship.toml — clean · Forest palette
-# Woodland: canopy → moss → earth
-# Swap: cp starship-clean-gradient-forest.toml starship.toml
+# ~/.config/starship.toml — powerline · Aurora palette  · glow · medium contrast
+# Northern lights: green → teal → blue → violet
+# Swap: starship-picker
 
 add_newline = true
 command_timeout = 1000
 
 format = """
-[░▒▓](#10c050)\
-[ $os ](bg:#10c050 fg:#0a0a0a)\
-[](bg:#0a2810 fg:#10c050)\
+[](#005028)\
+$os\
 $username\
 $hostname\
+[](bg:#005058 fg:#005028)\
 $directory\
-[](fg:#0a2810 bg:#081c14)\
+[](fg:#005058 bg:#0c2e68)\
 ${custom.giticon}\
 $git_branch\
 $git_status\
-[](fg:#081c14 bg:#0c1810)\
+[](fg:#0c2e68 bg:#1c0858)\
 ${custom.tmux_zoom}\
 $python\
 $nodejs\
@@ -26,26 +26,28 @@ $c\
 ${custom.cpp}\
 ${custom.vpn}\
 $docker_context\
-[](fg:#0c1810 bg:#18140c)\
+[](fg:#1c0858)\
+$fill\
+[](fg:#120840)\
 $cmd_duration\
 $battery\
 $time\
-[](fg:#18140c)\
+[](fg:#120840)\
 \n$character"""
 
-continuation_prompt = '[▶▶](#10c050) '
+continuation_prompt = '[](#00c860) '
 
 [fill]
 symbol = '─'
-style = '#081008'
+style = '#090418'
 
 [character]
-success_symbol = '[❯](bold #50c868)'
+success_symbol = '[❯](bold #00e888)'
 error_symbol = '[❯](bold #ff4444)'
 
 [os]
-style = 'bg:#10c050'
-format = '$symbol'
+style = 'fg:#55ffaa bg:#005028'
+format = '[ $symbol ]($style)'
 disabled = false
 
 [os.symbols]
@@ -54,27 +56,27 @@ Ubuntu = ""
 Linux = ""
 
 [username]
-style_user = 'fg:#50c868'
-style_root = 'bold fg:#ff4444'
-format = '[[ $user ](fg:#50c868 bg:#0a2810)]($style)'
+style_user = 'fg:#55ffaa bg:#005028'
+style_root = 'fg:#55ffaa bg:#005028'
+format = '[ $user]($style)'
 disabled = false
 show_always = false
 
 [hostname]
 ssh_only = true
-style = 'bg:#0a2810'
-format = '[[@$hostname ](fg:#50c868 bg:#0a2810)]($style)'
+style = 'fg:#55ffaa bg:#005028'
+format = '[@$hostname ]($style)'
 disabled = false
 
 [directory]
-style = 'bg:#0a2810'
-format = '[[ $path ](fg:#50c868 bg:#0a2810)]($style)'
+style = 'fg:#44eedd bg:#005058'
+format = '[ $path ]($style)'
 truncation_length = 4
 truncation_symbol = '…/'
 fish_style_pwd_dir_length = 2
 home_symbol = '󰋜 ~'
-read_only = ' 󰌾'
-read_only_style = 'fg:#50c868 bg:#0a2810'
+read_only = ' 󰌾 '
+read_only_style = 'fg:#44eedd bg:#005058'
 
 [directory.substitutions]
 "Documents" = "󰈙 "
@@ -84,13 +86,13 @@ read_only_style = 'fg:#50c868 bg:#0a2810'
 
 [git_branch]
 symbol = " "
-style = 'bg:#081c14'
-format = '[[ $symbol$branch ](fg:#2d8860 bg:#081c14)]($style)'
+style = 'bg:#0c2e68'
+format = '[ $symbol$branch ](fg:#88bbff bg:#0c2e68)'
 truncation_symbol = '…/'
 
 [git_status]
-style = 'bg:#081c14'
-format = '[[($all_status$ahead_behind )](fg:#2d8860 bg:#081c14)]($style)'
+style = 'bg:#0c2e68'
+format = '[$all_status$ahead_behind ](fg:#88bbff bg:#0c2e68)'
 up_to_date = ''
 ahead = '⇡${count}'
 diverged = '⇕⇡${ahead_count}⇣${behind_count}'
@@ -104,69 +106,69 @@ stashed = '\$${count} '
 
 [python]
 symbol = " "
-style = 'bg:#0c1810'
-format = '[[ $symbol($version )(\($virtualenv\) )](fg:#408060 bg:#0c1810)]($style)'
+style = 'fg:#cc88ff bg:#1c0858'
+format = '[ $symbol($version )(\($virtualenv\) )]($style)'
 pyenv_version_name = true
 
 [nodejs]
 symbol = " "
-style = 'bg:#0c1810'
-format = '[[ $symbol ($version) ](fg:#408060 bg:#0c1810)]($style)'
+style = 'fg:#cc88ff bg:#1c0858'
+format = '[ $symbol ($version) ]($style)'
 
 [rust]
 symbol = " "
-style = 'bg:#0c1810'
-format = '[[ $symbol ($version) ](fg:#408060 bg:#0c1810)]($style)'
+style = 'fg:#cc88ff bg:#1c0858'
+format = '[ $symbol ($version) ]($style)'
 
 [java]
 symbol = " "
-style = 'bg:#0c1810'
-format = '[[ $symbol ($version) ](fg:#408060 bg:#0c1810)]($style)'
+style = 'fg:#cc88ff bg:#1c0858'
+format = '[ $symbol ($version) ]($style)'
 
 [c]
 symbol = " "
-style = 'bg:#0c1810'
-format = '[[ $symbol ($version) ](fg:#408060 bg:#0c1810)]($style)'
+style = 'fg:#cc88ff bg:#1c0858'
+format = '[ $symbol ($version) ]($style)'
 detect_extensions = ['.c']
 
 [docker_context]
 symbol = " "
-style = 'bg:#0c1810'
-format = '[[ $symbol $context ](fg:#408060 bg:#0c1810)]($style)'
+style = 'fg:#cc88ff bg:#1c0858'
+format = '[ $symbol $context ]($style)'
 
 [cmd_duration]
 min_time = 2000
-style = 'bg:#18140c'
-format = '[[ ⏱ $duration ](fg:#907850 bg:#18140c)]($style)'
+style = 'fg:#9966dd bg:#120840'
+format = '[ ⏱ $duration ]($style)'
 
 [time]
 disabled = false
 time_format = "%d/%m/%y %H:%M"
-style = 'bg:#18140c'
-format = '[[  $time ](fg:#907850 bg:#18140c)]($style)'
+style = 'fg:#9966dd bg:#120840'
+format = '[ 󱑍 $time ]($style)'
 
 [battery]
 disabled = false
 full_symbol = '󱊣'
 charging_symbol = '󱊦'
 discharging_symbol = '󱊣'
-format = '[[ $symbol$percentage ](fg:#907850 bg:#18140c)]($style)'
+format = '[ $symbol$percentage ]($style)'
 
 [[battery.display]]
 threshold = 100
-style = 'bg:#18140c'
+style = 'fg:#9966dd bg:#120840'
 
 [[battery.display]]
 threshold = 50
 charging_symbol = '󱊥'
 discharging_symbol = '󱊢'
-style = 'bg:#18140c'
+style = 'fg:#9966dd bg:#120840'
 
 [[battery.display]]
 threshold = 20
 charging_symbol = '󱊤'
 discharging_symbol = '󱊡'
-style = 'bg:#18140c'
+style = 'fg:#9966dd bg:#120840'
 
 [[battery.display]]
 threshold = 10
@@ -180,29 +182,29 @@ description = "Display symbol for remote Git server"
 command = "check-git-remote.sh"
 when = 'git rev-parse --is-inside-work-tree 2> /dev/null'
 shell = ["bash", "--noprofile", "--norc"]
-style = 'bg:#081c14'
-format = '[[ $output ](fg:#2d8860 bg:#081c14)]($style)'
+style = 'bg:#0c2e68'
+format = '[ $output ](fg:#88bbff bg:#0c2e68)'
 
 [custom.cpp]
 description = "custom C++ config"
 command = 'echo '
 detect_extensions = ['.h', '.hpp', 'cpp', '.cc']
-style = 'bg:#0c1810'
-format = '[[ $output ](fg:#408060 bg:#0c1810)]($style)'
+style = 'fg:#cc88ff bg:#1c0858'
+format = '[ $output ]($style)'
 when = true
 
 [custom.vpn]
 disabled = false
 command = 'echo  󰓄'
-style = 'bg:#0c1810'
-format = '[[ $output ](fg:#408060 bg:#0c1810)]($style)'
+style = 'fg:#cc88ff bg:#1c0858'
+format = '[ $output ]($style)'
 when = 'ip route show | grep vpntun0 | awk "{ print $1 }" | grep "^53\." || corporate-vpn -s | grep -w "Connection Established"'
 
 [custom.tmux_zoom]
 disabled = false
 description = "Show indicator when tmux pane is zoomed"
 command = 'echo "󰖗 zoom"'
-style = 'bg:#0c1810'
+style = 'fg:#cc88ff bg:#1c0858'
 when = '[ -n "$TMUX" ] && [ "$(tmux display-message -p "#{window_zoomed_flag}")" = "1" ]'
-format = '[[ $output ](fg:#408060 bg:#0c1810)]($style)'
+format = '[ $output ]($style)'
 shell = ["bash", "--noprofile", "--norc"]
