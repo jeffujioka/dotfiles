@@ -1,0 +1,221 @@
+# ~/.config/starship.toml — bubble · Inferno palette  · glow · medium contrast
+# Fire spectrum: yellow-ember → orange → red → crimson
+# Swap: starship-picker
+
+add_newline = true
+command_timeout = 1000
+
+format = """
+[](fg:#d07228)[ $os ](fg:#0a0a0a bg:#d07228)[](fg:#d07228) \
+[](fg:#4a2a00)$username\
+$hostname\
+$directory\
+[](fg:#4a2a00) \
+${custom.git_start}\
+${custom.giticon}\
+$git_branch\
+$git_status\
+${custom.git_end}\
+${custom.tmux_zoom}\
+$python\
+$nodejs\
+$rust\
+$java\
+$c\
+${custom.cpp}\
+${custom.vpn}\
+$docker_context\
+$fill\
+[](fg:#1e0010)$cmd_duration\
+$battery\
+$time\
+[](fg:#0c081e)\
+\n$character"""
+
+continuation_prompt = '[](#e05050) '
+
+[fill]
+symbol = '─'
+style = '#1e0010'
+
+[character]
+success_symbol = '[❯](bold #ffc830)'
+error_symbol = '[❯](bold #ff4444)'
+
+[os]
+style = 'bg:#d07228'
+format = '$symbol'
+disabled = false
+
+[os.symbols]
+Macos = '󰀵'
+Ubuntu = ""
+Linux = ""
+
+[username]
+style_user = 'fg:#ffe050'
+style_root = 'bold fg:#ff4444'
+format = '[[ $user ](fg:#ffe050 bg:#4a2a00)]($style)'
+disabled = false
+show_always = false
+
+[hostname]
+ssh_only = true
+style = 'bg:#4a2a00'
+format = '[[@$hostname ](fg:#ffe050 bg:#4a2a00)]($style)'
+disabled = false
+
+[directory]
+style = 'bg:#4a2a00'
+format = '[[ $path ](fg:#ffe050 bg:#4a2a00)]($style)'
+truncation_length = 4
+truncation_symbol = '…/'
+fish_style_pwd_dir_length = 2
+home_symbol = '󰋜 ~'
+read_only = ' 󰌾'
+read_only_style = 'fg:#ffe050 bg:#4a2a00'
+
+[directory.substitutions]
+"Documents" = "󰈙 "
+"Downloads" = " "
+"Music" = " "
+"Pictures" = " "
+
+[git_branch]
+symbol = " "
+style = 'bg:#3a0000'
+format = '[[ $symbol$branch ](fg:#ff8833 bg:#3a0000)]($style)'
+truncation_symbol = '…/'
+
+[git_status]
+style = 'bg:#3a0000'
+format = '[[($all_status$ahead_behind )](fg:#ff8833 bg:#3a0000)]($style)'
+up_to_date = ''
+ahead = '⇡${count}'
+diverged = '⇕⇡${ahead_count}⇣${behind_count}'
+behind = '⇣${count}'
+staged = '+${count} '
+modified = '~${count} '
+untracked = '?${count} '
+deleted = '-${count} '
+conflicted = '!${count} '
+stashed = '\$${count} '
+
+[python]
+symbol = " "
+style = 'bg:#260018'
+format = '[](fg:#260018)[ $symbol($version )(\($virtualenv\) ) ](fg:#dd4488 bg:#260018)[](fg:#260018) '
+pyenv_version_name = true
+
+[nodejs]
+symbol = " "
+style = 'bg:#260018'
+format = '[](fg:#260018)[ $symbol ($version) ](fg:#dd4488 bg:#260018)[](fg:#260018) '
+
+[rust]
+symbol = " "
+style = 'bg:#260018'
+format = '[](fg:#260018)[ $symbol ($version) ](fg:#dd4488 bg:#260018)[](fg:#260018) '
+
+[java]
+symbol = " "
+style = 'bg:#260018'
+format = '[](fg:#260018)[ $symbol ($version) ](fg:#dd4488 bg:#260018)[](fg:#260018) '
+
+[c]
+symbol = " "
+style = 'bg:#260018'
+format = '[](fg:#260018)[ $symbol ($version) ](fg:#dd4488 bg:#260018)[](fg:#260018) '
+detect_extensions = ['.c']
+
+[docker_context]
+symbol = " "
+style = 'bg:#260018'
+format = '[](fg:#260018)[ $symbol $context ](fg:#dd4488 bg:#260018)[](fg:#260018) '
+
+[cmd_duration]
+min_time = 2000
+style = 'bg:#1e0010'
+format = '[[ ⏱ $duration ](fg:#cc3366 bg:#1e0010)]($style)'
+
+[time]
+disabled = false
+time_format = "%d/%m/%y %H:%M"
+style = 'bg:#1e0010'
+format = '[[  $time ](fg:#cc3366 bg:#1e0010)]($style)'
+
+[battery]
+disabled = false
+full_symbol = '󱊣'
+charging_symbol = '󱊦'
+discharging_symbol = '󱊣'
+format = '[[ $symbol$percentage ](fg:#cc3366 bg:#1e0010)]($style)'
+
+[[battery.display]]
+threshold = 100
+style = 'bg:#1e0010'
+
+[[battery.display]]
+threshold = 50
+charging_symbol = '󱊥'
+discharging_symbol = '󱊢'
+style = 'bg:#1e0010'
+
+[[battery.display]]
+threshold = 20
+charging_symbol = '󱊤'
+discharging_symbol = '󱊡'
+style = 'bg:#1e0010'
+
+[[battery.display]]
+threshold = 10
+charging_symbol = '󰨜'
+discharging_symbol = '󴃍'
+style = 'bg:#c0392b'
+
+[custom.git_start]
+disabled = false
+when = 'git rev-parse --is-inside-work-tree 2> /dev/null'
+command = 'echo ""'
+shell = ["bash", "--noprofile", "--norc"]
+format = '[](fg:#3a0000)'
+
+[custom.git_end]
+disabled = false
+when = 'git rev-parse --is-inside-work-tree 2> /dev/null'
+command = 'echo ""'
+shell = ["bash", "--noprofile", "--norc"]
+format = '[](fg:#3a0000) '
+
+[custom.giticon]
+disabled = false
+description = "Display symbol for remote Git server"
+command = "check-git-remote.sh"
+when = 'git rev-parse --is-inside-work-tree 2> /dev/null'
+shell = ["bash", "--noprofile", "--norc"]
+style = 'bg:#3a0000'
+format = '[[ $output ](fg:#ff8833 bg:#3a0000)]($style)'
+
+[custom.cpp]
+description = "custom C++ config"
+command = 'echo '
+detect_extensions = ['.h', '.hpp', 'cpp', '.cc']
+style = 'bg:#260018'
+format = '[](fg:#260018)[ $output ](fg:#dd4488 bg:#260018)[](fg:#260018) '
+when = true
+
+[custom.vpn]
+disabled = false
+command = 'echo  󰓄'
+style = 'bg:#260018'
+format = '[](fg:#260018)[ $output ](fg:#dd4488 bg:#260018)[](fg:#260018) '
+when = 'ip route show | grep zcctun | awk "{ print $1 }" | grep "^53\." || daimler-vpn -s | grep -w "Connection Established"'
+
+[custom.tmux_zoom]
+disabled = false
+description = "Show indicator when tmux pane is zoomed"
+command = 'echo "󰖗 zoom"'
+style = 'bg:#260018'
+when = '[ -n "$TMUX" ] && [ "$(tmux display-message -p "#{window_zoomed_flag}")" = "1" ]'
+format = '[](fg:#260018)[ $output ](fg:#dd4488 bg:#260018)[](fg:#260018) '
+shell = ["bash", "--noprofile", "--norc"]
