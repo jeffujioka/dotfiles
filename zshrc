@@ -102,6 +102,9 @@ if [ -r "${HOME}/.zsh_aliases" ]; then
   . "${HOME}/.zsh_aliases"
 fi
 
+export TMUX_TMPDIR="$HOME/.config/tmux/tmp"
+mkdir -p "$TMUX_TMPDIR"
+
 unsetopt pathdirs
 
 cat ~/.config/ascii-art-goku.txt
