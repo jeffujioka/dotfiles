@@ -178,7 +178,8 @@ alias ..9='cd ../../../../../../../../..'
 ##
 ################################################################################
 alias cc="claude"
-alias cca="claude --resume --dangerously-skip-permissions"
+alias cca="claude --dangerously-skip-permissions"
+alias ccar="claude --dangerously-skip-permissions --resume"
 alias ct="copilot"
 alias cta="copilot --allow-all"
 
