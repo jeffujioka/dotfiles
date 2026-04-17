@@ -21,10 +21,16 @@ set colorcolumn=72,75,100
 
 highlight ColorColumn ctermbg=238
 
-" https://stackoverflow.com/a/67890119
-nnoremap Y "+y
-vnoremap Y "+y
-nnoremap yY ^"+y$
+" Yank to system clipboard
+if executable('pbcopy')
+    vnoremap <silent> Y :w !pbcopy<CR><CR>
+    nnoremap <silent> Y :.w !pbcopy<CR><CR>
+    nnoremap <silent> yY ^vg_:w !pbcopy<CR><CR>
+else
+    vnoremap Y "+y
+    nnoremap Y "+y
+    nnoremap yY ^"+y$
+endif
 
 " https://vi.stackexchange.com/a/28284
 if &term =~ "screen"
