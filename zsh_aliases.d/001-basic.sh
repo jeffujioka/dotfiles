@@ -2,7 +2,7 @@
 
 # FIND PROCESS
 function p() {
-        ps aux | grep -i $1 | grep -v grep
+        ps aux | grep -i "$1" | grep -v grep
 }
 
 function print_info() {
@@ -33,8 +33,7 @@ function ka() {
     print_info $1
 
     if (( $cnt > 0 )); then
-        echo 'kill' -$klevel $(ps aux  |  grep -i $1 |  grep -v grep   | awk '{print $2}')
-        ps aux  |  grep -i $1 |  grep -v grep   | awk '{print $2}' | xargs kill -$klevel
+        ps aux  |  grep -i "$1" |  grep -v grep   | awk '{print $2}' | xargs kill -$klevel
 
         print_alive_processes $1
     else
@@ -51,8 +50,7 @@ function ska() {
     fi
 
     if (( $cnt > 0 )); then
-        echo 'sudo kill' -$klevel $(ps aux  |  grep -i $1 |  grep -v grep   | awk '{print $2}')
-        ps aux  |  grep -i $1 |  grep -v grep   | awk '{print $2}' | xargs sudo kill -$klevel
+        ps aux  |  grep -i "$1" |  grep -v grep   | awk '{print $2}' | xargs sudo kill -$klevel
 
         print_alive_processes $1
     else
@@ -150,6 +148,14 @@ alias tree="eza -T --icons --group-directories-first"
 alias treel="eza -lT --icons --group-directories-first"
 alias treela="eza -lTa --icons --group-directories-first"
 
+if command -v pbcopy &> /dev/null; then
+  alias pp="pbcopy"
+fi
+
+if command -v pbpaste &> /dev/null; then
+  alias ppe="pbpaste"
+fi
+
 # FZF
 alias fprv="fzf --preview 'bat --color=always --style=numbers {}'"
 
@@ -177,6 +183,14 @@ alias ..7='cd ../../../../../../..'
 alias ..8='cd ../../../../../../../..'
 alias ..9='cd ../../../../../../../../..'
 
+##
+## AI
+##
+################################################################################
+alias cc="claude"
+alias cca="claude --resume --dangerously-skip-permissions"
+alias ct="copilot"
+alias cta="copilot --allow-all"
 
 ##
 ## Utils
@@ -238,7 +252,7 @@ alias mic-list="pactl list short sources"
 
 alias clear="clear && printf '\e[3J'"
 
-alias sudovim='sudo vim -S /lhome/$USER/.vimrc'
+alias sim='sudo vim -S "$HOME/.vimrc"'
 
 ##
 ## keyboard
