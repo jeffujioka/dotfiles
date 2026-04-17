@@ -60,7 +60,7 @@ function ska() {
     fi
 }
 
-function cdmkdir() {
+function mkcd() {
     if [ -z "$1" ]; then
         echo "empty dir... exiting..."
         return 1
