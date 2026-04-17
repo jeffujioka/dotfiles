@@ -2,20 +2,20 @@
 
 # FIND PROCESS
 function p() {
-        ps aux | grep -i "$1" | grep -v grep
+    pgrep -lif "$1"
 }
 
 function print_info() {
-    cnt=$( p $1 | wc -l)  # total count of processes found
+    cnt=$(pgrep -cif "$1")
 
-    echo -e "\nSearching for '$1' -- Found" $cnt "Running Processes .. "
-    p $1
+    echo -e "\nSearching for '$1' -- Found $cnt Running Processes .."
+    p "$1"
 
-    echo -e '\nTerminating' $cnt 'processes ..'
+    echo -e "\nTerminating $cnt processes .."
 }
 
 function print_alive_processes() {
-    cnt=$( p $1 | wc -l)
+    cnt=$(pgrep -cif "$1")
     if (( $cnt > 0 )); then
         echo -e "\nThere is/are '$cnt' process[es] still running...\n"
         p "$1"
@@ -30,18 +30,18 @@ function ka() {
         klevel=$2
     fi
 
-    print_info $1
+    print_info "$1"
 
     if (( $cnt > 0 )); then
-        ps aux  |  grep -i "$1" |  grep -v grep   | awk '{print $2}' | xargs kill -$klevel
+        pkill -"$klevel" -if "$1"
 
-        print_alive_processes $1
+        print_alive_processes "$1"
     else
         echo -e "No '$1' process found.\n"
     fi
 }
 
-# KILL ALL
+# SUDO KILL ALL
 function ska() {
     if [ -z "$2" ]; then
         klevel=15
@@ -49,10 +49,12 @@ function ska() {
         klevel=$2
     fi
 
-    if (( $cnt > 0 )); then
-        ps aux  |  grep -i "$1" |  grep -v grep   | awk '{print $2}' | xargs sudo kill -$klevel
+    print_info "$1"
 
-        print_alive_processes $1
+    if (( $cnt > 0 )); then
+        sudo pkill -"$klevel" -if "$1"
+
+        print_alive_processes "$1"
     else
         echo -e "No '$1' process found.\n"
     fi
@@ -61,31 +63,30 @@ function ska() {
 function cdmkdir() {
     if [ -z "$1" ]; then
         echo "empty dir... exiting..."
-        exit 1
+        return 1
     fi
 
-    local dir=$1
-    mkdir -p $dir
-    cd $dir
+    local dir="$1"
+    mkdir -p "$dir"
+    cd "$dir"
 }
+alias mkcd="cdmkdir"
 
 function f() {
     if ! command -v fzf &> /dev/null; then
         echo "Error: fzf is not installed"
-        exit 1
+        return 1
     fi
 
     if [ $# -eq 0 ]; then
-        # echo "searching files under: $PWD"
         fzf
     else
         local search_path="${@: -1}"  # Get the last argument
         if [ ! -d "$search_path" ]; then
             echo "Error: Last argument is not a valid directory"
-            exit 1
+            return 1
         fi
         pushd "$search_path" &> /dev/null
-        # echo "searching files under: $PWD"
         fzf "${@:1:$#-1}"  # Forward all arguments except the last one
         popd &> /dev/null
     fi
@@ -94,40 +95,28 @@ function f() {
 function fq() {
     if [ $# -lt 2 ]; then
         echo "Error: fq requires at least two arguments: <query> <directory path>"
-        exit 1
+        return 1
     fi
 
-    if [ $# -eq 1 ]; then
-        f $opts -q $query .
-    else
-        search_dir="${@: -1}"
-        query="${@: -2:1}"
-        opts="${@:1:$#-2}"
+    search_dir="${@: -1}"
+    query="${@: -2:1}"
+    opts="${@:1:$#-2}"
 
-        # echo "last: ${search_dir}"
-        # echo "query: ${query}"
-        # echo "opts: ${opts}"
-
-        f $opts -q $query $search_dir
-    fi
+    f $opts -q $query $search_dir
 }
 
 function fqi() {
     if [ $# -eq 0 ]; then
         echo "Error: fqi requires at least two arguments: <query> <directory path>"
-        exit 1
+        return 1
     fi
 
     if [ $# -eq 1 ]; then
-        f $opts -i -q $1 .
+        f -i -q "$1" .
     else
         search_dir="${@: -1}"
         query="${@: -2:1}"
         opts="${@:1:$#-2}"
-
-        # echo "last: ${search_dir}"
-        # echo "query: ${query}"
-        # echo "opts: ${opts}"
 
         f $opts -i -q $query $search_dir
     fi
@@ -139,14 +128,15 @@ function fqi() {
 ################################################################################
 
 # Use eza instead of ls (modern replacement for exa)
-alias ls="eza --icons --group-directories-first"
-alias ll="eza -l --icons --group-directories-first"
-alias lla="eza -la --icons --group-directories-first"
-alias llt="eza -lT --icons --group-directories-first"
-alias llta="eza -lTa --icons --group-directories-first"
-alias tree="eza -T --icons --group-directories-first"
-alias treel="eza -lT --icons --group-directories-first"
-alias treela="eza -lTa --icons --group-directories-first"
+EZA_DEFAULT="--icons --group-directories-first"
+alias ls="eza $EZA_DEFAULT"
+alias ll="eza -l $EZA_DEFAULT"
+alias lla="eza -la $EZA_DEFAULT"
+alias llt="eza -lT $EZA_DEFAULT"
+alias llta="eza -lTa $EZA_DEFAULT"
+alias tree="eza -T $EZA_DEFAULT"
+alias treel="eza -lT $EZA_DEFAULT"
+alias treela="eza -lTa $EZA_DEFAULT"
 
 if command -v pbcopy &> /dev/null; then
   alias pp="pbcopy"
@@ -169,7 +159,7 @@ alias cpr="cp -R"
 alias mkdir="mkdir -p"
 
 # List hidden files
-alias l.='ls -d .* --color=auto'
+alias l.='eza -d .*'
 
 # Change directory
 alias cd..='cd ..'
@@ -234,7 +224,7 @@ alias spwd='cat ~/.pwdrc | sudo -S'
 # cpu info (older system use /proc/cpuinfo)
 alias cpuinfo='lscpu || less /proc/cpuinfo'
 alias meminfo='free -m -l -t'
-## get GPU ram on desktop / laptop## 
+## get GPU ram on desktop / laptop##
 alias gpumeminfo='grep -i --color memory /var/log/Xorg.0.log'
 
 # list top process eating memory
@@ -266,3 +256,53 @@ alias kboard2-us-intl="setxkbmap us intl"
 alias kboard2-de="setxkbmap de"
 
 alias runedge="microsoft-edge --remote-debugging-port=9222 > /dev/null 2>&1 &"
+
+##
+## New utilities
+##
+################################################################################
+
+function x() {
+    if [ -z "$1" ]; then
+        echo "Usage: x <file>"
+        return 1
+    fi
+
+    if [ ! -f "$1" ]; then
+        echo "'$1' is not a valid file"
+        return 1
+    fi
+
+    case "$1" in
+        *.tar.bz2) tar xjf "$1"    ;;
+        *.tar.gz)  tar xzf "$1"    ;;
+        *.tar.xz)  tar xJf "$1"    ;;
+        *.bz2)     bunzip2 "$1"    ;;
+        *.gz)      gunzip "$1"     ;;
+        *.tar)     tar xf "$1"     ;;
+        *.tbz2)    tar xjf "$1"    ;;
+        *.tgz)     tar xzf "$1"    ;;
+        *.zip)     unzip "$1"      ;;
+        *.Z)       uncompress "$1" ;;
+        *.7z)      7z x "$1"       ;;
+        *.rar)     unrar x "$1"    ;;
+        *.xz)      unxz "$1"       ;;
+        *)         echo "'$1' cannot be extracted via x()" ;;
+    esac
+}
+
+function serve() {
+    local port="${1:-8000}"
+    echo "Serving on http://localhost:$port"
+    python3 -m http.server "$port"
+}
+
+function ports() {
+    if [[ "$(uname)" == "Darwin" ]]; then
+        lsof -iTCP -sTCP:LISTEN -n -P
+    else
+        ss -tlnp
+    fi
+}
+
+alias myip='curl -s ifconfig.me && echo'
