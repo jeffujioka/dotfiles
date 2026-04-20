@@ -107,6 +107,15 @@ mkdir -p "$TMUX_TMPDIR"
 
 unsetopt pathdirs
 
+# Keep tmux pane_title meaningful: shell name when idle, command name when running.
+# Without this, processes like tmux reset the OSC title to empty and pane borders
+# show nothing instead of the current command.
+autoload -Uz add-zsh-hook
+_set_title_precmd()  { printf '\e]0;%s\a' "${SHELL:t}" }
+_set_title_preexec() { printf '\e]0;%s\a' "${1%% *}" }
+add-zsh-hook precmd  _set_title_precmd
+add-zsh-hook preexec _set_title_preexec
+
 cat ~/.config/ascii-art-goku.txt
 
 echo "setting up..."
@@ -132,11 +141,3 @@ if command -v zoxide &> /dev/null ; then
   eval "$(zoxide init --cmd cd zsh)"
 fi
 
-# Keep tmux pane_title meaningful: hostname when idle, command name when running.
-# Without this, processes like tmux reset the OSC title to empty and pane borders
-# show nothing instead of the current command.
-autoload -Uz add-zsh-hook
-_set_title_precmd()  { printf '\e]0;%s\a' "$HOST" }
-_set_title_preexec() { printf '\e]0;%s\a' "${1%% *}" }
-add-zsh-hook precmd  _set_title_precmd
-add-zsh-hook preexec _set_title_preexec
