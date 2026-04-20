@@ -214,7 +214,7 @@ _pick_with_fzf() {
       --preview="\"$SCRIPT_DIR/starship-picker\" --_preview {2}" \
       --preview-label=" Preset Details " \
       --preview-window="bottom:70%:wrap" \
-      --bind='focus:execute-silent(rm -f "'"$STARSHIP_TOML"'" && ln -s {2} "'"$STARSHIP_TOML"'")'
+      --bind='focus:execute-silent(rm -f "'"$STARSHIP_TOML"'" && ln -s {2} "'"$STARSHIP_TOML"'" && { [ -f /tmp/starship-picker-tmux-sync-off ] || tmux-palette {2} --preview 2>/dev/null; } || true)'
   ) || true  # fzf exits 130 on Esc — absorb it
 
   # Return only the clean name (first field before TAB)
@@ -240,6 +240,10 @@ SELECTED=$(_pick_with_fzf)
 
 if [[ -n "$SELECTED" ]]; then
   rm -f "$BACKUP"  # clear backup → EXIT trap becomes no-op
+  if command -v tmux-palette &>/dev/null && [[ -n "${TMUX:-}" ]]; then
+    _selected_path=$(readlink "$STARSHIP_TOML" 2>/dev/null || true)
+    [[ -n "$_selected_path" ]] && tmux-palette "$_selected_path" --full 2>/dev/null || true
+  fi
   echo "✓ Applied: $SELECTED"
 fi
 # If SELECTED is empty (Esc/Ctrl+C), EXIT trap restores backup
