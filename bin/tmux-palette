@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# --- Extraction helpers ---
+
+_extract_style_hex() {
+  local file="$1" section="$2"
+  awk -v header="[$section]" '
+    $0 == header { found=1; next }
+    found && /^\[/ { exit }
+    found && /^style[ \t]*=/ { match($0, /#[0-9a-fA-F]{6}/); if (RSTART) print substr($0, RSTART, 7); exit }
+  ' "$file"
+}
+
+_extract_format_fg() {
+  local file="$1" section="$2"
+  awk -v header="[$section]" '
+    $0 == header { found=1; next }
+    found && /^\[/ { exit }
+    found && /^format[ \t]*=/ { match($0, /fg:#[0-9a-fA-F]{6}/); if (RSTART) print substr($0, RSTART+3, 7); exit }
+  ' "$file"
+}
+
+_extract_style_fg() {
+  local file="$1" section="$2"
+  awk -v header="[$section]" '
+    $0 == header { found=1; next }
+    found && /^\[/ { exit }
+    found && /^style[ \t]*=/ { match($0, /fg:#[0-9a-fA-F]{6}/); if (RSTART) print substr($0, RSTART+3, 7); exit }
+  ' "$file"
+}
+
+_extract_palette() {
+  local file="$1"
+
+  c1=$(_extract_style_hex "$file" "os")
+  c2=$(_extract_style_hex "$file" "directory")
+  c3=$(_extract_style_hex "$file" "git_branch")
+  c4=$(_extract_style_hex "$file" "python")
+  c5=$(_extract_style_hex "$file" "cmd_duration")
+
+  # pfg three-pass: [directory] format fg → [directory] style fg → [git_branch] format fg → fallback
+  pfg=$(_extract_format_fg "$file" "directory")
+  [[ -z "$pfg" ]] && pfg=$(_extract_style_fg "$file" "directory")
+  [[ -z "$pfg" ]] && pfg=$(_extract_format_fg "$file" "git_branch")
+  [[ -z "$pfg" ]] && pfg="#ffffff"
+
+  # Bracket detection: [os] style uses fg: without bg:
+  local os_line
+  os_line=$(awk -v header="[os]" '$0 == header { found=1; next } found && /^\[/ { exit } found && /^style[ \t]*=/ { print; exit }' "$file")
+  is_bracket=false
+  if [[ "$os_line" == *"fg:"* && "$os_line" != *"bg:"* ]]; then
+    is_bracket=true
+  fi
+
+  # Validate: at minimum c1 must be extracted
+  if [[ -z "$c1" ]]; then
+    echo "tmux-palette: failed to extract palette from $file (missing [os] style)" >&2
+    exit 1
+  fi
+}
+
+# --- Main ---
+
+usage() {
+  cat <<'EOF'
+Usage: tmux-palette <preset.toml> [--preview|--full|--vars]
+
+Sync tmux status bar colors with a starship preset.
+
+Options:
+  --preview   Fast apply (<50ms) — structural elements only
+  --full      Complete apply (~200ms) — Dracula pipeline + all elements
+  --vars      Debug: print extracted palette variables
+  -h, --help  Show this help message
+EOF
+  exit 0
+}
+
+for arg in "$@"; do
+  case "$arg" in -h|--help) usage ;; esac
+done
+
+preset="${1:-}"
+mode="${2:---full}"
+
+if [[ -z "$preset" || ! -f "$preset" ]]; then
+  exit 0
+fi
+
+_extract_palette "$preset"
+
+case "$mode" in
+  --vars)
+    printf 'c1=%s\nc2=%s\nc3=%s\nc4=%s\nc5=%s\npfg=%s\nis_bracket=%s\n' \
+      "$c1" "$c2" "$c3" "$c4" "$c5" "$pfg" "$is_bracket"
+    ;;
+  *)
+    echo "Unknown mode: $mode" >&2
+    exit 1
+    ;;
+esac
