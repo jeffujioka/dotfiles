@@ -101,6 +101,10 @@ _cleanup_on_exit() {
     rm -f "$STARSHIP_TOML"
     if [[ -n "$ORIGINAL_SYMLINK_TARGET" ]]; then
       ln -s "$ORIGINAL_SYMLINK_TARGET" "$STARSHIP_TOML"
+      # Restore tmux palette to original preset
+      if command -v tmux-palette &>/dev/null && [[ -n "${TMUX:-}" ]]; then
+        tmux-palette "$ORIGINAL_SYMLINK_TARGET" --full 2>/dev/null || true
+      fi
     else
       cp "$BACKUP" "$STARSHIP_TOML"
     fi
@@ -108,6 +112,7 @@ _cleanup_on_exit() {
     echo ""
     echo "✗ Cancelled, restored original"
   fi
+  rm -f /tmp/starship-picker-tmux-sync-off
   _cleanup_test_dirs
 }
 trap '_cleanup_on_exit' EXIT
@@ -207,14 +212,15 @@ _pick_with_fzf() {
       --prompt="Starship Preset ❯ " \
       --height=100% \
       --border=rounded \
-      --header="↑↓ navigate · Enter confirm · Esc cancel · Type to search" \
+      --header="↑↓ navigate · Enter confirm · Esc cancel · ctrl-t tmux sync · Type to search" \
       --delimiter=$'\t' \
       --with-nth=1 \
       --ansi \
       --preview="\"$SCRIPT_DIR/starship-picker\" --_preview {2}" \
       --preview-label=" Preset Details " \
       --preview-window="bottom:70%:wrap" \
-      --bind='focus:execute-silent(rm -f "'"$STARSHIP_TOML"'" && ln -s {2} "'"$STARSHIP_TOML"'" && { [ -f /tmp/starship-picker-tmux-sync-off ] || tmux-palette {2} --preview 2>/dev/null; } || true)'
+      --bind='focus:execute-silent(rm -f "'"$STARSHIP_TOML"'" && ln -s {2} "'"$STARSHIP_TOML"'" && { [ -f /tmp/starship-picker-tmux-sync-off ] || tmux-palette {2} --preview 2>/dev/null; } || true)' \
+      --bind='ctrl-t:execute-silent(if [ -f /tmp/starship-picker-tmux-sync-off ]; then rm -f /tmp/starship-picker-tmux-sync-off; else touch /tmp/starship-picker-tmux-sync-off; fi)+transform-header(if [ -f /tmp/starship-picker-tmux-sync-off ]; then echo "↑↓ navigate · Enter confirm · Esc cancel · ctrl-t tmux sync [OFF] · Type to search"; else echo "↑↓ navigate · Enter confirm · Esc cancel · ctrl-t tmux sync [ON] · Type to search"; fi)'
   ) || true  # fzf exits 130 on Esc — absorb it
 
   # Return only the clean name (first field before TAB)
