@@ -102,8 +102,11 @@ if [ -r "${HOME}/.zsh_aliases" ]; then
   . "${HOME}/.zsh_aliases"
 fi
 
-export TMUX_TMPDIR="$HOME/.config/tmux/tmp"
-mkdir -p "$TMUX_TMPDIR"
+# TMPDIR, TMUX_TMPDIR, HOMEBREW_TEMP, JAVA_TOOL_OPTIONS → zprofile
+# (sourced at login by both bash and zsh so daemons inherit them)
+if [ -z "$TMPDIR" ]; then
+  source "${ZDOTDIR:-$HOME}/.zprofile"
+fi
 
 unsetopt pathdirs
 
