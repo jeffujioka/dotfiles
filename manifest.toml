@@ -132,6 +132,10 @@ shallow = true
 post_install = "./install.sh"
 
 [[symlinks]]
+source = "zprofile"
+target = "~/.zprofile"
+
+[[symlinks]]
 source = "zshrc"
 target = "~/.zshrc"
 
