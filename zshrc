@@ -119,28 +119,29 @@ _set_title_preexec() { printf '\e]0;%s\a' "${1%% *}" }
 add-zsh-hook precmd  _set_title_precmd
 add-zsh-hook preexec _set_title_preexec
 
-cat ~/.config/ascii-art-goku.txt
-
-echo "setting up..."
-
-if command -v starship &> /dev/null ; then
-  echo "   starship"
-  export STARSHIP_CONFIG="${XDG_CONFIG_HOME}/starship/config.toml"
-  eval "$(starship init zsh)"
+if [[ -o interactive ]]; then
+  cat ~/.config/ascii-art-goku.txt
+  
+  echo "setting up..."
+  
+  if command -v starship &> /dev/null ; then
+    echo "   starship"
+    export STARSHIP_CONFIG="${XDG_CONFIG_HOME}/starship/config.toml"
+    eval "$(starship init zsh)"
+  fi
+  
+  if [[ -L "${XDG_CONFIG_HOME}/fzf/fzf.zsh" || -f "${XDG_CONFIG_HOME}/fzf/fzf.zsh" ]]; then
+    echo "   fzf"
+    source "${XDG_CONFIG_HOME}/fzf/fzf.zsh"
+  fi
+  
+  if command -v tv &> /dev/null ; then
+    echo "   television"
+    eval "$(tv init zsh)"
+  fi
+  
+  if command -v zoxide &> /dev/null ; then
+    echo "  󰆤 zoxide"
+    eval "$(zoxide init --cmd cd zsh)"
+  fi
 fi
-
-if [[ -L "${XDG_CONFIG_HOME}/fzf/fzf.zsh" || -f "${XDG_CONFIG_HOME}/fzf/fzf.zsh" ]]; then
-  echo "   fzf"
-  source "${XDG_CONFIG_HOME}/fzf/fzf.zsh"
-fi
-
-if command -v tv &> /dev/null ; then
-  echo "   television"
-  eval "$(tv init zsh)"
-fi
-
-if command -v zoxide &> /dev/null ; then
-  echo "  󰆤 zoxide"
-  eval "$(zoxide init --cmd cd zsh)"
-fi
-
