@@ -15,9 +15,9 @@ pass=0 fail=0
 _assert() {
   local label="$1" expected="$2" actual="$3"
   if [[ "$expected" == "$actual" ]]; then
-    printf '  ✓ %s\n' "$label"; ((pass++))
+    printf '  ✓ %s\n' "$label"; pass=$((pass + 1))
   else
-    printf '  ✗ %s — expected: %s, got: %s\n' "$label" "$expected" "$actual"; ((fail++))
+    printf '  ✗ %s — expected: %s, got: %s\n' "$label" "$expected" "$actual"; fail=$((fail + 1))
   fi
 }
 
