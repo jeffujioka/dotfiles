@@ -73,13 +73,27 @@ _apply_preview() {
   local bg="$c5"
   $is_bracket && bg="default"
 
+  # Update Dracula color vars so segment backgrounds match the preset
+  local dracula_colors="p1='$c1'; p2='$c2'; p3='$c3'; p4='$c4'; p5='$c5'; pfg='$pfg'; "
+  dracula_colors+="green='$c1'; dark_gray='$bg'; gray='$c4'; "
+  dracula_colors+="light_purple='$c2'; dark_purple='$c3'; white='#f8f8f2'"
+  tmux set-option -g @dracula-colors "$dracula_colors"
+
+  local status_right
+  status_right=$(tmux show-option -gqv status-right 2>/dev/null || true)
+  if [[ -n "$status_right" ]]; then
+    local dracula_script="$HOME/.config/tmux/plugins/tmux/dracula.tmux"
+    [[ -x "$dracula_script" ]] && "$dracula_script"
+  fi
+
   tmux set-option -g status-style "bg=$bg,fg=$pfg"
-  tmux set-option -g pane-active-border-style "fg=$c1"
-  tmux set-option -g pane-border-style "fg=$c4"
+  tmux set-option -g pane-active-border-style "fg=$c1,bg=$c1"
+  tmux set-option -g pane-border-style "fg=$pfg"
   tmux set-option -g message-style "bg=$c3,fg=$pfg"
   tmux set-option -g window-status-current-format "$(_window_format "$c1" "$c2")"
   tmux set-option -g @palette-c1 "$c1"
   tmux set-option -g @palette-c2 "$c2"
+  tmux set-option -g @palette-pfg "$pfg"
 }
 
 _apply_full() {
@@ -89,7 +103,7 @@ _apply_full() {
   # @dracula-colors: define palette vars + override Dracula defaults
   local dracula_colors="p1='$c1'; p2='$c2'; p3='$c3'; p4='$c4'; p5='$c5'; pfg='$pfg'; "
   dracula_colors+="green='$c1'; dark_gray='$bg'; gray='$c4'; "
-  dracula_colors+="light_purple='$c2'; dark_purple='$c3'; white='$pfg'"
+  dracula_colors+="light_purple='$c2'; dark_purple='$c3'; white='#f8f8f2'"
   tmux set-option -g @dracula-colors "$dracula_colors"
 
   # Per-plugin color assignments (reference palette var names)
@@ -111,11 +125,12 @@ _apply_full() {
 
   # Direct style options (startup + mid-session)
   tmux set-option -g status-style "bg=$bg,fg=$pfg"
-  tmux set-option -g pane-active-border-style "fg=$c1"
-  tmux set-option -g pane-border-style "fg=$c4"
+  tmux set-option -g pane-active-border-style "fg=$c1,bg=$c1"
+  tmux set-option -g pane-border-style "fg=$pfg"
   tmux set-option -g message-style "bg=$c3,fg=$pfg"
   tmux set-option -g @palette-c1 "$c1"
   tmux set-option -g @palette-c2 "$c2"
+  tmux set-option -g @palette-pfg "$pfg"
 }
 
 # --- Main ---
