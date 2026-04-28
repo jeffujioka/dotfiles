@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Pulses the active pane border between palette color and a dimmed version.
+# Runs as a background process; kill it to stop the effect.
+# Usage: tmux-border-pulse [--stop]
+
+PIDFILE="/tmp/tmux-border-pulse.pid"
+
+if [[ "${1:-}" == "--stop" ]]; then
+  if [[ -f "$PIDFILE" ]]; then
+    kill "$(cat "$PIDFILE")" 2>/dev/null || true
+    rm -f "$PIDFILE"
+  fi
+  c1="$(tmux show-option -gqv @palette-c1 2>/dev/null || echo colour117)"
+  tmux set-option -g pane-active-border-style "fg=$c1,bg=$c1"
+  exit 0
+fi
+
+if [[ -f "$PIDFILE" ]] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+  echo "Already running (pid $(cat "$PIDFILE")). Use --stop to kill." >&2
+  exit 1
+fi
+
+[[ -z "${TMUX:-}" ]] && { echo "Not inside tmux." >&2; exit 1; }
+
+echo $$ > "$PIDFILE"
+trap 'rm -f "$PIDFILE"' EXIT
+
+c1="$(tmux show-option -gqv @palette-c1 2>/dev/null || echo colour117)"
+pfg="$(tmux show-option -gqv @palette-pfg 2>/dev/null || echo colour255)"
+
+while true; do
+  tmux set-option -g pane-active-border-style "fg=$c1,bg=$c1"
+  sleep 0.65
+  tmux set-option -g pane-active-border-style "fg=$pfg,bg=default"
+  sleep 0.65
+done
