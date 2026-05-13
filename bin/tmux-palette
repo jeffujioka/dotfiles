@@ -102,11 +102,11 @@ _apply_preview() {
   tmux set-option -g @palette-c1 "$c1"
   tmux set-option -g @palette-c2 "$c2"
   tmux set-option -g @palette-pfg "$pfg"
-  local active_bg
-  active_bg=$(_darken_hex "$pfg" 12)
-  tmux set-option -g window-active-style "bg=$active_bg,fg=terminal"
-  tmux set-option -g window-style "bg=terminal,fg=terminal"
-  tmux set-option -g @palette-active-bg "$active_bg"
+  local inactive_bg
+  inactive_bg=$(_darken_hex "$pfg" 25)
+  tmux set-option -g window-active-style "bg=#1e1e2e,fg=terminal"
+  tmux set-option -g window-style "bg=$inactive_bg,fg=terminal"
+  tmux set-option -g @palette-inactive-bg "$inactive_bg"
 }
 
 _apply_full() {
@@ -144,11 +144,11 @@ _apply_full() {
   tmux set-option -g @palette-c1 "$c1"
   tmux set-option -g @palette-c2 "$c2"
   tmux set-option -g @palette-pfg "$pfg"
-  local active_bg
-  active_bg=$(_darken_hex "$pfg" 12)
-  tmux set-option -g window-active-style "bg=$active_bg,fg=terminal"
-  tmux set-option -g window-style "bg=terminal,fg=terminal"
-  tmux set-option -g @palette-active-bg "$active_bg"
+  local inactive_bg
+  inactive_bg=$(_darken_hex "$pfg" 25)
+  tmux set-option -g window-active-style "bg=#1e1e2e,fg=terminal"
+  tmux set-option -g window-style "bg=$inactive_bg,fg=terminal"
+  tmux set-option -g @palette-inactive-bg "$inactive_bg"
 }
 
 # --- Main ---
