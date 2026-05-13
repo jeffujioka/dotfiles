@@ -53,6 +53,21 @@ _test_extraction "starship-powerline-gradient-ocean.toml" \
 _test_extraction "starship-clean-gradient-ocean.toml" \
   "#20b8b0" "#083028" "#081828" "#081028" "#080c20" "#40e0d0" "false"
 
+echo ""
+echo "=== Darken tests ==="
+
+_test_darken() {
+  local input="$1" pct="$2" expected="$3"
+  local actual; actual=$("$PALETTE" --darken "$input" "$pct")
+  _assert "darken $input @ ${pct}%" "$expected" "$actual"
+}
+
+_test_darken "#80e0a0" 12 "#0f1a13"
+_test_darken "#ff0000" 12 "#1e0000"
+_test_darken "#000000" 12 "#000000"
+_test_darken "#ffffff" 12 "#1e1e1e"
+_test_darken "#44ffaa" 12 "#081e14"
+
 # --- Apply tests (tmux required) ---
 
 if ! $EXTRACTION_ONLY; then

@@ -60,6 +60,14 @@ _extract_palette() {
   fi
 }
 
+# --- Color math ---
+
+_darken_hex() {
+  local hex="${1#\#}" pct="${2:-12}"
+  local r=$((16#${hex:0:2})) g=$((16#${hex:2:2})) b=$((16#${hex:4:2}))
+  printf '#%02x%02x%02x' $(( r * pct / 100 )) $(( g * pct / 100 )) $(( b * pct / 100 ))
+}
+
 # --- Window status format ---
 
 _window_format() {
@@ -145,6 +153,7 @@ Options:
   --preview   Fast apply (<50ms) — structural elements only
   --full      Complete apply (~200ms) — Dracula pipeline + all elements
   --vars      Debug: print extracted palette variables
+  --darken    Darken a hex color by percentage (default 12%)
   -h, --help  Show this help message
 EOF
   exit 0
@@ -153,6 +162,12 @@ EOF
 for arg in "$@"; do
   case "$arg" in -h|--help) usage ;; esac
 done
+
+# Standalone utility mode: tmux-palette --darken <#hex> [percent]
+if [[ "${1:-}" == "--darken" ]]; then
+  _darken_hex "${2:-}" "${3:-12}"
+  exit 0
+fi
 
 preset="${1:-}"
 mode="${2:---full}"
