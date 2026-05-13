@@ -74,7 +74,7 @@ Usage: `_darken_hex "#80e0a0" 12` → `#0f1b13`
 ```bash
 # In _apply_full and _apply_preview:
 local active_bg
-active_bg=$(_darken_hex "$pfg" 0.12)
+active_bg=$(_darken_hex "$pfg" 12)
 tmux set-option -g window-active-style "bg=$active_bg,fg=terminal"
 tmux set-option -g window-style "bg=terminal,fg=terminal"
 tmux set-option -g @palette-active-bg "$active_bg"
