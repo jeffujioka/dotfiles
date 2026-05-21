@@ -126,9 +126,9 @@ _test_full() {
     "$([[ "$pactive_bg" == "#"* ]] && echo true || echo false)"
 }
 
-_test_preview "starship-bubble-gradient-aurora-deep.toml" "#0c0620" "#00a850"
+_test_preview "starship-bubble-gradient-aurora-deep.toml" "#0c2d1e" "#44ffaa"
 _test_preview "starship-bracket-aurora.toml" "default" "#00e888"
-_test_full "starship-bubble-gradient-aurora-deep.toml" "#00a850"
+_test_full "starship-bubble-gradient-aurora-deep.toml" "#44ffaa"
 _test_full "starship-bracket-aurora.toml" "#00e888"
 
 tmux -L palette-test kill-server 2>/dev/null || true
