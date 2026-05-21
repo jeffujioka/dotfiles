@@ -53,6 +53,21 @@ _test_extraction "starship-powerline-gradient-ocean.toml" \
 _test_extraction "starship-clean-gradient-ocean.toml" \
   "#20b8b0" "#083028" "#081828" "#081028" "#080c20" "#40e0d0" "false"
 
+echo ""
+echo "=== Darken tests ==="
+
+_test_darken() {
+  local input="$1" pct="$2" expected="$3"
+  local actual; actual=$("$PALETTE" --darken "$input" "$pct")
+  _assert "darken $input @ ${pct}%" "$expected" "$actual"
+}
+
+_test_darken "#80e0a0" 12 "#0f1a13"
+_test_darken "#ff0000" 12 "#1e0000"
+_test_darken "#000000" 12 "#000000"
+_test_darken "#ffffff" 12 "#1e1e1e"
+_test_darken "#44ffaa" 12 "#081e14"
+
 # --- Apply tests (tmux required) ---
 
 if ! $EXTRACTION_ONLY; then
@@ -61,13 +76,14 @@ echo ""
 echo "=== Apply tests (tmux) ==="
 
 tmux -L palette-test new-session -d -s test 2>/dev/null
+PALETTE_TEST_SOCKET=$(tmux -L palette-test display-message -p "#{socket_path}")
 
 _test_preview() {
   local preset="$1" e_status_bg="$2" e_border="$3"
   local label; label=$(basename "$preset" .toml | sed 's/^starship-//')
   printf '%s --preview\n' "$label"
 
-  TMUX="/tmp/tmux-palette-test/palette-test,0,0" \
+  TMUX="${PALETTE_TEST_SOCKET},0,0" \
     "$PALETTE" "$PRESETS/$preset" --preview
 
   local status; status=$(tmux -L palette-test show-option -gv status-style)
@@ -77,6 +93,15 @@ _test_preview() {
     "$([[ "$status" == *"$e_status_bg"* ]] && echo true || echo false)"
   _assert "pane-active-border contains fg" "true" \
     "$([[ "$border" == *"$e_border"* ]] && echo true || echo false)"
+  local wactive; wactive=$(tmux -L palette-test show-option -gv window-active-style)
+  local wstyle; wstyle=$(tmux -L palette-test show-option -gv window-style)
+  _assert "window-active-style has bg" "true" \
+    "$([[ "$wactive" == *"bg=#"* ]] && echo true || echo false)"
+  _assert "window-style has tinted bg" "true" \
+    "$([[ "$wstyle" == *"bg=#"* ]] && echo true || echo false)"
+  local pactive_bg; pactive_bg=$(tmux -L palette-test show-option -gqv @palette-active-bg 2>/dev/null || echo "")
+  _assert "@palette-active-bg is set" "true" \
+    "$([[ "$pactive_bg" == "#"* ]] && echo true || echo false)"
 }
 
 _test_full() {
@@ -84,12 +109,21 @@ _test_full() {
   local label; label=$(basename "$preset" .toml | sed 's/^starship-//')
   printf '%s --full\n' "$label"
 
-  TMUX="/tmp/tmux-palette-test/palette-test,0,0" \
+  TMUX="${PALETTE_TEST_SOCKET},0,0" \
     "$PALETTE" "$PRESETS/$preset" --full
 
   local colors; colors=$(tmux -L palette-test show-option -gv @dracula-colors 2>/dev/null || echo "")
   _assert "@dracula-colors contains palette" "true" \
     "$([[ "$colors" == *"$e_dracula_has"* ]] && echo true || echo false)"
+  local wactive; wactive=$(tmux -L palette-test show-option -gv window-active-style)
+  local wstyle; wstyle=$(tmux -L palette-test show-option -gv window-style)
+  _assert "window-active-style has bg" "true" \
+    "$([[ "$wactive" == *"bg=#"* ]] && echo true || echo false)"
+  _assert "window-style has tinted bg" "true" \
+    "$([[ "$wstyle" == *"bg=#"* ]] && echo true || echo false)"
+  local pactive_bg; pactive_bg=$(tmux -L palette-test show-option -gqv @palette-active-bg 2>/dev/null || echo "")
+  _assert "@palette-active-bg is set" "true" \
+    "$([[ "$pactive_bg" == "#"* ]] && echo true || echo false)"
 }
 
 _test_preview "starship-bubble-gradient-aurora-deep.toml" "#0c0620" "#00a850"
