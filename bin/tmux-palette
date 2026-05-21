@@ -70,6 +70,7 @@ _darken_hex() {
 
 _is_light() {
   local hex="${1#\#}"
+  [[ "$hex" =~ ^[0-9a-fA-F]{6}$ ]] || return 1
   local r=$((16#${hex:0:2})) g=$((16#${hex:2:2})) b=$((16#${hex:4:2}))
   local lum=$(( (299 * r + 587 * g + 114 * b) / 1000 ))
   (( lum > 100 ))
@@ -132,8 +133,9 @@ _apply_preview() {
   tmux set-option -g @palette-title-fg "$cfg1"
   local inactive_bg
   inactive_bg=$(_darken_hex "$pfg" 25)
+  tmux set-option -g @palette-active-bg "#1e1e2e"
   tmux set-option -g window-active-style "bg=#1e1e2e,fg=terminal"
-  tmux set-option -g window-style "bg=$inactive_bg,fg=terminal"
+  tmux set-option -g window-style "bg=$inactive_bg,fg=#c0c0c0"
   tmux set-option -g @palette-inactive-bg "$inactive_bg"
 }
 
@@ -186,8 +188,9 @@ _apply_full() {
   tmux set-option -g @palette-title-fg "$cfg1"
   local inactive_bg
   inactive_bg=$(_darken_hex "$pfg" 25)
+  tmux set-option -g @palette-active-bg "#1e1e2e"
   tmux set-option -g window-active-style "bg=#1e1e2e,fg=terminal"
-  tmux set-option -g window-style "bg=$inactive_bg,fg=terminal"
+  tmux set-option -g window-style "bg=$inactive_bg,fg=#c0c0c0"
   tmux set-option -g @palette-inactive-bg "$inactive_bg"
 }
 

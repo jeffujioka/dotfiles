@@ -97,8 +97,8 @@ _test_preview() {
   local wstyle; wstyle=$(tmux -L palette-test show-option -gv window-style)
   _assert "window-active-style has bg" "true" \
     "$([[ "$wactive" == *"bg=#"* ]] && echo true || echo false)"
-  _assert "window-style is terminal" "true" \
-    "$([[ "$wstyle" == *"bg=terminal"* ]] && echo true || echo false)"
+  _assert "window-style has tinted bg" "true" \
+    "$([[ "$wstyle" == *"bg=#"* ]] && echo true || echo false)"
   local pactive_bg; pactive_bg=$(tmux -L palette-test show-option -gqv @palette-active-bg 2>/dev/null || echo "")
   _assert "@palette-active-bg is set" "true" \
     "$([[ "$pactive_bg" == "#"* ]] && echo true || echo false)"
@@ -119,8 +119,8 @@ _test_full() {
   local wstyle; wstyle=$(tmux -L palette-test show-option -gv window-style)
   _assert "window-active-style has bg" "true" \
     "$([[ "$wactive" == *"bg=#"* ]] && echo true || echo false)"
-  _assert "window-style is terminal" "true" \
-    "$([[ "$wstyle" == *"bg=terminal"* ]] && echo true || echo false)"
+  _assert "window-style has tinted bg" "true" \
+    "$([[ "$wstyle" == *"bg=#"* ]] && echo true || echo false)"
   local pactive_bg; pactive_bg=$(tmux -L palette-test show-option -gqv @palette-active-bg 2>/dev/null || echo "")
   _assert "@palette-active-bg is set" "true" \
     "$([[ "$pactive_bg" == "#"* ]] && echo true || echo false)"
