@@ -60,6 +60,43 @@ _extract_palette() {
   fi
 }
 
+# --- Color math ---
+
+_darken_hex() {
+  local hex="${1#\#}" pct="${2:-12}"
+  local r=$((16#${hex:0:2})) g=$((16#${hex:2:2})) b=$((16#${hex:4:2}))
+  printf '#%02x%02x%02x' $(( r * pct / 100 )) $(( g * pct / 100 )) $(( b * pct / 100 ))
+}
+
+_chroma_hex() {
+  local hex="${1#\#}"
+  [[ "$hex" =~ ^[0-9a-fA-F]{6}$ ]] || { echo 0; return; }
+  local r=$((16#${hex:0:2})) g=$((16#${hex:2:2})) b=$((16#${hex:4:2}))
+  local max min
+  max=$r; (( g > max )) && max=$g; (( b > max )) && max=$b
+  min=$r; (( g < min )) && min=$g; (( b < min )) && min=$b
+  echo $(( max - min ))
+}
+
+_is_light() {
+  local hex="${1#\#}"
+  [[ "$hex" =~ ^[0-9a-fA-F]{6}$ ]] || return 1
+  local r=$((16#${hex:0:2})) g=$((16#${hex:2:2})) b=$((16#${hex:4:2}))
+  local lum=$(( (299 * r + 587 * g + 114 * b) / 1000 ))
+  (( lum > 100 ))
+}
+
+_contrast_fg() {
+  local bg="$1" light_fg="${2:-#f8f8f2}" dark_fg="${3:-#1a1a2e}"
+  # If the proposed light_fg is itself dark, fall back to white
+  ! _is_light "$light_fg" && light_fg="#f8f8f2"
+  if _is_light "$bg"; then
+    printf '%s' "$dark_fg"
+  else
+    printf '%s' "$light_fg"
+  fi
+}
+
 # --- Window status format ---
 
 _window_format() {
@@ -70,13 +107,39 @@ _window_format() {
 # --- Apply modes ---
 
 _apply_preview() {
-  local bg="$c5"
+  local bg
+  bg=$(_darken_hex "$pfg" 18)
   $is_bracket && bg="default"
 
-  # Update Dracula color vars so segment backgrounds match the preset
-  local dracula_colors="p1='$c1'; p2='$c2'; p3='$c3'; p4='$c4'; p5='$c5'; pfg='$pfg'; "
-  dracula_colors+="green='$c1'; dark_gray='$bg'; gray='$c4'; "
-  dracula_colors+="light_purple='$c2'; dark_purple='$c3'; white='#f8f8f2'"
+  # Gradient base: whichever of c1/pfg has higher chroma (more saturated)
+  local gbase
+  if (( $(_chroma_hex "$c1") >= $(_chroma_hex "$pfg") )); then
+    gbase="$c1"
+  else
+    gbase="$pfg"
+  fi
+
+  # Generate 5-step gradient for segment backgrounds
+  local s1 s2 s3 s4 s5
+  s1=$(_darken_hex "$gbase" 100)
+  s2=$(_darken_hex "$gbase" 75)
+  s3=$(_darken_hex "$gbase" 55)
+  s4=$(_darken_hex "$gbase" 38)
+  s5=$(_darken_hex "$gbase" 25)
+
+  # Compute contrast-safe foreground for each segment bg
+  local cfg1 cfg2 cfg3 cfg4 cfg5
+  cfg1=$(_contrast_fg "$s1" "$pfg")
+  cfg2=$(_contrast_fg "$s2" "$pfg")
+  cfg3=$(_contrast_fg "$s3" "$pfg")
+  cfg4=$(_contrast_fg "$s4" "$pfg")
+  cfg5=$(_contrast_fg "$s5" "$pfg")
+
+  # Update Dracula color vars with gradient segments
+  local dracula_colors="p1='$s1'; p2='$s2'; p3='$s3'; p4='$s4'; p5='$s5'; pfg='$pfg'; "
+  dracula_colors+="cfg1='$cfg1'; cfg2='$cfg2'; cfg3='$cfg3'; cfg4='$cfg4'; cfg5='$cfg5'; "
+  dracula_colors+="green='$s1'; dark_gray='$bg'; gray='$s4'; "
+  dracula_colors+="light_purple='$s2'; dark_purple='$s3'; white='#f8f8f2'"
   tmux set-option -g @dracula-colors "$dracula_colors"
 
   local status_right
@@ -86,33 +149,68 @@ _apply_preview() {
     [[ -x "$dracula_script" ]] && "$dracula_script"
   fi
 
-  tmux set-option -g status-style "bg=$bg,fg=$pfg"
-  tmux set-option -g pane-active-border-style "fg=$c1,bg=$c1"
+  local status_fg
+  status_fg=$(_contrast_fg "$bg" "$pfg")
+  tmux set-option -g status-style "bg=$bg,fg=$status_fg"
+  tmux set-option -g pane-active-border-style "fg=$s1,bg=$s1"
   tmux set-option -g pane-border-style "fg=$pfg"
-  tmux set-option -g message-style "bg=$c3,fg=$pfg"
-  tmux set-option -g window-status-current-format "$(_window_format "$c1" "$c2")"
-  tmux set-option -g @palette-c1 "$c1"
-  tmux set-option -g @palette-c2 "$c2"
+  tmux set-option -g message-style "bg=$s3,fg=$cfg3"
+  tmux set-option -g window-status-current-format "$(_window_format "$s1" "$s2")"
+  tmux set-option -g @palette-c1 "$s1"
+  tmux set-option -g @palette-c2 "$s2"
   tmux set-option -g @palette-pfg "$pfg"
+  tmux set-option -g @palette-title-fg "$cfg1"
+  local inactive_bg
+  inactive_bg=$(_darken_hex "$pfg" 25)
+  tmux set-option -g @palette-active-bg "#1e1e2e"
+  tmux set-option -g window-active-style "bg=#1e1e2e,fg=terminal"
+  tmux set-option -g window-style "bg=$inactive_bg,fg=#c0c0c0"
+  tmux set-option -g @palette-inactive-bg "$inactive_bg"
 }
 
 _apply_full() {
-  local bg="$c5"
+  local bg
+  bg=$(_darken_hex "$pfg" 18)
   $is_bracket && bg="default"
 
+  # Gradient base: whichever of c1/pfg has higher chroma (more saturated)
+  local gbase
+  if (( $(_chroma_hex "$c1") >= $(_chroma_hex "$pfg") )); then
+    gbase="$c1"
+  else
+    gbase="$pfg"
+  fi
+
+  # Generate 5-step gradient for segment backgrounds
+  local s1 s2 s3 s4 s5
+  s1=$(_darken_hex "$gbase" 100)
+  s2=$(_darken_hex "$gbase" 75)
+  s3=$(_darken_hex "$gbase" 55)
+  s4=$(_darken_hex "$gbase" 38)
+  s5=$(_darken_hex "$gbase" 25)
+
+  # Compute contrast-safe foreground for each segment bg
+  local cfg1 cfg2 cfg3 cfg4 cfg5
+  cfg1=$(_contrast_fg "$s1" "$pfg")
+  cfg2=$(_contrast_fg "$s2" "$pfg")
+  cfg3=$(_contrast_fg "$s3" "$pfg")
+  cfg4=$(_contrast_fg "$s4" "$pfg")
+  cfg5=$(_contrast_fg "$s5" "$pfg")
+
   # @dracula-colors: define palette vars + override Dracula defaults
-  local dracula_colors="p1='$c1'; p2='$c2'; p3='$c3'; p4='$c4'; p5='$c5'; pfg='$pfg'; "
-  dracula_colors+="green='$c1'; dark_gray='$bg'; gray='$c4'; "
-  dracula_colors+="light_purple='$c2'; dark_purple='$c3'; white='#f8f8f2'"
+  local dracula_colors="p1='$s1'; p2='$s2'; p3='$s3'; p4='$s4'; p5='$s5'; pfg='$pfg'; "
+  dracula_colors+="cfg1='$cfg1'; cfg2='$cfg2'; cfg3='$cfg3'; cfg4='$cfg4'; cfg5='$cfg5'; "
+  dracula_colors+="green='$s1'; dark_gray='$bg'; gray='$s4'; "
+  dracula_colors+="light_purple='$s2'; dark_purple='$s3'; white='#f8f8f2'"
   tmux set-option -g @dracula-colors "$dracula_colors"
 
-  # Per-plugin color assignments (reference palette var names)
-  tmux set-option -g @dracula-ssh-session-colors "p1 p5"
-  tmux set-option -g @dracula-cwd-colors "p2 pfg"
-  tmux set-option -g @dracula-cpu-arch-colors "p3 pfg"
-  tmux set-option -g @dracula-cpu-usage-colors "p3 pfg"
-  tmux set-option -g @dracula-ram-usage-colors "p4 pfg"
-  tmux set-option -g @dracula-weather-colors "p4 pfg"
+  # Per-plugin color assignments (bg fg) — use contrast-safe fg
+  tmux set-option -g @dracula-ssh-session-colors "p1 cfg1"
+  tmux set-option -g @dracula-cwd-colors "p2 cfg2"
+  tmux set-option -g @dracula-cpu-arch-colors "p3 cfg3"
+  tmux set-option -g @dracula-cpu-usage-colors "p3 cfg3"
+  tmux set-option -g @dracula-ram-usage-colors "p4 cfg4"
+  tmux set-option -g @dracula-weather-colors "p4 cfg4"
 
   # Mid-session only: re-run Dracula + re-apply window format
   local status_right
@@ -120,17 +218,26 @@ _apply_full() {
   if [[ -n "$status_right" ]]; then
     local dracula_script="$HOME/.config/tmux/plugins/tmux/dracula.tmux"
     [[ -x "$dracula_script" ]] && "$dracula_script"
-    tmux set-option -g window-status-current-format "$(_window_format "$c1" "$c2")"
+    tmux set-option -g window-status-current-format "$(_window_format "$s1" "$s2")"
   fi
 
   # Direct style options (startup + mid-session)
-  tmux set-option -g status-style "bg=$bg,fg=$pfg"
-  tmux set-option -g pane-active-border-style "fg=$c1,bg=$c1"
+  local status_fg
+  status_fg=$(_contrast_fg "$bg" "$pfg")
+  tmux set-option -g status-style "bg=$bg,fg=$status_fg"
+  tmux set-option -g pane-active-border-style "fg=$s1,bg=$s1"
   tmux set-option -g pane-border-style "fg=$pfg"
-  tmux set-option -g message-style "bg=$c3,fg=$pfg"
-  tmux set-option -g @palette-c1 "$c1"
-  tmux set-option -g @palette-c2 "$c2"
+  tmux set-option -g message-style "bg=$s3,fg=$cfg3"
+  tmux set-option -g @palette-c1 "$s1"
+  tmux set-option -g @palette-c2 "$s2"
   tmux set-option -g @palette-pfg "$pfg"
+  tmux set-option -g @palette-title-fg "$cfg1"
+  local inactive_bg
+  inactive_bg=$(_darken_hex "$pfg" 25)
+  tmux set-option -g @palette-active-bg "#1e1e2e"
+  tmux set-option -g window-active-style "bg=#1e1e2e,fg=terminal"
+  tmux set-option -g window-style "bg=$inactive_bg,fg=#c0c0c0"
+  tmux set-option -g @palette-inactive-bg "$inactive_bg"
 }
 
 # --- Main ---
@@ -145,6 +252,7 @@ Options:
   --preview   Fast apply (<50ms) — structural elements only
   --full      Complete apply (~200ms) — Dracula pipeline + all elements
   --vars      Debug: print extracted palette variables
+  --darken    Darken a hex color by percentage (default 12%)
   -h, --help  Show this help message
 EOF
   exit 0
@@ -153,6 +261,12 @@ EOF
 for arg in "$@"; do
   case "$arg" in -h|--help) usage ;; esac
 done
+
+# Standalone utility mode: tmux-palette --darken <#hex> [percent]
+if [[ "${1:-}" == "--darken" ]]; then
+  _darken_hex "${2:-}" "${3:-12}"
+  exit 0
+fi
 
 preset="${1:-}"
 mode="${2:---full}"
