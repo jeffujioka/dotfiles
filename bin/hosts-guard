@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Ensures blocked endpoints stay in /etc/hosts.
+# Runs as root via LaunchDaemon whenever /etc/hosts is modified.
+# If entries are removed (e.g., by IT/MDM), reapplies them automatically.
+
+ENTRIES=(
+    "0.0.0.0 torrentio.strem.fun"
+    "0.0.0.0 api.real-debrid.com"
+)
+
+CHANGED=0
+for entry in "${ENTRIES[@]}"; do
+    if ! grep -qF "$entry" /etc/hosts; then
+        echo "$entry" >> /etc/hosts
+        CHANGED=1
+    fi
+done
+
+if [ "$CHANGED" -eq 1 ]; then
+    dscacheutil -flushcache
+    killall -HUP mDNSResponder 2>/dev/null
+fi

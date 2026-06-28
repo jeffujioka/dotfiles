@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+LABEL="com.jfujiok.hosts-guard"
+SCRIPT_DEST="/usr/local/bin/hosts-guard"
+PLIST_DEST="/Library/LaunchDaemons/${LABEL}.plist"
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_SRC="${SCRIPT_DIR}/hosts-guard"
+
+usage() {
+    cat <<EOF
+Usage:
+  hosts-guard-install             Install and load the hosts-guard LaunchDaemon
+  hosts-guard-install --uninstall Remove the LaunchDaemon
+
+Blocks torrentio.strem.fun and api.real-debrid.com at the DNS level.
+Auto-reapplies /etc/hosts entries if removed (e.g., by IT/MDM).
+
+Requires sudo.
+EOF
+    exit "${1:-0}"
+}
+
+UNINSTALL=false
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --uninstall) UNINSTALL=true; shift ;;
+        -h|--help) usage 0 ;;
+        *) echo "Unknown option: $1" >&2; usage 1 ;;
+    esac
+done
+
+if [[ "$UNINSTALL" == true ]]; then
+    sudo launchctl unload "$PLIST_DEST" 2>/dev/null || true
+    sudo rm -f "$PLIST_DEST"
+    sudo rm -f "$SCRIPT_DEST"
+    echo "Uninstalled: $LABEL"
+    exit 0
+fi
+
+if [[ ! -f "$SCRIPT_SRC" ]]; then
+    echo "Error: hosts-guard not found at $SCRIPT_SRC" >&2
+    exit 1
+fi
+
+# Install daemon script
+sudo cp "$SCRIPT_SRC" "$SCRIPT_DEST"
+sudo chmod +x "$SCRIPT_DEST"
+
+# Add /etc/hosts entries if missing
+ENTRIES=(
+    "0.0.0.0 torrentio.strem.fun"
+    "0.0.0.0 api.real-debrid.com"
+)
+for entry in "${ENTRIES[@]}"; do
+    if ! grep -qF "$entry" /etc/hosts; then
+        echo "$entry" | sudo tee -a /etc/hosts > /dev/null
+    fi
+done
+
+# Generate LaunchDaemon plist (runs as root, watches /etc/hosts)
+sudo tee "$PLIST_DEST" > /dev/null <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>${LABEL}</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>${SCRIPT_DEST}</string>
+    </array>
+    <key>WatchPaths</key>
+    <array>
+        <string>/etc/hosts</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+</dict>
+</plist>
+EOF
+
+sudo chown root:wheel "$PLIST_DEST"
+sudo chmod 644 "$PLIST_DEST"
+
+# Load daemon
+sudo launchctl unload "$PLIST_DEST" 2>/dev/null || true
+sudo launchctl load "$PLIST_DEST"
+
+# Flush DNS cache
+sudo dscacheutil -flushcache
+sudo killall -HUP mDNSResponder 2>/dev/null || true
+
+echo "Installed: $LABEL"
+echo "  Script: $SCRIPT_DEST"
+echo "  Plist:  $PLIST_DEST"
+echo ""
+echo "Commands:"
+echo "  Status:    sudo launchctl list | grep $LABEL"
+echo "  Uninstall: $(basename "$0") --uninstall"
