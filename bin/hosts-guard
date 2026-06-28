@@ -6,6 +6,8 @@
 ENTRIES=(
     "0.0.0.0 torrentio.strem.fun"
     "0.0.0.0 api.real-debrid.com"
+    ":: torrentio.strem.fun"
+    ":: api.real-debrid.com"
 )
 
 CHANGED=0

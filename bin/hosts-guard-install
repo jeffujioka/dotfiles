@@ -52,6 +52,8 @@ sudo chmod +x "$SCRIPT_DEST"
 ENTRIES=(
     "0.0.0.0 torrentio.strem.fun"
     "0.0.0.0 api.real-debrid.com"
+    ":: torrentio.strem.fun"
+    ":: api.real-debrid.com"
 )
 for entry in "${ENTRIES[@]}"; do
     if ! grep -qF "$entry" /etc/hosts; then
