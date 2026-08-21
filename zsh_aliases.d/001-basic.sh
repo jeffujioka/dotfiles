@@ -70,7 +70,6 @@ function mkcd() {
     mkdir -p "$dir"
     cd "$dir"
 }
-alias mkcd="cdmkdir"
 
 function f() {
     if ! command -v fzf &> /dev/null; then
@@ -182,6 +181,7 @@ alias cca="claude --dangerously-skip-permissions"
 alias ccar="claude --dangerously-skip-permissions --resume"
 alias ct="copilot"
 alias cta="copilot --allow-all"
+alias oc="opencode --auto"
 
 ##
 ## Utils
