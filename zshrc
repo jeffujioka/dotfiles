@@ -26,7 +26,6 @@ zinit light Aloxaf/fzf-tab
 zinit snippet OMZP::git
 zinit snippet OMZP::sudo
 zinit snippet OMZP::command-not-found
-zinit snippet OMZP::jira
 
 # Load completions
 fpath=(~/.zsh_completions.d $fpath)
@@ -86,6 +85,11 @@ if [[ "$OSTYPE" == darwin* ]] && [[ -x /opt/homebrew/bin/brew ]]; then
   eval "$(/opt/homebrew/bin/brew shellenv)"
 elif [[ "$OSTYPE" == linux* ]] && [[ -x "$HOME/.homebrew/bin/brew" ]]; then
   eval "$($HOME/.homebrew/bin/brew shellenv)"
+fi
+
+# VIMRUNTIME — fix for user homebrew vim compiled with system linuxbrew fallback path
+if [[ -d "$HOME/.homebrew/share/vim/vim92" ]]; then
+  export VIMRUNTIME="$HOME/.homebrew/share/vim/vim92"
 fi
 
 # .scripts — above Homebrew
