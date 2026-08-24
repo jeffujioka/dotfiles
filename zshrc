@@ -114,6 +114,13 @@ fi
 
 unsetopt pathdirs
 
+# Secrets (API tokens, etc.) live outside this repo, in ~/.zsh_secrets,
+# so they never end up in a public dotfiles history. sourced only if present.
+if [ -r "$HOME/.zsh_secrets" ]; then
+  source "$HOME/.zsh_secrets"
+fi
+
+
 # Keep tmux pane_title meaningful: shell name when idle, command name when running.
 # Without this, processes like tmux reset the OSC title to empty and pane borders
 # show nothing instead of the current command.
