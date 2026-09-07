@@ -1,0 +1,184 @@
+#!/usr/bin/env bash
+# wd40: tmux-palette - apply a starship preset's gradient colors to the running tmux session
+set -euo pipefail
+
+# --- Extraction helpers ---
+
+_extract_style_hex() {
+  local file="$1" section="$2"
+  awk -v header="[$section]" '
+    $0 == header { found=1; next }
+    found && /^\[/ { exit }
+    found && /^style[ \t]*=/ { match($0, /#[0-9a-fA-F]{6}/); if (RSTART) print substr($0, RSTART, 7); exit }
+  ' "$file"
+}
+
+_extract_format_fg() {
+  local file="$1" section="$2"
+  awk -v header="[$section]" '
+    $0 == header { found=1; next }
+    found && /^\[/ { exit }
+    found && /^format[ \t]*=/ { match($0, /fg:#[0-9a-fA-F]{6}/); if (RSTART) print substr($0, RSTART+3, 7); exit }
+  ' "$file"
+}
+
+_extract_style_fg() {
+  local file="$1" section="$2"
+  awk -v header="[$section]" '
+    $0 == header { found=1; next }
+    found && /^\[/ { exit }
+    found && /^style[ \t]*=/ { match($0, /fg:#[0-9a-fA-F]{6}/); if (RSTART) print substr($0, RSTART+3, 7); exit }
+  ' "$file"
+}
+
+_extract_palette() {
+  local file="$1"
+
+  c1=$(_extract_style_hex "$file" "os")
+  c2=$(_extract_style_hex "$file" "directory")
+  c3=$(_extract_style_hex "$file" "git_branch")
+  c4=$(_extract_style_hex "$file" "python")
+  c5=$(_extract_style_hex "$file" "cmd_duration")
+
+  # pfg three-pass: [directory] format fg → [directory] style fg → [git_branch] format fg → fallback
+  pfg=$(_extract_format_fg "$file" "directory")
+  [[ -z "$pfg" ]] && pfg=$(_extract_style_fg "$file" "directory")
+  [[ -z "$pfg" ]] && pfg=$(_extract_format_fg "$file" "git_branch")
+  [[ -z "$pfg" ]] && pfg="#ffffff"
+
+  # Bracket detection: [os] style uses fg: without bg:
+  local os_line
+  os_line=$(awk -v header="[os]" '$0 == header { found=1; next } found && /^\[/ { exit } found && /^style[ \t]*=/ { print; exit }' "$file")
+  is_bracket=false
+  if [[ "$os_line" == *"fg:"* && "$os_line" != *"bg:"* ]]; then
+    is_bracket=true
+  fi
+
+  # Validate: at minimum c1 must be extracted
+  if [[ -z "$c1" ]]; then
+    echo "tmux-palette: failed to extract palette from $file (missing [os] style)" >&2
+    exit 1
+  fi
+}
+
+# --- Window status format ---
+
+_window_format() {
+  local accent="$1" zoom="$2"
+  printf '%s' "#[fg=${accent}]win #[fg=default]#{window_index}/#{session_windows} #[fg=${accent}]| #[fg=${accent}]pane #[fg=default]#{pane_index}/#{window_panes} #[fg=${accent}]| #[fg=default]#{?#{||:#{==:#{pane_title},},#{==:#{pane_title},#{host}}},#{pane_current_command},#{pane_title}}#{?window_zoomed_flag, #[fg=${accent}]| #[fg=${zoom}]ZOOMED,}"
+}
+
+# --- Apply modes ---
+
+_apply_preview() {
+  local bg="$c5"
+  $is_bracket && bg="default"
+
+  # Update Dracula color vars so segment backgrounds match the preset
+  local dracula_colors="p1='$c1'; p2='$c2'; p3='$c3'; p4='$c4'; p5='$c5'; pfg='$pfg'; "
+  dracula_colors+="green='$c1'; dark_gray='$bg'; gray='$c4'; "
+  dracula_colors+="light_purple='$c2'; dark_purple='$c3'; white='#f8f8f2'"
+  tmux set-option -g @dracula-colors "$dracula_colors"
+
+  local status_right
+  status_right=$(tmux show-option -gqv status-right 2>/dev/null || true)
+  if [[ -n "$status_right" ]]; then
+    local dracula_script="$HOME/.config/tmux/plugins/tmux/dracula.tmux"
+    [[ -x "$dracula_script" ]] && "$dracula_script"
+  fi
+
+  tmux set-option -g status-style "bg=$bg,fg=$pfg"
+  tmux set-option -g pane-active-border-style "fg=$c1,bg=$c1"
+  tmux set-option -g pane-border-style "fg=$pfg"
+  tmux set-option -g message-style "bg=$c3,fg=$pfg"
+  tmux set-option -g window-status-current-format "$(_window_format "$c1" "$c2")"
+  tmux set-option -g @palette-c1 "$c1"
+  tmux set-option -g @palette-c2 "$c2"
+  tmux set-option -g @palette-pfg "$pfg"
+}
+
+_apply_full() {
+  local bg="$c5"
+  $is_bracket && bg="default"
+
+  # @dracula-colors: define palette vars + override Dracula defaults
+  local dracula_colors="p1='$c1'; p2='$c2'; p3='$c3'; p4='$c4'; p5='$c5'; pfg='$pfg'; "
+  dracula_colors+="green='$c1'; dark_gray='$bg'; gray='$c4'; "
+  dracula_colors+="light_purple='$c2'; dark_purple='$c3'; white='#f8f8f2'"
+  tmux set-option -g @dracula-colors "$dracula_colors"
+
+  # Per-plugin color assignments (reference palette var names)
+  tmux set-option -g @dracula-ssh-session-colors "p1 p5"
+  tmux set-option -g @dracula-cwd-colors "p2 pfg"
+  tmux set-option -g @dracula-cpu-arch-colors "p3 pfg"
+  tmux set-option -g @dracula-cpu-usage-colors "p3 pfg"
+  tmux set-option -g @dracula-ram-usage-colors "p4 pfg"
+  tmux set-option -g @dracula-weather-colors "p4 pfg"
+
+  # Mid-session only: re-run Dracula + re-apply window format
+  local status_right
+  status_right=$(tmux show-option -gqv status-right 2>/dev/null || true)
+  if [[ -n "$status_right" ]]; then
+    local dracula_script="$HOME/.config/tmux/plugins/tmux/dracula.tmux"
+    [[ -x "$dracula_script" ]] && "$dracula_script"
+    tmux set-option -g window-status-current-format "$(_window_format "$c1" "$c2")"
+  fi
+
+  # Direct style options (startup + mid-session)
+  tmux set-option -g status-style "bg=$bg,fg=$pfg"
+  tmux set-option -g pane-active-border-style "fg=$c1,bg=$c1"
+  tmux set-option -g pane-border-style "fg=$pfg"
+  tmux set-option -g message-style "bg=$c3,fg=$pfg"
+  tmux set-option -g @palette-c1 "$c1"
+  tmux set-option -g @palette-c2 "$c2"
+  tmux set-option -g @palette-pfg "$pfg"
+}
+
+# --- Main ---
+
+usage() {
+  cat <<'EOF'
+Usage: tmux-palette <preset.toml> [--preview|--full|--vars]
+
+Sync tmux status bar colors with a starship preset.
+
+Options:
+  --preview   Fast apply (<50ms) — structural elements only
+  --full      Complete apply (~200ms) — Dracula pipeline + all elements
+  --vars      Debug: print extracted palette variables
+  -h, --help  Show this help message
+EOF
+  exit 0
+}
+
+for arg in "$@"; do
+  case "$arg" in -h|--help) usage ;; esac
+done
+
+preset="${1:-}"
+mode="${2:---full}"
+
+if [[ -z "$preset" || ! -f "$preset" ]]; then
+  exit 0
+fi
+
+_extract_palette "$preset"
+
+case "$mode" in
+  --vars)
+    printf 'c1=%s\nc2=%s\nc3=%s\nc4=%s\nc5=%s\npfg=%s\nis_bracket=%s\n' \
+      "$c1" "$c2" "$c3" "$c4" "$c5" "$pfg" "$is_bracket"
+    ;;
+  --preview)
+    [[ -z "${TMUX:-}" ]] && exit 0
+    _apply_preview
+    ;;
+  --full)
+    [[ -z "${TMUX:-}" ]] && exit 0
+    _apply_full
+    ;;
+  *)
+    echo "Unknown mode: $mode" >&2
+    exit 1
+    ;;
+esac

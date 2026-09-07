@@ -30,6 +30,34 @@ get_brew_package_list() {
   "$script_dir/helpers/read-manifest.py" packages.linux_brew.list
 }
 
+# Wrapper for helpers/read-manifest.py honoring the DOTFILES_MANIFEST test
+# seam. Tests point this at a fixture manifest; normal runs use the repo's.
+read_manifest() {
+  if [ -n "${DOTFILES_MANIFEST:-}" ]; then
+    "$script_dir/helpers/read-manifest.py" "$@" --manifest "$DOTFILES_MANIFEST"
+  else
+    "$script_dir/helpers/read-manifest.py" "$@"
+  fi
+}
+
+# Platform vocabulary for the symlinks `platform` field: darwin | linux.
+# WD40_PLATFORM overrides detection (test seam, shared with wd40rc/wd40.sh).
+detect_platform() {
+  echo "${WD40_PLATFORM:-$(uname -s | tr '[:upper:]' '[:lower:]')}"
+}
+
+# THE strip rule (single definition, mirrored by tests/check-symlinks.sh and
+# wd40/common/scripts/wd40.sh): remove a final .sh or .py suffix — nothing
+# else. Extensionless names pass through unchanged.
+strip_ext_name() {
+  local base="$1"
+  case "$base" in
+    *.sh) base="${base%.sh}" ;;
+    *.py) base="${base%.py}" ;;
+  esac
+  echo "$base"
+}
+
 install_linux_brew() {
   if command -v brew &>/dev/null; then
     echo "Homebrew already installed at $(brew --prefix)."
@@ -60,7 +88,7 @@ install_brew_tools() {
       brew install $flags "$formula" \
         || { echo "Warning: Failed to install $formula"; failed_installs=$((failed_installs + 1)); }
     fi
-  done < <("$script_dir/helpers/read-manifest.py" brew.tools --format tsv \
+  done < <(read_manifest brew.tools --format tsv \
               --fields "formula,binary:,flags:")
 
   if [ "$failed_installs" -gt 0 ]; then
@@ -72,7 +100,7 @@ install_brew_tools() {
 . "$(dirname "$(readlink -f "$0")")/helpers/shell-utils.sh"
 
 # Validate manifest.toml before doing any destructive work.
-"$script_dir/helpers/read-manifest.py" brew.tools --format tsv --fields "formula,binary:,flags:" > /dev/null \
+read_manifest brew.tools --format tsv --fields "formula,binary:,flags:" > /dev/null \
   || { echo "Error: manifest.toml is missing or invalid. Aborting."; exit 1; }
 
 install_sys_packages() {
@@ -234,9 +262,28 @@ function backup_this() {
 function apply_dotfiles() {
   mkdir -p "${bak_dir}"
 
-  "$script_dir/helpers/read-manifest.py" symlinks --format tsv \
-      --fields "source,target,type:symlink,backup:true" \
-      | while IFS=$'\t' read -r src tgt typ should_backup; do
+  local host_platform seen_targets src tgt typ should_backup strip_ext platform
+  local tgt_dir base link_path f
+  host_platform=$(detect_platform)
+  # Newline-framed list of already-claimed link paths, for collision refusal.
+  seen_targets=$'\n'
+
+  # Process substitution, NOT a pipeline: the loop body must run in THIS
+  # shell so that (a) refusals can exit the whole script and (b)
+  # seen_targets accumulates across entries.
+  while IFS=$'\t' read -r src tgt typ should_backup strip_ext platform; do
+
+    # Platform filter: empty field = install on every platform.
+    if [ -n "$platform" ] && [ "$platform" != "$host_platform" ]; then
+      continue
+    fi
+
+    # strip_ext is only meaningful where a link NAME is derived from a
+    # matched file — i.e. glob entries. Anywhere else it is a manifest bug.
+    if [ "$strip_ext" = "true" ] && [ "$typ" != "glob" ]; then
+      echo "Error: strip_ext is only valid on glob entries (source: $src)" >&2
+      exit 1
+    fi
 
     # Expand ~ to $HOME
     tgt="${tgt/#\~/$HOME}"
@@ -265,15 +312,33 @@ function apply_dotfiles() {
         cp "$src" "$tgt"
         ;;
       glob)
-        for f in $src; do
-          tgt_dir="${tgt%/\*}"
-          tgt_dir="${tgt_dir/#\~/$HOME}"
-          mkdir -p "$tgt_dir"
-          ln -sfn "$(resolve_path "$f")" "$tgt_dir/"
-        done
+        tgt_dir="${tgt%/\*}"
+        mkdir -p "$tgt_dir"
+        # compgen -G expands the pattern one match per line WITHOUT word-
+        # splitting the pattern itself (quoting fix: paths with spaces in
+        # $script_dir survive). Exits 1 on no match — tolerated.
+        while IFS= read -r f; do
+          [ -e "$f" ] || continue
+          base=$(basename "$f")
+          if [ "$strip_ext" = "true" ]; then
+            base=$(strip_ext_name "$base")
+          fi
+          link_path="$tgt_dir/$base"
+          # Collision refusal: two sources claiming one installed name is a
+          # manifest/layout bug; last-wins would hide it silently.
+          case "$seen_targets" in
+            *$'\n'"$link_path"$'\n'*)
+              echo "Error: two sources install as '$link_path' (second: $f)" >&2
+              exit 1
+              ;;
+          esac
+          seen_targets="${seen_targets}${link_path}"$'\n'
+          ln -sfn "$(resolve_path "$f")" "$link_path"
+        done < <(compgen -G "$src" || true)
         ;;
     esac
-  done
+  done < <(read_manifest symlinks --format tsv \
+      --fields "source,target,type:symlink,backup:true,strip_ext:false,platform:")
 
   # Remove old dangling symlink if it exists
   if [ -L "$script_dir/config/starship.toml" ]; then

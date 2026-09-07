@@ -22,5 +22,6 @@ RUN useradd -m -d /home/${TEST_USER} -s /bin/bash -u ${TEST_UID} ${TEST_USER} 2>
 
 USER ${TEST_USER}
 WORKDIR /home/${TEST_USER}
-RUN mkdir -p /home/${TEST_USER}/.local/bin
-ENV PATH="/home/${TEST_USER}/.local/bin:${PATH}"
+RUN mkdir -p /home/${TEST_USER}/.local/bin /home/${TEST_USER}/.local/sbin \
+    && sed -i "/^# set PATH so it includes user's private bin if it exists$/,/^fi$/d" /home/${TEST_USER}/.profile
+ENV PATH="/home/${TEST_USER}/.local/sbin:/home/${TEST_USER}/.local/bin:${PATH}"
