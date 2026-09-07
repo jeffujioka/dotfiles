@@ -462,3 +462,13 @@ fi
 
 echo ""
 echo "dotfiles have been successfully installed"
+
+if [[ "$OSTYPE" == linux* ]] && [[ -x "$HOME/.homebrew/bin/brew" ]]; then
+  if ! grep -q '\.homebrew/bin/brew shellenv' "$HOME/.bashrc" 2>/dev/null; then
+    printf '\n# Homebrew (added by dotfiles install.sh)\neval "$($HOME/.homebrew/bin/brew shellenv)"\n' >> "$HOME/.bashrc"
+    echo "Added Homebrew to ~/.bashrc so brew-installed tools (zsh, starship, etc.) are available from bash."
+  fi
+  echo ""
+  echo "To start zsh now:  exec \$HOME/.homebrew/bin/zsh"
+  echo "To make it default: chsh -s \$(which zsh)  (after starting a new shell)"
+fi
