@@ -49,8 +49,8 @@ done
 # Permissions: identity files are secrets even once detokenized, since they
 # carry certificate paths and routing for internal infrastructure.
 if [ -d "$HOME/.config/git/configs" ]; then
-    dir_mode=$(stat -f '%Lp' "$HOME/.config/git/configs" 2>/dev/null \
-               || stat -c '%a' "$HOME/.config/git/configs")
+    dir_mode=$(stat -f '%Lp' "$HOME/.config/git/configs" 2>/dev/null) \
+               || dir_mode=$(stat -c '%a' "$HOME/.config/git/configs")
     if [ "$dir_mode" = "700" ]; then
         pass "~/.config/git/configs is 0700"
     else
@@ -60,7 +60,7 @@ if [ -d "$HOME/.config/git/configs" ]; then
 
     for f in "$HOME/.config/git/configs"/*; do
         [ -f "$f" ] || continue
-        mode=$(stat -f '%Lp' "$f" 2>/dev/null || stat -c '%a' "$f")
+        mode=$(stat -f '%Lp' "$f" 2>/dev/null) || mode=$(stat -c '%a' "$f")
         if [ "$mode" = "600" ]; then
             pass "${f/#$HOME/\~} is 0600"
         else
