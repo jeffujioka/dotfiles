@@ -27,7 +27,14 @@ zinit snippet OMZP::git
 zinit snippet OMZP::sudo
 zinit snippet OMZP::command-not-found
 
-# Load completions
+# Load completions — brew site-functions before compinit so brew-installed
+# tools (gh, fd, rg, eza …) get tab-completion registered.
+_brew_sf=""
+for _b in /opt/homebrew/bin/brew /usr/local/bin/brew "$HOME/.homebrew/bin/brew"; do
+  [[ -x "$_b" ]] && _brew_sf="${_b%/bin/brew}/share/zsh/site-functions" && break
+done
+[[ -d "$_brew_sf" ]] && fpath=("$_brew_sf" $fpath)
+unset _brew_sf _b
 fpath=(~/.zsh_completions.d $fpath)
 autoload -Uz compinit && compinit
 
