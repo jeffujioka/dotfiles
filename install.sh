@@ -353,9 +353,25 @@ function apply_dotfiles() {
   # immediately after install. starship-picker later re-points it to any
   # chosen preset: <repo>/config/starship/config.toml → presets/<chosen>.toml
   if [ ! -e "$script_dir/config/starship/config.toml" ]; then
-    default_preset="$script_dir/config/starship/presets/starship-powerline-solar.toml"
-    if [ -f "$default_preset" ]; then
+    # NOTE: a hardcoded name that does not exist used to fail silently here,
+    # leaving ~/.config/starship/config.toml permanently dangling (the old
+    # value, starship-powerline-solar.toml, was never a real preset). Fall
+    # back to any available preset, and say so when there is none at all.
+    default_preset="$script_dir/config/starship/presets/starship-powerline-gradient-solar.toml"
+    if [ ! -f "$default_preset" ]; then
+      default_preset=""
+      for preset_candidate in "$script_dir"/config/starship/presets/*.toml; do
+        if [ -f "$preset_candidate" ]; then
+          default_preset="$preset_candidate"
+          break
+        fi
+      done
+    fi
+    if [ -n "$default_preset" ]; then
       ln -s "$default_preset" "$script_dir/config/starship/config.toml"
+    else
+      echo "Warning: no starship preset found in config/starship/presets;" >&2
+      echo "         ~/.config/starship/config.toml will be a dangling symlink" >&2
     fi
   fi
 

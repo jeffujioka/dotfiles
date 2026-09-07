@@ -152,7 +152,7 @@ style = 'fg:#ff4444'
 [custom.giticon]
 disabled = false
 description = "Display symbol for remote Git server"
-command = "check-git-remote.sh"
+command = "check-git-remote"
 when = 'git rev-parse --is-inside-work-tree 2> /dev/null'
 shell = ["bash", "--noprofile", "--norc"]
 style = 'fg:#20a8c0'
