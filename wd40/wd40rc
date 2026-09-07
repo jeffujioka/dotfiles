@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+#
+# wd40rc - unified shell entrypoint, sourced by interactive bash and zsh.
+# Symlinked to ~/.config/wd40/wd40rc by the dotfiles installer.
+#
+# Sources every readable *.sh under wd40/common/shell, wd40/<platform>/shell
+# and wd40/local/shell, in that order. Order is alphabetical WITHIN each
+# directory; there is no global ordering across directories (verified: no
+# cross-file load-order dependencies exist among these files).
+#
+# Constraints, inherited from the original wd40rc:
+#   * No `set` options — they would leak into the caller's interactive shell.
+#   * bash 3.2 + zsh. BASH_SOURCE[0] under bash, $0 under zsh.
+#   * Everything is _wd40_-prefixed and unset before returning: zsh ties
+#     `path`, `status`, `cdpath`, `fpath` to shell state, so bare names are
+#     not safe in sourced files.
+#   * The `-r` gate: sourced files need readability, not an exec bit. A
+#     dangling symlink fails -r AND -e but passes -L, which is what the
+#     warning branch catches instead of skipping it silently.
+
+if [ -n "${BASH_VERSION:-}" ]; then
+  _wd40_me="${BASH_SOURCE[0]}"
+else
+  _wd40_me="$0"
+fi
+if [ -L "$_wd40_me" ]; then
+  _wd40_link=$(readlink "$_wd40_me")
+  case "$_wd40_link" in
+    /*) _wd40_me="$_wd40_link" ;;
+    *)  _wd40_me="$(dirname "$_wd40_me")/$_wd40_link" ;;
+  esac
+fi
+_wd40_dir=$(dirname "$_wd40_me")
+
+# A function so zsh can confine nullglob to this scope (localoptions).
+# Under bash a non-matching glob stays a literal pattern, which the
+# [ -r ] / [ -L ] / [ -e ] chain all reject — silently skipped, as intended.
+_wd40_load() {
+  if [ -n "${ZSH_VERSION:-}" ]; then
+    setopt localoptions nullglob
+  fi
+  local _wd40_platform _wd40_sub _wd40_f
+  _wd40_platform="${WD40_PLATFORM:-$(uname -s | tr '[:upper:]' '[:lower:]')}"
+  for _wd40_sub in common "$_wd40_platform" local; do
+    for _wd40_f in "$_wd40_dir/$_wd40_sub/shell/"*.sh; do
+      if [ -r "$_wd40_f" ]; then
+        # No exit-status check: a file that returns nonzero must not stop
+        # the loop or shell startup. There is no `set -e` here to trip.
+        . "$_wd40_f"
+      elif [ -L "$_wd40_f" ] || [ -e "$_wd40_f" ]; then
+        printf 'wd40: skipped unreadable %s\n' "$_wd40_f" >&2
+      fi
+    done
+  done
+}
+
+_wd40_load
+unset -f _wd40_load
+unset _wd40_me _wd40_link _wd40_dir

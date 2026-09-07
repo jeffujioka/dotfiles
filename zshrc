@@ -130,6 +130,12 @@ _set_title_preexec() { printf '\e]0;%s\a' "${1%% *}" }
 add-zsh-hook precmd  _set_title_precmd
 add-zsh-hook preexec _set_title_preexec
 
+# Refresh tmux status bar on cd and ssh (avoids polling every second)
+_tmux_refresh_chpwd()   { [[ -n "$TMUX" ]] && tmux refresh-client -S }
+_tmux_refresh_preexec() { [[ -n "$TMUX" && "$1" == ssh* ]] && tmux refresh-client -S }
+add-zsh-hook chpwd   _tmux_refresh_chpwd
+add-zsh-hook preexec _tmux_refresh_preexec
+
 if [[ -o interactive ]]; then
   cat ~/.config/ascii-art-goku.txt
   
@@ -155,4 +161,9 @@ if [[ -o interactive ]]; then
     echo "  󰆤 zoxide"
     eval "$(zoxide init --cmd cd zsh)"
   fi
+fi
+
+# added by wd40 install.sh
+if [[ ":$PATH:" != *":/home/jfujiok/.local/sbin:"* ]]; then
+  export PATH="/home/jfujiok/.local/sbin:$PATH"
 fi

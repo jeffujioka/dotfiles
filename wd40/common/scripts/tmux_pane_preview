@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# wd40: tmux_pane_preview - dump the first 30 lines of a tmux pane's scrollback
+
+tmux capture-pane -p -t $1 -S 1 -E 30

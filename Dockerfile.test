@@ -37,8 +37,9 @@ RUN if ! getent group ${DOMAINUSERS_GID}; then \
 
 RUN usermod -s /bin/bash ${DEV_USER_NAME}
 
-ENV PATH="${ASDF_DATA_DIR:-$DEV_HOME/.asdf}/shims:${DEV_HOME}/.local/bin:${PATH}"
+ENV PATH="${ASDF_DATA_DIR:-$DEV_HOME/.asdf}/shims:${DEV_HOME}/.local/sbin:${DEV_HOME}/.local/bin:${PATH}"
 
 USER ${DEV_USER_NAME}
-RUN mkdir -p ${DEV_HOME}/.local/bin
+RUN mkdir -p ${DEV_HOME}/.local/bin ${DEV_HOME}/.local/sbin \
+    && sed -i "/^# set PATH so it includes user's private bin if it exists$/,/^fi$/d" ${DEV_HOME}/.profile
 

@@ -140,14 +140,6 @@ source = "zshrc"
 target = "~/.zshrc"
 
 [[symlinks]]
-source = "zsh_aliases"
-target = "~/.zsh_aliases"
-
-[[symlinks]]
-source = "zsh_aliases.d"
-target = "~/.zsh_aliases.d"
-
-[[symlinks]]
 source = "zsh_completions.d"
 target = "~/.zsh_completions.d"
 backup = false
@@ -192,6 +184,25 @@ target = "~/.gitconfig"
 type = "copy"
 
 [[symlinks]]
-source = "bin/*"
-target = "~/.local/bin/*"
+source = "wd40/wd40rc"
+target = "~/.config/wd40/wd40rc"
+
+[[symlinks]]
+source = "wd40/common/scripts/*"
+target = "~/.local/sbin/*"
 type = "glob"
+strip_ext = true
+
+[[symlinks]]
+source = "wd40/darwin/scripts/*"
+target = "~/.local/sbin/*"
+type = "glob"
+strip_ext = true
+platform = "darwin"
+
+[[symlinks]]
+source = "wd40/linux/scripts/*"
+target = "~/.local/sbin/*"
+type = "glob"
+strip_ext = true
+platform = "linux"

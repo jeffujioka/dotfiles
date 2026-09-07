@@ -14,10 +14,20 @@ expand_path() {
     echo "${1/#\~/$HOME}"
 }
 
+HOST_PLATFORM="${WD40_PLATFORM:-$(uname -s | tr '[:upper:]' '[:lower:]')}"
+SEEN_GLOB_LINKS=$(mktemp)
+trap 'rm -f "$SEEN_GLOB_LINKS"' EXIT
+
 "$REPO_ROOT/helpers/read-manifest.py" symlinks --format tsv \
-    --fields "source,target,type:symlink" \
-    | while IFS=$'\t' read -r src tgt typ; do
+    --fields "source,target,type:symlink,strip_ext:false,platform:" \
+    | while IFS=$'\t' read -r src tgt typ strip_ext platform; do
     tgt=$(expand_path "$tgt")
+
+    # Entries for the other platform are not installed here — skip, loudly.
+    if [ -n "$platform" ] && [ "$platform" != "$HOST_PLATFORM" ]; then
+        warn "skipped ($platform-only): $src"
+        continue
+    fi
 
     case "$typ" in
         symlink)
@@ -58,7 +68,19 @@ expand_path() {
             for f in $src_pattern; do
                 [ -e "$f" ] || continue
                 base=$(basename "$f")
+                if [ "$strip_ext" = "true" ]; then
+                    case "$base" in
+                        *.sh) base="${base%.sh}" ;;
+                        *.py) base="${base%.py}" ;;
+                    esac
+                fi
                 link="$tgt_dir/$base"
+                # uniqueness across ALL glob entries (collision = installer bug)
+                if grep -qxF "$link" "$SEEN_GLOB_LINKS"; then
+                    fail "$link claimed by two glob sources (collision)"
+                    failures=$((failures + 1))
+                fi
+                echo "$link" >> "$SEEN_GLOB_LINKS"
                 if [ -L "$link" ]; then
                     actual=$(resolve_path "$link")
                     expected=$(resolve_path "$f")
