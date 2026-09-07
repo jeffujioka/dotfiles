@@ -1,6 +1,7 @@
 [core]
 	excludesfile = ~/.gitignore
 	editor = vim
+	pager = hunk pager
 	hooksPath = ~/.config/git/hooks
 
 [color]
@@ -31,6 +32,8 @@
 	pr = pull --rebase
 	nb = checkout -b
 
+	ds = !git -c core.pager='hunk pager --mode stack' diff
+	da = !git -c core.pager='hunk pager --mode auto' diff
 	alias = !git config --global -l | grep 'alias.' | cut -d. -f2-
 	codereview = log --decorate -p --reverse
     changelog = log --abbrev-commit --pretty=format:'%h %s'

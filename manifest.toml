@@ -83,6 +83,9 @@ formula = "eza"
 formula = "fd"
 
 [[brew.tools]]
+formula = "hunk"
+
+[[brew.tools]]
 formula = "procs"
 
 [[brew.tools]]
