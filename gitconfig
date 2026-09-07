@@ -1,6 +1,7 @@
 [core]
 	excludesfile = ~/.gitignore
 	editor = vim
+	hooksPath = ~/.config/git/hooks
 
 [color]
 	ui = auto
@@ -54,5 +55,9 @@
 [pull]
 	rebase = merges
 
-[url "git@github.com:"]
-	insteadOf = https://github.com/
+[credential "https://github.com"]
+	helper =
+	helper = !gh auth git-credential
+
+[credential "https://gist.github.com"]
+	helper =

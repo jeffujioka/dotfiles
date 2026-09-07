@@ -180,8 +180,18 @@ target = "~/.vimrc"
 
 [[symlinks]]
 source = "gitconfig"
+target = "~/.config/git/config"
+
+[[symlinks]]
+source = "git/hooks/*"
+target = "~/.config/git/hooks/*"
+type = "glob"
+
+[[symlinks]]
+source = "gitconfig.local.seed"
 target = "~/.gitconfig"
-type = "copy"
+type = "seed"
+backup = false
 
 [[symlinks]]
 source = "wd40/wd40rc"
