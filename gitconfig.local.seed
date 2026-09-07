@@ -1,0 +1,14 @@
+# Machine-local git config.
+#
+# Git reads ~/.config/git/config (this repo's tracked `gitconfig`, installed
+# as a symlink by install.sh) first, then ~/.gitconfig. Any key set here
+# overrides the tracked config — not just includeIf routing, but aliases,
+# core settings, push/pull defaults, credential helpers, etc.
+#
+# install.sh creates this file ONLY if it is absent, and never touches it
+# again — so nothing here is ever reverted by a re-install.
+#
+# Common uses:
+#   - [includeIf "gitdir:..."] blocks to route identities by directory
+#   - Machine-specific credential helpers or signing keys
+#   - Overrides for any tracked default (e.g. core.editor, diff.tool)

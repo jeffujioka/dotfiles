@@ -53,11 +53,11 @@ trap 'rm -f "$SEEN_GLOB_LINKS"' EXIT
                 fail "$tgt missing"
             fi
             ;;
-        copy)
-            if [ -f "$tgt" ]; then
-                pass "$tgt exists (copy)"
+        seed)
+            if [ -e "$tgt" ]; then
+                pass "$tgt exists (seed)"
             else
-                fail "$tgt not found (expected copy of $src)"
+                fail "$tgt not found (expected seed to have created $src)"
             fi
             ;;
         glob)

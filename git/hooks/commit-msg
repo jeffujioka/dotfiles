@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Reject commits containing Co-authored-by trailers (reserved for human co-authors only)
+if grep -qi "^Co-authored-by:" "$1"; then
+  echo "error: Co-authored-by trailer not allowed. Remove it and try again." >&2
+  exit 1
+fi

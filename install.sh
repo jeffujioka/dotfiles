@@ -285,6 +285,14 @@ function apply_dotfiles() {
       exit 1
     fi
 
+    # seed entries are create-if-absent; backing up implies overwriting,
+    # which seed never does. backup defaults to true, so this must be
+    # stated explicitly rather than silently ignored.
+    if [ "$should_backup" = "true" ] && [ "$typ" = "seed" ]; then
+      echo "Error: seed entries never back up (source: $src)" >&2
+      exit 1
+    fi
+
     # Expand ~ to $HOME
     tgt="${tgt/#\~/$HOME}"
     # Resolve src relative to repo root (not $PWD) — C2 fix
@@ -305,11 +313,14 @@ function apply_dotfiles() {
         fi
         ln -sfn "$(resolve_path "$src")" "$tgt"
         ;;
-      copy)
-        if [ "$should_backup" = "true" ]; then
-          backup_this "$tgt"
+      seed)
+        # Create-if-absent only. The target is machine-local state the user
+        # owns, so there is deliberately no backup_this call: with nothing
+        # ever overwritten there is nothing to back up, and backup_this
+        # would MOVE a file we promised not to touch.
+        if [ ! -e "$tgt" ]; then
+          cp "$src" "$tgt"
         fi
-        cp "$src" "$tgt"
         ;;
       glob)
         tgt_dir="${tgt%/\*}"

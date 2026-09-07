@@ -96,6 +96,8 @@ run_local_checks() {
     "$SCRIPT_DIR/tests/check-brew-tools.sh"       || rc=1
     "$SCRIPT_DIR/tests/check-non-asdf-tools.sh"   || rc=1
     "$SCRIPT_DIR/tests/check-symlinks.sh"         || rc=1
+    "$SCRIPT_DIR/tests/test-installer-seed.sh"    || rc=1
+    "$SCRIPT_DIR/tests/check-git-credentials.sh"  || rc=1
     "$SCRIPT_DIR/tests/check-wd40.sh"             || rc=1
 
     . "$SCRIPT_DIR/tests/helpers.sh"
