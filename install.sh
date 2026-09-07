@@ -422,6 +422,16 @@ do
 done
 
 if [ -n "$install_deps" ]; then
+  # On Linux, ask about sudo unless already decided via flags.
+  if [[ "$OSTYPE" == linux* ]] && [ -z "$no_sudo_install" ] && [ -z "${install_all}" ]; then
+    read -rp "Do you have sudo/admin rights on this machine? [Y/n] " sudo_response
+    sudo_response=$(echo "$sudo_response" | tr '[:upper:]' '[:lower:]')
+    if [[ "$sudo_response" == "n" || "$sudo_response" == "no" ]]; then
+      no_sudo_install="1"
+      echo "Will install system dependencies via Homebrew instead of apt."
+    fi
+  fi
+
   if [ -z "${install_all}" ]; then
     if [[ "$OSTYPE" == linux* ]] && [ -n "$no_sudo_install" ]; then
       echo "This script will install the following packages via Homebrew:"
