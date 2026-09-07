@@ -4,7 +4,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
-PALETTE="$REPO_ROOT/bin/tmux-palette"
+PALETTE="$REPO_ROOT/wd40/common/scripts/tmux-palette"
 PRESETS="$REPO_ROOT/config/starship/presets"
 
 EXTRACTION_ONLY=false
@@ -60,18 +60,27 @@ if ! $EXTRACTION_ONLY; then
 echo ""
 echo "=== Apply tests (tmux) ==="
 
-tmux -L palette-test new-session -d -s test 2>/dev/null
+# Hermetic tmux server on an EXPLICIT socket path (-S), not a named socket
+# (-L). `-L palette-test` puts the socket at $TMPDIR/tmux-$UID/palette-test,
+# which varies by platform and user; the $TMUX value below has to name that
+# same socket for tmux-palette's own `tmux set -g` calls to reach this test
+# server. Keep the path short — AF_UNIX paths cap near 104 bytes on macOS.
+PALETTE_SOCKET_DIR=$(mktemp -d "/tmp/tmux-palette-test.XXXXXX")
+PALETTE_SOCKET="$PALETTE_SOCKET_DIR/socket"
+trap 'tmux -S "$PALETTE_SOCKET" kill-server 2>/dev/null || true; rm -rf "$PALETTE_SOCKET_DIR"' EXIT
+
+tmux -S "$PALETTE_SOCKET" new-session -d -s test 2>/dev/null
 
 _test_preview() {
   local preset="$1" e_status_bg="$2" e_border="$3"
   local label; label=$(basename "$preset" .toml | sed 's/^starship-//')
   printf '%s --preview\n' "$label"
 
-  TMUX="/tmp/tmux-palette-test/palette-test,0,0" \
+  TMUX="$PALETTE_SOCKET,0,0" \
     "$PALETTE" "$PRESETS/$preset" --preview
 
-  local status; status=$(tmux -L palette-test show-option -gv status-style)
-  local border; border=$(tmux -L palette-test show-option -gv pane-active-border-style)
+  local status; status=$(tmux -S "$PALETTE_SOCKET" show-option -gv status-style)
+  local border; border=$(tmux -S "$PALETTE_SOCKET" show-option -gv pane-active-border-style)
 
   _assert "status-style contains bg" "true" \
     "$([[ "$status" == *"$e_status_bg"* ]] && echo true || echo false)"
@@ -84,10 +93,10 @@ _test_full() {
   local label; label=$(basename "$preset" .toml | sed 's/^starship-//')
   printf '%s --full\n' "$label"
 
-  TMUX="/tmp/tmux-palette-test/palette-test,0,0" \
+  TMUX="$PALETTE_SOCKET,0,0" \
     "$PALETTE" "$PRESETS/$preset" --full
 
-  local colors; colors=$(tmux -L palette-test show-option -gv @dracula-colors 2>/dev/null || echo "")
+  local colors; colors=$(tmux -S "$PALETTE_SOCKET" show-option -gv @dracula-colors 2>/dev/null || echo "")
   _assert "@dracula-colors contains palette" "true" \
     "$([[ "$colors" == *"$e_dracula_has"* ]] && echo true || echo false)"
 }
@@ -97,7 +106,7 @@ _test_preview "starship-bracket-aurora.toml" "default" "#00e888"
 _test_full "starship-bubble-gradient-aurora-deep.toml" "#00a850"
 _test_full "starship-bracket-aurora.toml" "#00e888"
 
-tmux -L palette-test kill-server 2>/dev/null || true
+tmux -S "$PALETTE_SOCKET" kill-server 2>/dev/null || true
 
 fi  # end !EXTRACTION_ONLY
 

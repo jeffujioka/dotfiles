@@ -97,13 +97,13 @@ if [[ ! "$PATH" == *.scripts* ]]; then
   export PATH="$HOME/.scripts:${PATH:+${PATH}:}"
 fi
 
+# .asdf above Homebrew
+if [[ ! "$PATH" == *.asdf* ]]; then
+  export PATH="$HOME/.asdf/shims:${PATH:+${PATH}:}"
+fi
 # .local/bin — highest priority
 if [[ ! "$PATH" == *${HOME}/.local/bin* ]]; then
   export PATH="$HOME/.local/bin:${PATH:+${PATH}:}"
-fi
-
-if [ -r "${HOME}/.zsh_aliases" ]; then
-  . "${HOME}/.zsh_aliases"
 fi
 
 # TMPDIR, TMUX_TMPDIR, HOMEBREW_TEMP, JAVA_TOOL_OPTIONS → zprofile
@@ -164,6 +164,11 @@ if [[ -o interactive ]]; then
 fi
 
 # added by wd40 install.sh
-if [[ ":$PATH:" != *":/home/jfujiok/.local/sbin:"* ]]; then
-  export PATH="/home/jfujiok/.local/sbin:$PATH"
+if [[ ! "$PATH" == *"$HOME/.local/sbin"* ]]; then
+  export PATH="$HOME/.local/sbin:${PATH:+${PATH}:}"
+fi
+
+# added by wd40 install.sh
+if [ -r "$HOME/.config/wd40/wd40rc" ]; then
+  . "$HOME/.config/wd40/wd40rc"
 fi
