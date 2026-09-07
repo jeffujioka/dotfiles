@@ -65,7 +65,7 @@ install_linux_brew() {
   fi
   echo "Installing Homebrew to $HOME/.homebrew..."
   mkdir -p "$HOME/.homebrew"
-  curl -fsSL https://github.com/Homebrew/brew/tarball/master \
+  curl -fsSL https://github.com/Homebrew/brew/tarball/main \
     | tar xz --strip-components 1 -C "$HOME/.homebrew" \
     || { echo "Error: Homebrew installation failed. Aborting."; exit 1; }
   eval "$("$HOME/.homebrew/bin/brew" shellenv)"
