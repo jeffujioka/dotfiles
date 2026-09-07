@@ -96,6 +96,7 @@ run_local_checks() {
     "$SCRIPT_DIR/tests/check-brew-tools.sh"       || rc=1
     "$SCRIPT_DIR/tests/check-non-asdf-tools.sh"   || rc=1
     "$SCRIPT_DIR/tests/check-symlinks.sh"         || rc=1
+    "$SCRIPT_DIR/tests/check-wd40.sh"             || rc=1
 
     . "$SCRIPT_DIR/tests/helpers.sh"
     summary || rc=1
@@ -123,9 +124,13 @@ run_docker_scenario() {
         cmd_build_image "$scenario"
     fi
 
+    # :exec — the wd40 smoke suite builds and runs its own fixture scripts
+    # under mktemp -d (which lands on /tmp); Docker's default tmpfs mount
+    # is noexec, which fails those fixtures for reasons unrelated to any
+    # real defect.
     docker run --rm \
         -v "$SCRIPT_DIR:/home/testuser/.dotfiles:ro" \
-        --tmpfs /tmp \
+        --tmpfs /tmp:exec \
         "$image" \
         bash -c "
             mkdir -p /home/testuser/dotfiles-work
