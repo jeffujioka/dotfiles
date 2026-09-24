@@ -67,3 +67,5 @@
 
 [credential "https://gist.github.com"]
 	helper =
+	# same wrapper as above; gh serves gist.github.com from the github.com token
+	helper = !/usr/bin/env PATH=/opt/homebrew/bin:/usr/local/bin:$PATH gh auth git-credential
