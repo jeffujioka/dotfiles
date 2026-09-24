@@ -60,7 +60,10 @@
 
 [credential "https://github.com"]
 	helper =
-	helper = !gh auth git-credential
+	# GUI apps (Obsidian, VS Code) launch git with a minimal PATH that has no
+	# Homebrew prefix, so a bare `gh` is "command not found" and git falls back to
+	# prompting for a username. On Linux the extra dirs just don't match anything.
+	helper = !/usr/bin/env PATH=/opt/homebrew/bin:/usr/local/bin:$PATH gh auth git-credential
 
 [credential "https://gist.github.com"]
 	helper =
