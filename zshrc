@@ -108,10 +108,15 @@ fi
 if [[ ! "$PATH" == *.asdf* ]]; then
   export PATH="$HOME/.asdf/shims:${PATH:+${PATH}:}"
 fi
-# .local/bin — highest priority
-if [[ ! "$PATH" == *${HOME}/.local/bin* ]]; then
-  export PATH="$HOME/.local/bin:${PATH:+${PATH}:}"
-fi
+# .local/sbin + .local/bin — always first in PATH.
+# Login shells (kitty, every tmux pane) re-run path_helper via /etc/zprofile,
+# which rebuilds PATH with system dirs first and appends the inherited PATH.
+# Guard-based prepends ([[ ! $PATH == *dir* ]]) then skip, so these dirs
+# never reached the front. Force them to the front on every shell start.
+# `path` is zsh's array tied to PATH; typeset -U also drops duplicates
+# (fixes the accumulated brew/docker dups from nested logins).
+typeset -gU path PATH
+path=("${HOME}/.local/sbin" "${HOME}/.local/bin" "${path[@]}")
 
 # TMPDIR, TMUX_TMPDIR, HOMEBREW_TEMP, JAVA_TOOL_OPTIONS → zprofile
 # (sourced at login by both bash and zsh so daemons inherit them)
@@ -170,12 +175,7 @@ if [[ -o interactive ]]; then
   fi
 fi
 
-# added by wd40 install.sh
-if [[ ! "$PATH" == *"$HOME/.local/sbin"* ]]; then
-  export PATH="$HOME/.local/sbin:${PATH:+${PATH}:}"
-fi
-
-# added by wd40 install.sh
+# added by wd40 install.sh (.local/sbin moved to the top of this file)
 if [ -r "$HOME/.config/wd40/wd40rc" ]; then
   . "$HOME/.config/wd40/wd40rc"
 fi
