@@ -179,3 +179,13 @@ fi
 if [ -r "$HOME/.config/wd40/wd40rc" ]; then
   . "$HOME/.config/wd40/wd40rc"
 fi
+export KUBECONFIG=~/.kube/config
+
+. "$HOME/.local/bin/env"
+
+# fnm
+FNM_PATH="/home/jeff/.local/share/fnm"
+if [ -d "$FNM_PATH" ]; then
+  export PATH="$FNM_PATH:$PATH"
+  eval "$(fnm env --shell zsh)"
+fi
