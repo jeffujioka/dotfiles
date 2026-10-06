@@ -9,7 +9,7 @@ ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 
 # Download Zinit, if it's not there yet
 if [ ! -d "$ZINIT_HOME" ]; then
-   mkdir -p "$(dirname $ZINIT_HOME)"
+   mkdir -p "${ZINIT_HOME:h}"
    git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
 fi
 
@@ -17,7 +17,6 @@ fi
 source "${ZINIT_HOME}/zinit.zsh"
 
 # Add in zsh plugins
-zinit light zsh-users/zsh-syntax-highlighting
 zinit light zsh-users/zsh-completions
 zinit light zsh-users/zsh-autosuggestions
 zinit light Aloxaf/fzf-tab
@@ -36,7 +35,17 @@ done
 [[ -d "$_brew_sf" ]] && fpath=("$_brew_sf" $fpath)
 unset _brew_sf _b
 fpath=(~/.zsh_completions.d $fpath)
-autoload -Uz compinit && compinit
+# Full compinit (rebuild + security audit) at most once a day; otherwise
+# trust the cached dump. Force a rebuild with `zcomp-rebuild` (wd40).
+autoload -Uz compinit
+_zcd=(${ZDOTDIR:-$HOME}/.zcompdump(N.mh-24))
+if (( ${#_zcd} )); then
+  compinit -C
+else
+  compinit
+  touch "${ZDOTDIR:-$HOME}/.zcompdump"
+fi
+unset _zcd
 
 zinit cdreplay -q
 
@@ -84,14 +93,32 @@ elif [ -d "${CARGO_HOME}/bin" ]; then
 fi
 
 # NVM — above cargo
-export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+export NVM_DIR="${XDG_CONFIG_HOME}/nvm"
+# nvm.sh costs ~500ms, so it is deferred until after the first prompt.
+# The default node bin goes on PATH now so node/npm/npx work immediately.
+if [[ -s "$NVM_DIR/nvm.sh" ]]; then
+  _nvm_alias=$(<"$NVM_DIR/alias/default" 2>/dev/null)
+  _nvm_bin=("$NVM_DIR"/versions/node/${_nvm_alias:#[^v0-9]*}*(N/nOn[1]))
+  [[ -z $_nvm_bin ]] && _nvm_bin=("$NVM_DIR"/versions/node/*(N/nOn[1]))
+  [[ -n $_nvm_bin ]] && path=("$_nvm_bin/bin" $path)
+  unset _nvm_alias _nvm_bin
+  zinit light romkatv/zsh-defer
+  zsh-defer source "$NVM_DIR/nvm.sh"
+fi
 
-# Homebrew — above NVM
+# Homebrew — above NVM. Static equivalent of `brew shellenv` (saves a fork);
+# site-functions is already on fpath from the completions block above.
 if [[ "$OSTYPE" == darwin* ]] && [[ -x /opt/homebrew/bin/brew ]]; then
-  eval "$(/opt/homebrew/bin/brew shellenv)"
+  export HOMEBREW_PREFIX="/opt/homebrew"
 elif [[ "$OSTYPE" == linux* ]] && [[ -x "$HOME/.homebrew/bin/brew" ]]; then
-  eval "$($HOME/.homebrew/bin/brew shellenv)"
+  export HOMEBREW_PREFIX="$HOME/.homebrew"
+fi
+if [[ -n $HOMEBREW_PREFIX ]]; then
+  export HOMEBREW_CELLAR="$HOMEBREW_PREFIX/Cellar"
+  export HOMEBREW_REPOSITORY="$HOMEBREW_PREFIX"
+  path=("$HOMEBREW_PREFIX/bin" "$HOMEBREW_PREFIX/sbin" $path)
+  [[ -n ${MANPATH-} ]] && export MANPATH=":${MANPATH#:}"
+  export INFOPATH="$HOMEBREW_PREFIX/share/info:${INFOPATH:-}"
 fi
 
 # VIMRUNTIME — fix for user homebrew vim compiled with system linuxbrew fallback path
@@ -99,15 +126,14 @@ if [[ -d "$HOME/.homebrew/share/vim/vim92" ]]; then
   export VIMRUNTIME="$HOME/.homebrew/share/vim/vim92"
 fi
 
-# .scripts — above Homebrew
-if [[ ! "$PATH" == *.scripts* ]]; then
-  export PATH="$HOME/.scripts:${PATH:+${PATH}:}"
-fi
+typeset -gU path PATH
 
-# .asdf above Homebrew
-if [[ ! "$PATH" == *.asdf* ]]; then
-  export PATH="$HOME/.asdf/shims:${PATH:+${PATH}:}"
-fi
+# .scripts — above Homebrew
+path=("$HOME/.scripts" $path)
+
+# .asdf shims — above .scripts
+path=("$HOME/.asdf/shims" $path)
+
 # .local/sbin + .local/bin — always first in PATH.
 # Login shells (kitty, every tmux pane) re-run path_helper via /etc/zprofile,
 # which rebuilds PATH with system dirs first and appends the inherited PATH.
@@ -115,8 +141,7 @@ fi
 # never reached the front. Force them to the front on every shell start.
 # `path` is zsh's array tied to PATH; typeset -U also drops duplicates
 # (fixes the accumulated brew/docker dups from nested logins).
-typeset -gU path PATH
-path=("${HOME}/.local/sbin" "${HOME}/.local/bin" "${path[@]}")
+path=("${HOME}/.local/sbin" "${HOME}/.local/bin" "${HOME}/.bun/bin" "${path[@]}")
 
 # TMPDIR, TMUX_TMPDIR, HOMEBREW_TEMP, JAVA_TOOL_OPTIONS → zprofile
 # (sourced at login by both bash and zsh so daemons inherit them)
@@ -175,7 +200,7 @@ if [[ -o interactive ]]; then
   fi
 fi
 
-# added by wd40 install.sh (.local/sbin moved to the top of this file)
+# added by wd40 install.sh
 if [ -r "$HOME/.config/wd40/wd40rc" ]; then
   . "$HOME/.config/wd40/wd40rc"
 fi
@@ -189,3 +214,6 @@ if [ -d "$FNM_PATH" ]; then
   export PATH="$FNM_PATH:$PATH"
   eval "$(fnm env --shell zsh)"
 fi
+
+# Must load last: it wraps every ZLE widget defined before it.
+zinit light zsh-users/zsh-syntax-highlighting
