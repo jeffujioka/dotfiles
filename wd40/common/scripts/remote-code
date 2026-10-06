@@ -1,0 +1,156 @@
+#!/usr/bin/env bash
+# wd40: remote-code - open VS Code Remote-SSH on another host, pointed at a path there, via ssh or locally
+#
+# Two modes:
+#
+#   On the remote host (e.g. a build server): relay through ssh so a VS Code
+#   window opens on your editor machine (today: macOS), attached via
+#   Remote-SSH to a path on *this* machine.
+#
+#     remote-code [PATH] --mac-host HOST --remote-host HOST
+#
+#   On the editor machine itself (macOS): --local launches VS Code directly.
+#   PATH is a path on the remote host, so it is required and absolute.
+#
+#     remote-code --local PATH --remote-host HOST
+#
+# --mac-host/-m    ssh target that reaches the editor machine (alias,
+#                  hostname, or IP). Required unless --local: flag, else
+#                  $REMOTE_CODE_MAC_HOST, else error.
+# --local/-l       run on the editor machine itself; no ssh hop. Cannot be
+#                  combined with --mac-host (an env var is ignored).
+# --remote-host/-r host string embedded in the vscode-remote URI, i.e.
+#                  how the editor machine's own ssh config names the host
+#                  that has the files (alias, hostname, or IP). Same
+#                  fallback order, via $REMOTE_CODE_REMOTE_HOST.
+# PATH             optional, any position. Default: $PWD. Required and
+#                  absolute with --local.
+set -euo pipefail
+
+usage() {
+  cat <<EOF
+Usage: $(basename "$0") [PATH] (-m|--mac-host) HOST (-r|--remote-host) HOST
+       $(basename "$0") (-l|--local) PATH (-r|--remote-host) HOST
+
+Open VS Code Remote-SSH on an editor machine (today: macOS), attached to a
+folder on the remote host. Run it on the remote host (relays through ssh),
+or on the editor machine itself with --local.
+
+Options:
+  -m, --mac-host HOST      ssh target that reaches the editor machine.
+                            Falls back to \$REMOTE_CODE_MAC_HOST.
+  -l, --local              Run on the editor machine itself, no ssh hop to
+                            it. PATH is required and must be an absolute
+                            path on the remote host; it is checked with
+                            'ssh HOST test -d'. Cannot be combined with
+                            --mac-host.
+  -r, --remote-host HOST   host string the editor machine's ssh config
+                            uses for the host with the files, embedded in
+                            the vscode-remote URI. Falls back to
+                            \$REMOTE_CODE_REMOTE_HOST.
+  -h, --help               Show this help message and exit
+
+Without --local, PATH defaults to the current directory (\$PWD).
+
+Examples:
+  remote-code ~/project --mac-host macos --remote-host starfish-bs
+  remote-code --local /home/me/project --remote-host starfish-bs
+EOF
+}
+
+die() {
+  echo "Error: $1" >&2
+  exit 1
+}
+
+mac_host="${REMOTE_CODE_MAC_HOST:-}"
+mac_host_flag=""
+remote_host="${REMOTE_CODE_REMOTE_HOST:-}"
+local_mode=""
+target_path=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    -m|--mac-host)
+      [[ $# -ge 2 ]] || die "$1 requires a value"
+      mac_host=$2
+      mac_host_flag=1
+      shift 2
+      ;;
+    --mac-host=*)
+      mac_host=${1#*=}
+      mac_host_flag=1
+      shift
+      ;;
+    -l|--local)
+      local_mode=1
+      shift
+      ;;
+    -r|--remote-host)
+      [[ $# -ge 2 ]] || die "$1 requires a value"
+      remote_host=$2
+      shift 2
+      ;;
+    --remote-host=*)
+      remote_host=${1#*=}
+      shift
+      ;;
+    -*)
+      usage >&2
+      die "unknown option '$1'"
+      ;;
+    *)
+      [[ -z "$target_path" ]] || die "unexpected extra argument '$1' (PATH already set to '$target_path')"
+      target_path=$1
+      shift
+      ;;
+  esac
+done
+
+[[ -n "$remote_host" ]] || die "remote host required: pass --remote-host/-r or export REMOTE_CODE_REMOTE_HOST"
+
+# open -n (both modes below): without it, open drops --args when VS Code is
+# already running and only focuses it. A new instance hands the args to the
+# running one and exits, same as the code CLI does.
+if [[ -n "$local_mode" ]]; then
+  [[ -z "$mac_host_flag" ]] || die "--local cannot be combined with --mac-host"
+  command -v open >/dev/null 2>&1 \
+    || die "--local needs 'open' (macOS), which is not available on this machine"
+  [[ -n "$target_path" ]] || die "--local requires PATH, an absolute path on the remote host"
+  [[ "$target_path" == /* ]] || die "--local requires an absolute PATH on the remote host, got '$target_path'"
+
+  # printf %q: the path crosses ssh's shell, so quote it for that side.
+  if ! ssh "$remote_host" "test -d $(printf '%q' "$target_path")"; then
+    die "'$target_path' is not a directory on '$remote_host' (or ssh to it failed)"
+  fi
+
+  uri="vscode-remote://ssh-remote+${remote_host}${target_path}"
+  if ! open -n -a 'Visual Studio Code' --args --folder-uri "$uri"; then
+    die "could not launch VS Code"
+  fi
+  echo "Opened $target_path on $remote_host (locally)"
+  exit 0
+fi
+
+[[ -n "$mac_host" ]] || die "mac host required: pass --mac-host/-m (or --local), or export REMOTE_CODE_MAC_HOST"
+
+if [[ -n "$target_path" ]]; then
+  [[ -d "$target_path" ]] || die "not a directory: $target_path"
+  abs_path=$(cd "$target_path" && pwd -P)
+else
+  abs_path=$(pwd -P)
+fi
+
+uri="vscode-remote://ssh-remote+${remote_host}${abs_path}"
+
+remote_cmd="open -n -a 'Visual Studio Code' --args --folder-uri '${uri}'"
+
+if ! ssh "$mac_host" "$remote_cmd"; then
+  die "ssh to '$mac_host' failed, or VS Code could not be launched there"
+fi
+
+echo "Opened $abs_path on $mac_host (as seen from there: $remote_host)"
