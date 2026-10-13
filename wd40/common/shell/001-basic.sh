@@ -139,6 +139,8 @@ function fqi() {
 ##
 ################################################################################
 
+alias ez="exec zsh"
+
 # Use eza instead of ls (modern replacement for exa)
 EZA_DEFAULT="--icons --group-directories-first"
 alias ls="eza $EZA_DEFAULT"
