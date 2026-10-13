@@ -11,15 +11,34 @@ claude_update_all_plugins() (
     done
 )
 
-alias upd='
-    brew update && brew upgrade -y && claude --update &&
-    openchamber update &&
-    DISABLE_TELEMETRY=1 npx skills@latest update -g -y &&
-    ccuap &&
-    opencode plugin update
-'
+upd() {
+  brew update || true
+  brew upgrade || true
+  echo '################################################################################'
+  echo '... Updating Claude Code...'
+  echo '################################################################################'
+  claude --update || true
+  if command -v openchamber >/dev/null; then
+    echo '################################################################################'
+    echo '... Updating OpenChamber...'
+    echo '################################################################################'
+    openchamber update || true
+  fi
+  echo '################################################################################'
+  echo '... Updating skills...'
+  echo '################################################################################'
+  DISABLE_TELEMETRY=1 npx --yes skills@latest update -g -y || true
+  echo '################################################################################'
+  echo '... Updating claude plugins...'
+  echo '################################################################################'
+  claude_update_all_plugins || true
+  echo '################################################################################'
+  echo '... Updating opencode plugins...'
+  echo '################################################################################'
+  opencode plugin update || true
+}
 alias ccupd="claude --update"
 alias bupd="brew update && brew upgrade -y"
-alias yupd="DISABLE_TELEMETRY=1 npx skills@latest update -g -y"
+alias yupd="DISABLE_TELEMETRY=1 npx --yes skills@latest update -g -y"
 alias opupd="openchamber update"
 alias ccuap="claude_update_all_plugins"
