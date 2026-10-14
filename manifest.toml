@@ -143,6 +143,10 @@ source = "zshrc"
 target = "~/.zshrc"
 
 [[symlinks]]
+source = "zshenv"
+target = "~/.zshenv"
+
+[[symlinks]]
 source = "zsh_completions.d"
 target = "~/.zsh_completions.d"
 backup = false
