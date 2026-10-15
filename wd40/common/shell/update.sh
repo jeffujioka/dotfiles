@@ -1,6 +1,6 @@
 #!/bin/env bash
-# wd40: upd - update brew, Claude Code, OpenChamber, skills, plugins, and zsh completions
-# wd40: zcomp-update - regenerate zsh completion scripts for installed CLIs and rebuild the dump
+# wd40: upd - update brew, Claude Code, OpenChamber, skills, plugins, and zsh completions, then restart zsh (--no-restart to skip)
+# wd40: zcomp-update - regenerate zsh completion scripts for installed CLIs and rebuild the dump, then restart zsh (--no-restart to skip)
 
 claude_update_all_plugins() (
   json=$(claude plugin list --json) || exit $?
@@ -31,9 +31,40 @@ _zcomp_gen_cmd() {
   esac
 }
 
+# Replace the current shell with a fresh zsh. $1 is an optional failure
+# summary, handed over through UPD_SUMMARY and printed by _upd_report.
+# Returns 1 when the shell was not replaced (non-zsh, non-interactive, jobs).
+_upd_restart_shell() {
+  [ -n "${ZSH_VERSION:-}" ] || return 1
+  case $- in *i*) ;; *) return 1 ;; esac
+  if [ "${#jobstates}" -gt 0 ]; then
+    echo "upd: background jobs exist, not restarting the shell" >&2
+    return 1
+  fi
+  [ -n "$1" ] && export UPD_SUMMARY="$1"
+  exec zsh
+  unset UPD_SUMMARY
+  return 1
+}
+
+if [ -n "${ZSH_VERSION:-}" ]; then
+  _upd_report() {
+    [ -n "${UPD_SUMMARY:-}" ] || return 0
+    printf 'upd: failed: %s\n' "$UPD_SUMMARY" >&2
+    unset UPD_SUMMARY
+  }
+  autoload -Uz add-zsh-hook
+  add-zsh-hook precmd _upd_report
+fi
+
 zcomp-update() {
   local _zc_dir="$HOME/.zsh_completions.d"
-  local _zc_brew _zc_sf="" _zc_tool _zc_args _zc_tmp
+  local _zc_brew _zc_sf="" _zc_tool _zc_args _zc_tmp _zc_restart=1
+  case "${1:-}" in
+    "") ;;
+    --no-restart) _zc_restart=0 ;;
+    *) echo "usage: zcomp-update [--no-restart]" >&2; return 2 ;;
+  esac
   _zc_brew=$(command -v brew 2>/dev/null)
   [ -n "$_zc_brew" ] && _zc_sf="$(dirname "$(dirname "$_zc_brew")")/share/zsh/site-functions"
   for _zc_tool in opencode gh glab acli docker asdf glow git-lfs bun starship tv procs bat uv uvx ruff rg fd; do
@@ -56,18 +87,26 @@ zcomp-update() {
   else
     rm -f "$HOME/.zcompdump" "$HOME/.zcompdump.zwc"
   fi
-  echo "zcomp-update: run 'exec zsh' to load the new completions"
+  if [ "$_zc_restart" = 1 ]; then
+    _upd_restart_shell
+    echo "zcomp-update: run 'exec zsh' to load the new completions"
+  fi
 }
 
 upd() {
-  local _failed="" _cmd
+  local _failed="" _cmd _restart=1
+  case "${1:-}" in
+    "") ;;
+    --no-restart) _restart=0 ;;
+    *) echo "usage: upd [--no-restart]" >&2; return 2 ;;
+  esac
   local _cmds=("brew update" "brew upgrade -y" "claude --update")
   command -v openchamber >/dev/null && _cmds+=("openchamber update")
   _cmds+=(
     "DISABLE_TELEMETRY=1 npx --yes skills@latest update -g -y"
     "claude_update_all_plugins"
     "opencode plugin update"
-    "zcomp-update"
+    "zcomp-update --no-restart"
   )
   for _cmd in "${_cmds[@]}"; do
     echo '################################################################################'
@@ -77,6 +116,10 @@ upd() {
     echo '--------------------------------------------------------------------------------'
     echo ""
   done
+  if [ "$_restart" = 1 ]; then
+    _upd_restart_shell "$_failed"
+    echo "upd: run 'exec zsh' to load the new completions"
+  fi
   if [ -n "$_failed" ]; then
     echo "upd: failed: $_failed" >&2
     return 1
