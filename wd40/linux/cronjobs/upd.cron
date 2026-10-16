@@ -1,0 +1,2 @@
+# upd: hourly from 06:00 to 23:00
+0 6-23 * * * env PATH=@PATH@ @WD40@/common/cronjobs/upd.sh
