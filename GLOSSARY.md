@@ -15,3 +15,9 @@ _Avoid_: local run, direct run
 **Background service**:
 OpenCode's built-in long-running server, managed with `opencode service`.
 _Avoid_: daemon, opencode service server
+
+## Scheduling
+
+**Scheduled job**:
+A task that runs on a timetable with no terminal attached, so it cannot prompt and has none of the interactive shell's environment.
+_Avoid_: cron job, timer
