@@ -17,28 +17,33 @@
 # --mac-host/-m    ssh target that reaches the editor machine (alias,
 #                  hostname, or IP). Required unless --local: flag, else
 #                  $REMOTE_CODE_MAC_HOST, else error.
+# --goto/-g        LINE[:COL], only for a file PATH: jump there on open. Ignored
+#                  for a folder. Cannot be combined with --local.
 # --local/-l       run on the editor machine itself; no ssh hop. Cannot be
 #                  combined with --mac-host (an env var is ignored).
 # --remote-host/-r host string embedded in the vscode-remote URI, i.e.
 #                  how the editor machine's own ssh config names the host
 #                  that has the files (alias, hostname, or IP). Same
 #                  fallback order, via $REMOTE_CODE_REMOTE_HOST.
-# PATH             optional, any position. Default: $PWD. Required and
-#                  absolute with --local.
+# PATH             optional, any position. A folder or regular file. Default:
+#                  $PWD. Required and absolute with --local (folder only).
 set -euo pipefail
 
 usage() {
   cat <<EOF
-Usage: $(basename "$0") [PATH] (-m|--mac-host) HOST (-r|--remote-host) HOST
+Usage: $(basename "$0") [PATH] [-g LINE[:COL]] (-m|--mac-host) HOST (-r|--remote-host) HOST
        $(basename "$0") (-l|--local) PATH (-r|--remote-host) HOST
 
 Open VS Code Remote-SSH on an editor machine (today: macOS), attached to a
-folder on the remote host. Run it on the remote host (relays through ssh),
-or on the editor machine itself with --local.
+folder or file on the remote host. Run it on the remote host (relays through
+ssh), or on the editor machine itself with --local.
 
 Options:
   -m, --mac-host HOST      ssh target that reaches the editor machine.
                             Falls back to \$REMOTE_CODE_MAC_HOST.
+  -g, --goto LINE[:COL]    With a file PATH, open it at this line and optional
+                            column. Ignored for a folder. Cannot be combined
+                            with --local.
   -l, --local              Run on the editor machine itself, no ssh hop to
                             it. PATH is required and must be an absolute
                             path on the remote host; it is checked with
@@ -50,10 +55,12 @@ Options:
                             \$REMOTE_CODE_REMOTE_HOST.
   -h, --help               Show this help message and exit
 
-Without --local, PATH defaults to the current directory (\$PWD).
+Without --local, PATH defaults to the current directory (\$PWD). PATH may be a
+folder or a regular file.
 
 Examples:
   remote-code ~/project --mac-host macos --remote-host starfish-bs
+  remote-code ~/project/main.c --goto 42:7 --mac-host macos --remote-host starfish-bs
   remote-code --local /home/me/project --remote-host starfish-bs
 EOF
 }
@@ -68,6 +75,7 @@ mac_host_flag=""
 remote_host="${REMOTE_CODE_REMOTE_HOST:-}"
 local_mode=""
 target_path=""
+goto_loc=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -84,6 +92,15 @@ while [[ $# -gt 0 ]]; do
     --mac-host=*)
       mac_host=${1#*=}
       mac_host_flag=1
+      shift
+      ;;
+    -g|--goto)
+      [[ $# -ge 2 ]] || die "$1 requires a value"
+      goto_loc=$2
+      shift 2
+      ;;
+    --goto=*)
+      goto_loc=${1#*=}
       shift
       ;;
     -l|--local)
@@ -113,11 +130,16 @@ done
 
 [[ -n "$remote_host" ]] || die "remote host required: pass --remote-host/-r or export REMOTE_CODE_REMOTE_HOST"
 
+if [[ -n "$goto_loc" ]]; then
+  [[ "$goto_loc" =~ ^[0-9]+(:[0-9]+)?$ ]] || die "invalid --goto '$goto_loc': expected LINE or LINE:COL"
+fi
+
 # open -n (both modes below): without it, open drops --args when VS Code is
 # already running and only focuses it. A new instance hands the args to the
 # running one and exits, same as the code CLI does.
 if [[ -n "$local_mode" ]]; then
   [[ -z "$mac_host_flag" ]] || die "--local cannot be combined with --mac-host"
+  [[ -z "$goto_loc" ]] || die "--goto is not supported with --local"
   command -v open >/dev/null 2>&1 \
     || die "--local needs 'open' (macOS), which is not available on this machine"
   [[ -n "$target_path" ]] || die "--local requires PATH, an absolute path on the remote host"
@@ -138,12 +160,34 @@ fi
 
 [[ -n "$mac_host" ]] || die "mac host required: pass --mac-host/-m (or --local), or export REMOTE_CODE_MAC_HOST"
 
+if [[ -n "$target_path" && -f "$target_path" ]]; then
+  abs_dir=$(cd "$(dirname "$target_path")" && pwd -P)
+  abs_path="${abs_dir%/}/$(basename "$target_path")"
+  [[ "$abs_path" != *"'"* ]] || die "path contains a single quote, cannot pass it over ssh: $abs_path"
+
+  loc=""
+  if [[ -n "$goto_loc" ]]; then
+    loc=":$goto_loc"
+  fi
+
+  remote_cmd="'/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code' --remote 'ssh-remote+${remote_host}' --goto '${abs_path}${loc}'"
+
+  if ! ssh "$mac_host" "$remote_cmd"; then
+    die "ssh to '$mac_host' failed, or VS Code could not be launched there"
+  fi
+
+  echo "Opened $abs_path on $mac_host (as seen from there: $remote_host)"
+  exit 0
+fi
+
 if [[ -n "$target_path" ]]; then
-  [[ -d "$target_path" ]] || die "not a directory: $target_path"
+  [[ -d "$target_path" ]] || die "not a file or directory: $target_path"
   abs_path=$(cd "$target_path" && pwd -P)
 else
   abs_path=$(pwd -P)
 fi
+
+[[ "$abs_path" != *"'"* ]] || die "path contains a single quote, cannot pass it over ssh: $abs_path"
 
 uri="vscode-remote://ssh-remote+${remote_host}${abs_path}"
 
