@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# xdg-open relay: inside an SSH session, sends URLs to the Mac via `open`
+# and files/directories to the Mac via remote-code. Outside SSH, defers to
+# the real xdg-open found on PATH.
+set -euo pipefail
+
+self=$(readlink -f "${BASH_SOURCE[0]}")
+
+if [[ -z "${SSH_CONNECTION:-}" ]]; then
+  IFS=: read -ra dirs <<< "$PATH"
+  for dir in "${dirs[@]}"; do
+    [[ -n "$dir" ]] || continue
+    cand="$dir/xdg-open"
+    [[ -x "$cand" && ! -d "$cand" ]] || continue
+    if [[ "$(readlink -f "$cand")" != "$self" ]]; then
+      exec "$cand" "$@"
+    fi
+  done
+  echo "xdg-open: not in an SSH session and no real xdg-open found" >&2
+  exit 1
+fi
+
+arg=${1:-}
+
+if [[ "$arg" =~ ^https?:// ]]; then
+  if [[ "$arg" == *"'"* ]]; then
+    echo "xdg-open: refusing URL containing single quote: '$arg'" >&2
+    exit 1
+  fi
+  exec ssh -n -o BatchMode=yes macos "open '$arg'"
+fi
+
+target=${arg#file://}
+
+abs() {
+  case "$1" in
+    /*) printf '%s\n' "$1" ;;
+    *) printf '%s\n' "$PWD/$1" ;;
+  esac
+}
+
+path=$(abs "$target")
+
+if [[ -e "$path" ]]; then
+  exec remote-code "$path" --mac-host macos --remote-host starfish-bs
+fi
+
+if [[ "$target" =~ ^(.+):([0-9]+):([0-9]+)$ ]]; then
+  file=$(abs "${BASH_REMATCH[1]}")
+  if [[ -f "$file" ]]; then
+    exec remote-code "$file" --goto "${BASH_REMATCH[2]}:${BASH_REMATCH[3]}" --mac-host macos --remote-host starfish-bs
+  fi
+fi
+
+if [[ "$target" =~ ^(.+):([0-9]+)$ ]]; then
+  file=$(abs "${BASH_REMATCH[1]}")
+  if [[ -f "$file" ]]; then
+    exec remote-code "$file" --goto "${BASH_REMATCH[2]}" --mac-host macos --remote-host starfish-bs
+  fi
+fi
+
+echo "xdg-open: cannot open '$arg'" >&2
+exit 1
