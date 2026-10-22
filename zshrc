@@ -217,3 +217,5 @@ fi
 
 # Must load last: it wraps every ZLE widget defined before it.
 zinit light zsh-users/zsh-syntax-highlighting
+
+export EDITOR=vim
