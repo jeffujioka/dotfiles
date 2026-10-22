@@ -1,5 +1,5 @@
 #!/bin/env bash
-# wd40: upd - update brew, Claude Code, OpenChamber, skills, plugins, and zsh completions
+# wd40: upd - update brew, Claude Code, OpenChamber, litellm, skills, plugins, and zsh completions
 # wd40: zcomp-update - regenerate zsh completion scripts for installed CLIs and rebuild the dump
 
 claude_update_all_plugins() (
@@ -63,6 +63,7 @@ upd() {
   local _failed="" _cmd
   local _cmds=("brew update" "brew upgrade -y" "claude --update")
   command -v openchamber >/dev/null && _cmds+=("openchamber update")
+  command -v uv >/dev/null && _cmds+=("uv tool upgrade litellm")
   _cmds+=(
     "DISABLE_TELEMETRY=1 npx --yes skills@latest update -g -y"
     "claude_update_all_plugins"
@@ -87,5 +88,6 @@ alias bupd="brew update && brew upgrade -y"
 alias sk="DISABLE_TELEMETRY=1 npx --yes skills@latest"
 alias yupd="DISABLE_TELEMETRY=1 npx --yes skills@latest update -g -y"
 alias opupd="openchamber update"
+alias litellmupdate="uv tool upgrade litellm"
 alias ccuap="claude_update_all_plugins"
 
