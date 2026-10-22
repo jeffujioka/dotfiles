@@ -12,6 +12,10 @@ stale_lock_minutes=120
 timeout_seconds="${UPD_TIMEOUT_SECONDS:-2700}"
 check_url="${UPD_CHECK_URL:-https://github.com}"
 
+# launchd/cron do not set this; without it Homebrew reads ~/.homebrew/trust.json
+# instead of ~/.config/homebrew/trust.json and ignores trusted-tap formulae.
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+
 mkdir -p "$state_dir" || exit 1
 
 stamp() { date '+%F %T'; }

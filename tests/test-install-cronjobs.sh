@@ -96,6 +96,11 @@ UPD_TIMEOUT_SECONDS=2 HOME="$SANDBOX/home" PATH="$SANDBOX/stubs:$PATH" "$REPO_RO
 elapsed=$(( $(date +%s) - start ))
 check "runner: hung upd is killed and logged" "[ $elapsed -lt 30 ] && grep -q 'timed out' '$STATE/upd.log' && [ ! -e '$STATE/upd.lock' ] && ! kill -0 \$(cat '$SANDBOX/brew.pid') 2>/dev/null"
 
+rm -rf "$STATE"
+printf '#!/bin/bash\necho "$XDG_CONFIG_HOME" > "%s/brew.xdg"\n' "$SANDBOX" > "$SANDBOX/stubs/brew"
+env -u XDG_CONFIG_HOME HOME="$SANDBOX/home" PATH="$SANDBOX/stubs:$PATH" "$REPO_ROOT/wd40/common/cronjobs/upd.sh" >/dev/null 2>&1
+check "runner: XDG_CONFIG_HOME defaults to \$HOME/.config (brew trust store)" "[ \"\$(cat '$SANDBOX/brew.xdg')\" = '$SANDBOX/home/.config' ]"
+
 # --- installer edge cases ---
 run_fx() { HOME="$SANDBOX/home" PATH="$SANDBOX/bin:$PATH" WD40_PLATFORM="$1" WD40_DIR="$FX" "$REPO_ROOT/install-cronjobs.sh" >"$SANDBOX/out" 2>&1; }
 FX="$SANDBOX/fx"; mkdir -p "$FX/common/cronjobs" "$FX/linux/cronjobs" "$FX/darwin/cronjobs"
