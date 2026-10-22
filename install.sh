@@ -393,9 +393,26 @@ no_sudo_install=""
 no_backups="1"
 install_all=""
 
+usage() {
+  cat <<EOF
+Usage: install.sh [OPTIONS]
+
+Options:
+  --no-install-deps   skip installing dependencies
+  --no-sudo-install   skip system packages (no sudo); use Homebrew instead
+  --no-backups        install dependencies only, skip applying dotfiles
+  --install-all       answer yes to all prompts
+  -h, --help          show this help and exit
+EOF
+}
+
 while [ -n "$1" ]
 do
   case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
     --no-install-deps)
       install_deps=""
       echo "it won't install deps!!!"
@@ -415,7 +432,8 @@ do
       shift
       ;;
     *)
-      echo "Invalid option"
+      echo "Invalid option: $1" >&2
+      usage >&2
       exit 1
       ;;
   esac
