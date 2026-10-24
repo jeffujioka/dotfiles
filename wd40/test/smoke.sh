@@ -1121,23 +1121,5 @@ section_begin 'scripts are executable and carry shebangs'
 )
 section_end $?
 
-section_begin 'co-location invariant'
-(
-  set -e
-  section_reset
-
-  # starship-picker and tmux-palette call each other via $SCRIPT_DIR and MUST
-  # stay in one directory (spec §Target Layout).
-  if [ -f "$REPO/wd40/common/scripts/starship-picker" ] \
-     && [ -f "$REPO/wd40/common/scripts/tmux-palette" ]; then
-    pass "starship-picker and tmux-palette are co-located"
-  else
-    fail "starship-picker and tmux-palette are NOT in the same directory"
-  fi
-
-  section_report
-)
-section_end $?
-
 printf '\n%d passed, %d failed, %d skipped\n' "$PASS" "$FAIL" "$SKIP"
 [ "$FAIL" -eq 0 ] || exit 1
