@@ -83,6 +83,9 @@ formula = "eza"
 formula = "fd"
 
 [[brew.tools]]
+formula = "herdr"
+
+[[brew.tools]]
 formula = "hunk"
 
 [[brew.tools]]
@@ -169,6 +172,10 @@ backup = false
 [[symlinks]]
 source = "gitignore"
 target = "~/.gitignore"
+
+[[symlinks]]
+source = "config/herdr/config.toml"
+target = "~/.config/herdr/config.toml"
 
 [[symlinks]]
 source = "vimrc"

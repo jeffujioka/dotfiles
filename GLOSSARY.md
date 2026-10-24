@@ -21,3 +21,13 @@ _Avoid_: daemon, opencode service server
 **Scheduled job**:
 A task that runs on a timetable with no terminal attached, so it cannot prompt and has none of the interactive shell's environment.
 _Avoid_: cron job, timer
+
+## Terminal
+
+**Herdr**:
+The terminal multiplexer that organises panes, tabs and workspaces, and supervises coding agents. It replaced tmux.
+_Avoid_: tmux, multiplexer (unqualified)
+
+**Workspace**:
+A Herdr container of tabs and panes, used to keep one project's terminals together.
+_Avoid_: session (that was the tmux term)
