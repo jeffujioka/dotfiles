@@ -29,7 +29,6 @@ get_version() {
     local tool="$1"
     case "$tool" in
         rust) rustc --version 2>/dev/null | awk '{print $2}' ;;
-        tmux) tmux -V 2>/dev/null | awk '{print $2}' ;;
         glab) glab --version 2>/dev/null | awk '{print $3}' ;;
         *)    "$tool" --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+[0-9.]*' | head -1 ;;
     esac

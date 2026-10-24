@@ -5,7 +5,6 @@ config/starship/config.toml
 
 .gitrepos
 .fzf
-.tmux
 
 .gitconfig
 .git_extra_configs

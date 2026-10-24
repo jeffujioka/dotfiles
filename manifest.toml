@@ -110,13 +110,6 @@ flags = "--force-bottle"
 formula = "zsh"
 
 [[resources]]
-name = "tpm"
-type = "git-clone"
-path = "~/.tmux/plugins/tpm"
-url = "https://github.com/tmux-plugins/tpm"
-branch = "master"
-
-[[resources]]
 name = "nerd-fonts"
 type = "git-clone"
 path = ".git_downloads/nerd-fonts"
@@ -176,10 +169,6 @@ backup = false
 [[symlinks]]
 source = "gitignore"
 target = "~/.gitignore"
-
-[[symlinks]]
-source = "tmux.conf"
-target = "~/.tmux.conf"
 
 [[symlinks]]
 source = "vimrc"

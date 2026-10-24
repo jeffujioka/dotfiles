@@ -16,7 +16,6 @@ ${custom.giticon}\
 $git_branch\
 $git_status\
 ${custom.git_end}\
-${custom.tmux_zoom}\
 $python\
 $nodejs\
 $rust\
@@ -210,12 +209,3 @@ command = 'echo  󰓄'
 style = 'bg:#100808'
 format = '[](fg:#100808)[ $output ](fg:#cc7733 bg:#100808)[](fg:#100808) '
 when = 'ip route show | grep vpntun0 | awk "{ print $1 }" | grep "^53\." || corporate-vpn -s | grep -w "Connection Established"'
-
-[custom.tmux_zoom]
-disabled = false
-description = "Show indicator when tmux pane is zoomed"
-command = 'echo "󰖗 zoom"'
-style = 'bg:#100808'
-when = '[ -n "$TMUX" ] && [ "$(tmux display-message -p "#{window_zoomed_flag}")" = "1" ]'
-format = '[](fg:#100808)[ $output ](fg:#cc7733 bg:#100808)[](fg:#100808) '
-shell = ["bash", "--noprofile", "--norc"]
