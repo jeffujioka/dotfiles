@@ -73,7 +73,6 @@ zstyle ':completion:*' menu no
 # zstyle ':completion:*' menu select
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls --color $realpath'
 zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
-zstyle ':fzf-tab:*' fzf-command ftb-tmux-popup
 
 bindkey "^[[1;5C" forward-word
 bindkey "^[[1;5D" backward-word
@@ -135,7 +134,7 @@ path=("$HOME/.scripts" $path)
 path=("$HOME/.asdf/shims" $path)
 
 # .local/sbin + .local/bin — always first in PATH.
-# Login shells (kitty, every tmux pane) re-run path_helper via /etc/zprofile,
+# Login shells (kitty, every herdr pane) re-run path_helper via /etc/zprofile,
 # which rebuilds PATH with system dirs first and appends the inherited PATH.
 # Guard-based prepends ([[ ! $PATH == *dir* ]]) then skip, so these dirs
 # never reached the front. Force them to the front on every shell start.
@@ -143,7 +142,7 @@ path=("$HOME/.asdf/shims" $path)
 # (fixes the accumulated brew/docker dups from nested logins).
 path=("${HOME}/.local/sbin" "${HOME}/.local/bin" "${HOME}/.bun/bin" "${path[@]}")
 
-# TMPDIR, TMUX_TMPDIR, HOMEBREW_TEMP, JAVA_TOOL_OPTIONS → zprofile
+# TMPDIR, HOMEBREW_TEMP, JAVA_TOOL_OPTIONS → zprofile
 # (sourced at login by both bash and zsh so daemons inherit them)
 if [ -z "$TMPDIR" ]; then
   source "${ZDOTDIR:-$HOME}/.zprofile"
@@ -158,20 +157,12 @@ if [ -r "$HOME/.zsh_secrets" ]; then
 fi
 
 
-# Keep tmux pane_title meaningful: shell name when idle, command name when running.
-# Without this, processes like tmux reset the OSC title to empty and pane borders
-# show nothing instead of the current command.
+# Keep the terminal title meaningful: shell name when idle, command name when running.
 autoload -Uz add-zsh-hook
 _set_title_precmd()  { printf '\e]0;%s\a' "${SHELL:t}" }
 _set_title_preexec() { printf '\e]0;%s\a' "${1%% *}" }
 add-zsh-hook precmd  _set_title_precmd
 add-zsh-hook preexec _set_title_preexec
-
-# Refresh tmux status bar on cd and ssh (avoids polling every second)
-_tmux_refresh_chpwd()   { [[ -n "$TMUX" ]] && tmux refresh-client -S }
-_tmux_refresh_preexec() { [[ -n "$TMUX" && "$1" == ssh* ]] && tmux refresh-client -S }
-add-zsh-hook chpwd   _tmux_refresh_chpwd
-add-zsh-hook preexec _tmux_refresh_preexec
 
 if [[ -o interactive ]]; then
   cat ~/.config/ascii-art-goku.txt

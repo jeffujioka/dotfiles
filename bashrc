@@ -128,15 +128,6 @@ if [ -f "${HOME}/.bash_completion/alacritty" ]; then
   source "${HOME}/.bash_completion/alacritty"
 fi
 
-# if command -v tmux &> /dev/null && [ -n "$PS1" ] && [[ ! "$TERM" =~ screen ]] && [[ ! "$TERM" =~ tmux ]] && [ -z "$TMUX" ]; then
-#   exec tmux
-# fi
-
-if [ -f "${HOME}/.bash_completion/tmux_completion" ]; then
-  echo "   tmux autocomplete"
-  source "${HOME}/.bash_completion/tmux_completion"
-fi
-
 [[ ${BLE_VERSION-} ]] && ble-attach
 
 # added by wd40 install.sh
