@@ -372,7 +372,12 @@ section_begin 'bash 3.2 and BSD portability'
   # The program itself lives in a quoted here-document because a quoted
   # here-document is data, and the scanner skips it. A scanner that read
   # its own source as shell would be the first thing to trip it.
-  STRIPPER=$(cat <<'AWK'
+  #
+  # It is read with `read -d ''` rather than captured with `$(cat <<...)`:
+  # bash 3.2 does not treat a here-document body inside `$(...)` as opaque,
+  # so the unbalanced quotes and parentheses in the awk program make the
+  # whole file fail to parse there. `|| true` because read returns 1 at EOF.
+  IFS= read -r -d '' STRIPPER <<'AWK' || true
   heredoc != "" {
     line = $0
     sub(/^[[:space:]]+/, "", line)
@@ -407,7 +412,6 @@ section_begin 'bash 3.2 and BSD portability'
     }
   }
 AWK
-)
 
   # One pass per file rather than one per file and construct, with the name
   # and line number carried along so a hit can be gone straight to.
