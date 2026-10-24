@@ -1,0 +1,36 @@
+onboarding = false
+
+[keys]
+prefix = "ctrl+k"
+detach = "prefix+d"
+split_vertical = ["alt+backslash"]
+split_horizontal = ["alt+minus"]
+focus_pane_left = ["alt+h"]
+focus_pane_down = ["alt+j"]
+focus_pane_up = ["alt+k"]
+focus_pane_right = ["alt+l"]
+next_tab = ["prefix+n", "shift+alt+l"]
+previous_tab = ["prefix+p", "shift+alt+h"]
+previous_workspace = ["shift+alt+k"]
+next_workspace = ["shift+alt+j"]
+previous_agent = ["F2"]
+next_agent = ["F3"]
+focus_agent = ["ctrl+alt+1..9"]
+new_workspace = ["ctrl+n"]
+
+[ui.toast]
+delivery = "system"
+
+[ui.toast.clipboard]
+enabled = true
+position = "top-right"
+
+[theme]
+name = "gruvbox"
+auto_switch = false
+
+[[keys.command]]
+key = "prefix+t"
+type = "shell"
+command = "herdr plugin pane open --plugin ttt.editor --entrypoint editor"
+description = "open TTT editor"
