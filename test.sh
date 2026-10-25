@@ -98,6 +98,7 @@ run_local_checks() {
     "$SCRIPT_DIR/tests/check-symlinks.sh"         || rc=1
     "$SCRIPT_DIR/tests/test-installer-seed.sh"    || rc=1
     "$SCRIPT_DIR/tests/test-install-cronjobs.sh"  || rc=1
+    "$SCRIPT_DIR/tests/check-hammerspoon.sh"      || rc=1
     "$SCRIPT_DIR/tests/check-git-credentials.sh"  || rc=1
     "$SCRIPT_DIR/tests/check-wd40.sh"             || rc=1
 
