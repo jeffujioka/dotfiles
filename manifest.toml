@@ -178,6 +178,12 @@ source = "config/herdr/config.toml"
 target = "~/.config/herdr/config.toml"
 
 [[symlinks]]
+source = "config/hammerspoon/*"
+target = "~/.hammerspoon/*"
+type = "glob"
+platform = "darwin"
+
+[[symlinks]]
 source = "vimrc"
 target = "~/.vimrc"
 
