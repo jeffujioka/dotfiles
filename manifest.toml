@@ -71,10 +71,46 @@ list = [
 tools = []
 
 [[brew.tools]]
+formula = "anomalyco/tap/opencode-v2"
+binary = "opencode"
+
+[[brew.tools]]
+formula = "asdf"
+
+[[brew.tools]]
+formula = "automake"
+
+[[brew.tools]]
+formula = "awscli"
+
+[[brew.tools]]
+formula = "bash"
+
+[[brew.tools]]
 formula = "bat"
 
 [[brew.tools]]
+formula = "can1357/tap/omp"
+binary = "omp"
+
+[[brew.tools]]
+formula = "cmake"
+
+[[brew.tools]]
+formula = "colima"
+
+[[brew.tools]]
+formula = "docker"
+
+[[brew.tools]]
+formula = "docker-completion"
+
+[[brew.tools]]
 formula = "dust"
+
+[[brew.tools]]
+formula = "eugenioenko/ttt/ttt"
+binary = "ttt"
 
 [[brew.tools]]
 formula = "eza"
@@ -83,31 +119,134 @@ formula = "eza"
 formula = "fd"
 
 [[brew.tools]]
+formula = "fzf"
+
+[[brew.tools]]
+formula = "gh"
+
+[[brew.tools]]
+formula = "git-filter-repo"
+
+[[brew.tools]]
+formula = "gitleaks"
+
+[[brew.tools]]
+formula = "glab"
+
+[[brew.tools]]
+formula = "glow"
+
+[[brew.tools]]
+formula = "google-java-format"
+
+[[brew.tools]]
+formula = "gradle"
+
+[[brew.tools]]
 formula = "herdr"
+
+[[brew.tools]]
+formula = "htop"
 
 [[brew.tools]]
 formula = "hunk"
 
 [[brew.tools]]
+formula = "imagemagick"
+
+[[brew.tools]]
+formula = "jeffujioka/local/freerdp"
+binary = "xfreerdp"
+
+[[brew.tools]]
+formula = "jfrog-cli"
+binary = "jfrog"
+
+[[brew.tools]]
+formula = "jira-cli"
+binary = "jira"
+
+[[brew.tools]]
+formula = "mutagen-io/mutagen/mutagen"
+binary = "mutagen"
+
+[[brew.tools]]
+formula = "node"
+
+[[brew.tools]]
+formula = "openjdk@11"
+
+[[brew.tools]]
+formula = "openjdk@17"
+
+[[brew.tools]]
+formula = "plantuml"
+
+[[brew.tools]]
+formula = "presenterm"
+
+[[brew.tools]]
 formula = "procs"
+
+[[brew.tools]]
+formula = "qemu"
+
+[[brew.tools]]
+formula = "repo"
 
 [[brew.tools]]
 formula = "ripgrep"
 binary = "rg"
 
 [[brew.tools]]
+formula = "sesh"
+
+[[brew.tools]]
+formula = "shellcheck"
+
+[[brew.tools]]
+formula = "sing-box"
+
+[[brew.tools]]
 formula = "starship"
+
+[[brew.tools]]
+formula = "tealdeer"
+
+[[brew.tools]]
+formula = "tldr"
+
+[[brew.tools]]
+formula = "tmux"
+
+[[brew.tools]]
+formula = "uv"
 
 [[brew.tools]]
 formula = "viu"
 
 [[brew.tools]]
+formula = "vim"
+
+[[brew.tools]]
+formula = "wget"
+
+[[brew.tools]]
+formula = "xcodegen"
+
+[[brew.tools]]
+formula = "zlib"
+
+[[brew.tools]]
 formula = "zoxide"
 
 [[brew.tools]]
-formula = "python@3.14"
+formula = "python@3.15"
 binary = "python3"
 flags = "--force-bottle"
+
+[[brew.tools]]
+formula = "python-tk@3.15"
 
 [[brew.tools]]
 formula = "zsh"
@@ -118,15 +257,6 @@ type = "git-clone"
 path = ".git_downloads/nerd-fonts"
 url = "https://github.com/ryanoasis/nerd-fonts"
 branch = "master"
-shallow = true
-post_install = "./install.sh"
-
-[[resources]]
-name = "mate"
-type = "git-clone"
-path = ".git_downloads/mate"
-url = "https://github.com/jeffujioka/mate"
-branch = "main"
 shallow = true
 post_install = "./install.sh"
 
