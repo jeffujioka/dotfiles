@@ -1,6 +1,6 @@
 #!/bin/env bash
 # wd40: upd - update brew, Claude Code, OpenChamber, litellm, skills, plugins, and zsh completions, then restart zsh (--no-restart to skip)
-# wd40: zcomp-update - regenerate zsh completion scripts for installed CLIs and rebuild the dump, then restart zsh (--no-restart to skip)
+# wd40: zcomp_update - regenerate zsh completion scripts for installed CLIs and rebuild the dump, then restart zsh (--no-restart to skip)
 
 claude_update_all_plugins() (
   json=$(claude plugin list --json) || exit $?
@@ -57,13 +57,13 @@ if [ -n "${ZSH_VERSION:-}" ]; then
   add-zsh-hook precmd _upd_report
 fi
 
-zcomp-update() {
+zcomp_update() {
   local _zc_dir="$HOME/.zsh_completions.d"
   local _zc_brew _zc_sf="" _zc_tool _zc_args _zc_tmp _zc_restart=1
   case "${1:-}" in
     "") ;;
     --no-restart) _zc_restart=0 ;;
-    *) echo "usage: zcomp-update [--no-restart]" >&2; return 2 ;;
+    *) echo "usage: zcomp_update [--no-restart]" >&2; return 2 ;;
   esac
   _zc_brew=$(command -v brew 2>/dev/null)
   [ -n "$_zc_brew" ] && _zc_sf="$(dirname "$(dirname "$_zc_brew")")/share/zsh/site-functions"
@@ -76,20 +76,20 @@ zcomp-update() {
     _zc_tmp=$(mktemp) || return 1
     # eval so the argument string word-splits identically in bash and zsh
     if eval "\"\$_zc_tool\" $_zc_args" >"$_zc_tmp" 2>/dev/null && [ -s "$_zc_tmp" ]; then
-      mv "$_zc_tmp" "$_zc_dir/_$_zc_tool" && echo "zcomp-update: $_zc_tool: updated"
+      mv "$_zc_tmp" "$_zc_dir/_$_zc_tool" && echo "zcomp_update: $_zc_tool: updated"
     else
       rm -f "$_zc_tmp"
-      echo "zcomp-update: $_zc_tool: generator failed, skipping" >&2
+      echo "zcomp_update: $_zc_tool: generator failed, skipping" >&2
     fi
   done
-  if [ -n "${ZSH_VERSION:-}" ] && command -v zcomp-rebuild >/dev/null 2>&1; then
-    zcomp-rebuild
+  if [ -n "${ZSH_VERSION:-}" ] && command -v zcomp_rebuild >/dev/null 2>&1; then
+    zcomp_rebuild
   else
     rm -f "$HOME/.zcompdump" "$HOME/.zcompdump.zwc"
   fi
   if [ "$_zc_restart" = 1 ]; then
     _upd_restart_shell
-    echo "zcomp-update: run 'exec zsh' to load the new completions"
+    echo "zcomp_update: run 'exec zsh' to load the new completions"
   fi
 }
 
@@ -107,7 +107,7 @@ upd() {
     "DISABLE_TELEMETRY=1 npx --yes skills@latest update -g -y"
     "claude_update_all_plugins"
     "opencode plugin update"
-    "zcomp-update --no-restart"
+    "zcomp_update --no-restart"
   )
   for _cmd in "${_cmds[@]}"; do
     echo '################################################################################'
@@ -133,4 +133,5 @@ alias yupd="DISABLE_TELEMETRY=1 npx --yes skills@latest update -g -y"
 alias opupd="openchamber update"
 alias litellmupdate="uv tool upgrade litellm"
 alias ccuap="claude_update_all_plugins"
+alias zupd="zcomp_update"
 

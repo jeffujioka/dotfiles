@@ -36,7 +36,7 @@ done
 unset _brew_sf _b
 fpath=(~/.zsh_completions.d $fpath)
 # Full compinit (rebuild + security audit) at most once a day; otherwise
-# trust the cached dump. Force a rebuild with `zcomp-rebuild` (wd40).
+# trust the cached dump. Force a rebuild with `zcomp_rebuild` (wd40).
 autoload -Uz compinit
 _zcd=(${ZDOTDIR:-$HOME}/.zcompdump(N.mh-24))
 if (( ${#_zcd} )); then
