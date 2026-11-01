@@ -1,6 +1,6 @@
 # OpenChamber owns the OpenCode shared server; the CLI attaches opt-in via `occ`
 
-OpenChamber and the OpenCode CLI need a shared server to see the same sessions. OpenChamber starts and owns it (`127.0.0.1:5555`). Plain `opencode` is left untouched and uses its own background service; attaching is an explicit choice through the `occ` alias (`opencode_chamber` in `wd40/darwin/shell/opencode.sh`), which fails loudly when OpenChamber isn't running.
+OpenChamber and the OpenCode CLI need a shared server to see the same sessions. OpenChamber starts and owns it (fixed `127.0.0.1:5555` on macOS; on Linux the port is random, so `occ` discovers it at runtime from the process tree). Plain `opencode` is left untouched and uses its own background service; attaching is an explicit choice through the `occ` alias (`opencode_chamber` in `wd40/common/shell/opencode.sh`), which fails loudly when OpenChamber isn't running.
 
 ## Considered Options
 
