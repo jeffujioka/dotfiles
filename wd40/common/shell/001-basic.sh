@@ -206,6 +206,7 @@ alias hr="herdr"
 ################################################################################
 alias rc='remote-code'
 alias rcl='remote-code --local'
+alias omp='VISUAL=omp-rc EDITOR= omp'
 
 alias now='date +"%T"'
 alias timestamp='date +%Y%m%d_%H%M%S'
