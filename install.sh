@@ -40,12 +40,6 @@ read_manifest() {
   fi
 }
 
-# Platform vocabulary for the symlinks `platform` field: darwin | linux.
-# WD40_PLATFORM overrides detection (test seam, shared with wd40rc/wd40.sh).
-detect_platform() {
-  echo "${WD40_PLATFORM:-$(uname -s | tr '[:upper:]' '[:lower:]')}"
-}
-
 # THE strip rule (single definition, mirrored by tests/check-symlinks.sh and
 # wd40/common/scripts/wd40.sh): remove a final .sh or .py suffix — nothing
 # else. Extensionless names pass through unchanged.
@@ -82,17 +76,14 @@ install_brew_tools() {
   host_platform=$(detect_platform)
   installed_names=$'\n'"$(brew_installed_names)"$'\n'
 
-  while IFS=$'\t' read -r formula binary flags platform; do
-    # Platform filter: empty field = install on every platform.
-    if [ -n "$platform" ] && [ "$platform" != "$host_platform" ]; then
-      continue
-    fi
+  while IFS=$MANIFEST_SEP read -r formula binary flags platform; do
+    platform_matches "$platform" "$host_platform" || continue
     binary="${binary:-$formula}"
     # Installed if the binary is on PATH, or brew itself lists the package
     # (covers formulae whose binary differs from the name, or that ship none).
     if command -v "$binary" &>/dev/null; then
       echo "'$binary' is already installed."
-    elif [[ "$installed_names" == *$'\n'"${formula##*/}"$'\n'* ]]; then
+    elif brew_package_installed "$installed_names" "$formula"; then
       echo "'$formula' is already installed (brew)."
     else
       echo "Installing $formula via brew..."
@@ -100,7 +91,7 @@ install_brew_tools() {
       brew install $flags "$formula" \
         || { echo "Warning: Failed to install $formula"; failed_installs=$((failed_installs + 1)); }
     fi
-  done < <(read_manifest brew.tools --format tsv \
+  done < <(read_manifest brew.tools --format tsv --sep "$MANIFEST_SEP" \
               --fields "formula,binary:,flags:,platform:")
 
   if [ "$failed_installs" -gt 0 ]; then
@@ -209,28 +200,56 @@ install_non_asdf_tools() {
   done
 }
 
+# Download URL to a temp file and run it with SHELL_BIN (never piped). Runs as
+# a subshell function so `env` and `post_install` do not leak into the rest of
+# the installer. Args: name url shell args env sha256 post_install.
+#   env  - "KEY=VALUE ..." eval'd into `export`; quote values that may contain
+#          spaces, e.g. KEY="$XDG_CONFIG_HOME/x"
+#   args - word-split on purpose (manifest string of CLI flags)
+run_script_install() (
+  local name="$1" url="$2" shell_bin="$3" args="$4" env_vars="$5" sha256="$6" post_install="$7"
+  local tmp actual
+  set -e
+  tmp=$(mktemp)
+  trap 'rm -f "$tmp"' EXIT
+  if [ -n "$env_vars" ]; then
+    eval "export $env_vars"
+  fi
+  # env may point TMPDIR at a directory that does not exist yet.
+  if [ -n "${TMPDIR:-}" ]; then
+    mkdir -p "$TMPDIR"
+  fi
+  curl --proto '=https' --tlsv1.2 -fsSL "$url" -o "$tmp"
+  if [ -n "$sha256" ]; then
+    actual=$(file_sha256 "$tmp")
+    if [ "$actual" != "$sha256" ]; then
+      echo "Error: sha256 mismatch for $name (expected $sha256, got $actual)" >&2
+      exit 1
+    fi
+  fi
+  # shellcheck disable=SC2086
+  "$shell_bin" "$tmp" $args
+  if [ -n "$post_install" ]; then
+    # Intentional: post_install is a trusted shell snippet from manifest.toml
+    eval "$post_install"
+  fi
+)
+
 # Install tools via the vendor's own install script: manifest `resources`
-# entries of type "script-install". The script is downloaded to a temp file
-# and run with <shell> (never piped), in a per-entry subshell so `env` does
-# not leak into the rest of the installer.
+# entries of type "script-install".
 #
 # Fields: name, url, creates (binary; skip if on PATH), shell (default bash),
-# args, env ("KEY=VALUE ..." expanded at runtime), sha256 (optional pin),
-# platform (darwin|linux; empty = both), post_install (runs in the same
-# subshell, after the script), required (true = failure aborts install.sh).
+# args, env, sha256 (optional pin), platform (darwin|linux; empty = both),
+# post_install (runs in the same subshell, after the script), required
+# (true = failure aborts install.sh). See run_script_install for semantics.
 install_script_installers() {
   local host_platform rc failed_installs=0
-  local name rtype url creates interp args env_vars sha256 platform required post_install
+  local name rtype url creates shell_bin args env_vars sha256 platform required post_install
   host_platform=$(detect_platform)
 
-  # Unit-separator delimiter, NOT tab: tab is IFS-whitespace, so `read`
-  # would collapse the many empty optional fields and shift later ones.
-  while IFS=$'\x1f' read -r name rtype url creates interp args env_vars sha256 platform required post_install; do
+  while IFS=$MANIFEST_SEP read -r name rtype url creates shell_bin args env_vars sha256 platform required post_install; do
     [ "$rtype" = "script-install" ] || continue
-
-    if [ -n "$platform" ] && [ "$platform" != "$host_platform" ]; then
-      continue
-    fi
+    platform_matches "$platform" "$host_platform" || continue
 
     if [ -z "$url" ] || [ -z "$creates" ]; then
       echo "Error: script-install '$name' needs both url and creates" >&2
@@ -243,34 +262,9 @@ install_script_installers() {
     fi
 
     echo "Installing $name via install script..."
-    (
-      set -e
-      tmp=$(mktemp)
-      trap 'rm -f "$tmp"' EXIT
-      if [ -n "$env_vars" ]; then
-        eval "export $env_vars"
-      fi
-      # env may point TMPDIR at a directory that does not exist yet.
-      if [ -n "${TMPDIR:-}" ]; then
-        mkdir -p "$TMPDIR"
-      fi
-      curl --proto '=https' --tlsv1.2 -fsSL "$url" -o "$tmp"
-      if [ -n "$sha256" ]; then
-        actual=$( (sha256sum "$tmp" 2>/dev/null || shasum -a 256 "$tmp") | cut -d' ' -f1)
-        if [ "$actual" != "$sha256" ]; then
-          echo "Error: sha256 mismatch for $name (expected $sha256, got $actual)" >&2
-          exit 1
-        fi
-      fi
-      # shellcheck disable=SC2086
-      "$interp" "$tmp" $args
-      if [ -n "$post_install" ]; then
-        # Intentional: post_install is a trusted shell snippet from manifest.toml
-        eval "$post_install"
-      fi
-    )
-    # Status captured outside an `if` condition: bash ignores `set -e` for
-    # everything inside a subshell that is itself an if/&& condition.
+    # Status read on the next line, NOT via `|| rc=$?`: bash ignores the
+    # subshell's `set -e` when the call is an `||`/`if` condition.
+    run_script_install "$name" "$url" "$shell_bin" "$args" "$env_vars" "$sha256" "$post_install"
     rc=$?
     if [ "$rc" -eq 0 ]; then
       :
@@ -281,7 +275,7 @@ install_script_installers() {
       echo "Warning: Failed to install $name"
       failed_installs=$((failed_installs + 1))
     fi
-  done < <(read_manifest resources --format tsv --sep $'\x1f' \
+  done < <(read_manifest resources --format tsv --sep "$MANIFEST_SEP" \
               --fields "name,type,url,creates,shell:bash,args,env,sha256,platform,required,post_install")
 
   if [ "$failed_installs" -gt 0 ]; then
@@ -310,6 +304,13 @@ install_dependencies() {
 
   # Rust (rustup) and other vendor-script tools: manifest `script-install` entries.
   install_script_installers
+  # Script installs run in subshells; re-expose rustup/cargo to the rest of
+  # install.sh (the old inline installer did `source cargo/env` here).
+  if [ -f "${XDG_CONFIG_HOME}/cargo/env" ]; then
+    export RUSTUP_HOME="${XDG_CONFIG_HOME}/rustup" CARGO_HOME="${XDG_CONFIG_HOME}/cargo"
+    # shellcheck disable=SC1091
+    . "${XDG_CONFIG_HOME}/cargo/env"
+  fi
 
   install_brew_tools
 

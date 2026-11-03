@@ -216,7 +216,6 @@ formula = "tealdeer"
 
 [[brew.tools]]
 formula = "terminal-browser"
-binary = "terminal-browser"
 flags = "--cask"
 platform = "darwin"
 
@@ -271,6 +270,9 @@ post_install = '[ -n "$(fc-list "SauceCodePro Nerd Font" family)" ] || ./install
 # file, then run with `shell`; never piped). Skipped when `creates` is on PATH.
 # Optional: shell (default bash), args, env ("KEY=VALUE ..."), sha256,
 # platform (darwin|linux), post_install, required (true = failure aborts).
+# `env` is eval'd: quote values that may contain spaces (see rustup below).
+# sha256 is left unset for rolling vendor scripts (they change upstream and a
+# pin would break the install); set it for scripts that are versioned.
 [[resources]]
 name = "rustup"
 type = "script-install"
@@ -278,7 +280,7 @@ url = "https://sh.rustup.rs"
 creates = "cargo"
 shell = "sh"
 args = "-y --no-modify-path"
-env = "RUSTUP_HOME=$XDG_CONFIG_HOME/rustup CARGO_HOME=$XDG_CONFIG_HOME/cargo TMPDIR=$XDG_CONFIG_HOME/tmp"
+env = 'RUSTUP_HOME="$XDG_CONFIG_HOME/rustup" CARGO_HOME="$XDG_CONFIG_HOME/cargo" TMPDIR="$XDG_CONFIG_HOME/tmp"'
 post_install = '. "$CARGO_HOME/env" && rustup default stable'
 required = true
 
