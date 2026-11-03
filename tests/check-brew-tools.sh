@@ -15,8 +15,13 @@ if ! command -v brew &>/dev/null; then
     exit 0
 fi
 
-"$REPO_ROOT/helpers/read-manifest.py" brew.tools --format tsv --fields "formula,binary:" \
-    | while IFS=$'\t' read -r formula binary; do
+host_platform="${WD40_PLATFORM:-$(uname -s | tr '[:upper:]' '[:lower:]')}"
+
+"$REPO_ROOT/helpers/read-manifest.py" brew.tools --format tsv --fields "formula,binary:,platform:" \
+    | while IFS=$'\t' read -r formula binary platform; do
+    if [ -n "$platform" ] && [ "$platform" != "$host_platform" ]; then
+        continue
+    fi
     binary="${binary:-$formula}"
     if command -v "$binary" &>/dev/null; then
         version=$("$binary" --version 2>/dev/null | head -1)

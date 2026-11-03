@@ -78,7 +78,14 @@ install_brew_tools() {
   echo "Installing brew tools..."
   local failed_installs=0
 
-  while IFS=$'\t' read -r formula binary flags; do
+  local host_platform formula binary flags platform
+  host_platform=$(detect_platform)
+
+  while IFS=$'\t' read -r formula binary flags platform; do
+    # Platform filter: empty field = install on every platform.
+    if [ -n "$platform" ] && [ "$platform" != "$host_platform" ]; then
+      continue
+    fi
     binary="${binary:-$formula}"
     if command -v "$binary" &>/dev/null; then
       echo "'$binary' is already installed."
@@ -89,7 +96,7 @@ install_brew_tools() {
         || { echo "Warning: Failed to install $formula"; failed_installs=$((failed_installs + 1)); }
     fi
   done < <(read_manifest brew.tools --format tsv \
-              --fields "formula,binary:,flags:")
+              --fields "formula,binary:,flags:,platform:")
 
   if [ "$failed_installs" -gt 0 ]; then
     echo "Warning: $failed_installs brew tool(s) failed to install."
