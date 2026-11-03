@@ -204,6 +204,86 @@ install_non_asdf_tools() {
   done
 }
 
+# Install tools via the vendor's own install script: manifest `resources`
+# entries of type "script-install". The script is downloaded to a temp file
+# and run with <shell> (never piped), in a per-entry subshell so `env` does
+# not leak into the rest of the installer.
+#
+# Fields: name, url, creates (binary; skip if on PATH), shell (default bash),
+# args, env ("KEY=VALUE ..." expanded at runtime), sha256 (optional pin),
+# platform (darwin|linux; empty = both), post_install (runs in the same
+# subshell, after the script), required (true = failure aborts install.sh).
+install_script_installers() {
+  local host_platform rc failed_installs=0
+  local name rtype url creates interp args env_vars sha256 platform required post_install
+  host_platform=$(detect_platform)
+
+  # Unit-separator delimiter, NOT tab: tab is IFS-whitespace, so `read`
+  # would collapse the many empty optional fields and shift later ones.
+  while IFS=$'\x1f' read -r name rtype url creates interp args env_vars sha256 platform required post_install; do
+    [ "$rtype" = "script-install" ] || continue
+
+    if [ -n "$platform" ] && [ "$platform" != "$host_platform" ]; then
+      continue
+    fi
+
+    if [ -z "$url" ] || [ -z "$creates" ]; then
+      echo "Error: script-install '$name' needs both url and creates" >&2
+      exit 1
+    fi
+
+    if command -v "$creates" &>/dev/null; then
+      echo "'$creates' is already installed ($name)."
+      continue
+    fi
+
+    echo "Installing $name via install script..."
+    (
+      set -e
+      tmp=$(mktemp)
+      trap 'rm -f "$tmp"' EXIT
+      if [ -n "$env_vars" ]; then
+        eval "export $env_vars"
+      fi
+      # env may point TMPDIR at a directory that does not exist yet.
+      if [ -n "${TMPDIR:-}" ]; then
+        mkdir -p "$TMPDIR"
+      fi
+      curl --proto '=https' --tlsv1.2 -fsSL "$url" -o "$tmp"
+      if [ -n "$sha256" ]; then
+        actual=$( (sha256sum "$tmp" 2>/dev/null || shasum -a 256 "$tmp") | cut -d' ' -f1)
+        if [ "$actual" != "$sha256" ]; then
+          echo "Error: sha256 mismatch for $name (expected $sha256, got $actual)" >&2
+          exit 1
+        fi
+      fi
+      # shellcheck disable=SC2086
+      "$interp" "$tmp" $args
+      if [ -n "$post_install" ]; then
+        # Intentional: post_install is a trusted shell snippet from manifest.toml
+        eval "$post_install"
+      fi
+    )
+    # Status captured outside an `if` condition: bash ignores `set -e` for
+    # everything inside a subshell that is itself an if/&& condition.
+    rc=$?
+    if [ "$rc" -eq 0 ]; then
+      :
+    elif [ "$required" = "true" ]; then
+      echo "Error: required install '$name' failed. Aborting." >&2
+      exit 1
+    else
+      echo "Warning: Failed to install $name"
+      failed_installs=$((failed_installs + 1))
+    fi
+  done < <(read_manifest resources --format tsv --sep $'\x1f' \
+              --fields "name,type,url,creates,shell:bash,args,env,sha256,platform,required,post_install")
+
+  if [ "$failed_installs" -gt 0 ]; then
+    echo "Warning: $failed_installs script install(s) failed."
+  fi
+}
+
 install_dependencies() {
   # On Linux, install Homebrew and zsh BEFORE install_sys_packages.
   # zsh must be built before Homebrew's ncurses is installed — once
@@ -223,20 +303,8 @@ install_dependencies() {
 
   install_sys_packages
 
-  if ! command -v cargo > /dev/null 2>&1 ; then
-    echo "Installing Rust..."
-    export RUSTUP_HOME=${XDG_CONFIG_HOME}/rustup
-    export CARGO_HOME=${XDG_CONFIG_HOME}/cargo
-    export TMPDIR=${XDG_CONFIG_HOME}/tmp
-    mkdir -p "$TMPDIR"
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
-
-    source "${XDG_CONFIG_HOME}/cargo/env"
-
-    rustup default stable
-  fi
-
-  rustup default stable
+  # Rust (rustup) and other vendor-script tools: manifest `script-install` entries.
+  install_script_installers
 
   install_brew_tools
 

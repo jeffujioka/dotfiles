@@ -31,3 +31,9 @@ _Avoid_: tmux, multiplexer (unqualified)
 **Workspace**:
 A Herdr container of tabs and panes, used to keep one project's terminals together.
 _Avoid_: session (that was the tmux term)
+
+## Installation
+
+**Script installer**:
+A tool installed by running the vendor's own install script instead of a package manager.
+_Avoid_: curl-bash, curl pipe

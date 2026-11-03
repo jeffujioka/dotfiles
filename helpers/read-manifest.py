@@ -79,6 +79,13 @@ def main():
         help="Comma-separated fields for --format tsv: 'field' or 'field:default'",
     )
     parser.add_argument(
+        "--sep",
+        default="\t",
+        help="Field separator for --format tsv (default: tab). Use a non-whitespace "
+        "character such as $'\\x1f' when fields may be empty: shell `read` collapses "
+        "runs of whitespace separators, silently shifting later fields.",
+    )
+    parser.add_argument(
         "--manifest",
         type=Path,
         default=None,
@@ -109,7 +116,7 @@ def main():
         field_specs = _parse_field_specs(args.fields)
         for item in value:
             parts = [_get_field_value(item, f, d) for f, d in field_specs]
-            print("\t".join(parts))
+            print(args.sep.join(parts))
     else:
         if isinstance(value, list):
             for item in value:
