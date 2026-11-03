@@ -55,6 +55,11 @@ bindkey '^p' history-search-backward
 bindkey '^n' history-search-forward
 bindkey '^[w' kill-region
 
+# ctrl+l: clear screen AND scrollback (\e[3J), like the `clear` alias
+clear-screen-and-scrollback() { zle clear-screen; print -n '\e[3J'; zle redisplay }
+zle -N clear-screen-and-scrollback
+bindkey '^l' clear-screen-and-scrollback
+
 # History
 HISTSIZE=10000
 HISTFILE=~/.zsh_history
