@@ -34,3 +34,36 @@ key = "prefix+t"
 type = "shell"
 command = "herdr plugin pane open --plugin ttt.editor --entrypoint editor"
 description = "open TTT editor"
+
+[[keys.command]]
+key = "prefix+k"
+type = "plugin_action"
+command = "herdr-bar.open"
+description = "command bar"
+
+[[keys.command]]
+key = "cmd+o"
+type = "shell"
+command = "herdr plugin action invoke open-sidebar --plugin herdr-sidebar"
+description = "toogle sidebar"
+
+[[keys.command]]
+key = "cmd+p"
+type = "shell"
+command = "herdr plugin action invoke show-explorer --plugin herdr-sidebar"
+description = "sidebar show explorer"
+
+[[keys.command]]
+key = "cmd+shift+f"
+type = "shell"
+command = "herdr plugin action invoke show-search --plugin herdr-sidebar"
+description = "sidebar show search"
+
+[[keys.command]]
+key = "cmd+g"
+type = "shell"
+command = "herdr plugin action invoke show-git --plugin herdr-sidebar"
+description = "sidebar show git"
+
+[experimental]
+kitty_graphics = true
