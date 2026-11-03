@@ -67,7 +67,8 @@ list = [
 
 [cargo]
 # Placeholder — add entries here for any future cargo tools.
-# Rust/cargo is always installed; this list drives cargo install runs.
+# Rust/cargo itself is installed by the "rustup" script-install resource;
+# this list drives cargo install runs.
 tools = []
 
 [[brew.tools]]
@@ -265,6 +266,28 @@ url = "https://github.com/ryanoasis/nerd-fonts"
 branch = "master"
 shallow = true
 post_install = "./install.sh"
+
+# type = "script-install": run a vendor install script (downloaded to a temp
+# file, then run with `shell`; never piped). Skipped when `creates` is on PATH.
+# Optional: shell (default bash), args, env ("KEY=VALUE ..."), sha256,
+# platform (darwin|linux), post_install, required (true = failure aborts).
+[[resources]]
+name = "rustup"
+type = "script-install"
+url = "https://sh.rustup.rs"
+creates = "cargo"
+shell = "sh"
+args = "-y --no-modify-path"
+env = "RUSTUP_HOME=$XDG_CONFIG_HOME/rustup CARGO_HOME=$XDG_CONFIG_HOME/cargo TMPDIR=$XDG_CONFIG_HOME/tmp"
+post_install = '. "$CARGO_HOME/env" && rustup default stable'
+required = true
+
+[[resources]]
+name = "terminal-browser"
+type = "script-install"
+url = "https://terminal-browser.sh/install"
+creates = "terminal-browser"
+platform = "linux"
 
 [[symlinks]]
 source = "zprofile"
