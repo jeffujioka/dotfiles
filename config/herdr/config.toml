@@ -65,5 +65,13 @@ type = "shell"
 command = "herdr plugin action invoke show-git --plugin herdr-sidebar"
 description = "sidebar show git"
 
+[[keys.command]]
+key = "prefix+l"
+type = "popup"
+command = "~/.local/sbin/herdr-save-pane"
+description = "save pane contents to $TMPDIR log"
+width = "70%"
+height = 9
+
 [experimental]
 kitty_graphics = true
