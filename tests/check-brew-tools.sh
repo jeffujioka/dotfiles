@@ -16,20 +16,18 @@ if ! command -v brew &>/dev/null; then
 fi
 
 installed_names=$'\n'"$(brew_installed_names)"$'\n'
-host_platform="${WD40_PLATFORM:-$(uname -s | tr '[:upper:]' '[:lower:]')}"
+host_platform=$(detect_platform)
 
-"$REPO_ROOT/helpers/read-manifest.py" brew.tools --format tsv --fields "formula,binary:,platform:" \
-    | while IFS=$'\t' read -r formula binary platform; do
-    if [ -n "$platform" ] && [ "$platform" != "$host_platform" ]; then
-        continue
-    fi
+"$REPO_ROOT/helpers/read-manifest.py" brew.tools --format tsv --sep "$MANIFEST_SEP" --fields "formula,binary:,platform:" \
+    | while IFS=$MANIFEST_SEP read -r formula binary platform; do
+    platform_matches "$platform" "$host_platform" || continue
     binary="${binary:-$formula}"
     if command -v "$binary" &>/dev/null; then
         # `|| true`: some tools exit nonzero on --version; under
         # `set -eo pipefail` that would silently kill the whole check.
         version=$("$binary" --version 2>/dev/null | head -1 || true)
         pass "$formula ($version)"
-    elif [[ "$installed_names" == *$'\n'"${formula##*/}"$'\n'* ]]; then
+    elif brew_package_installed "$installed_names" "$formula"; then
         pass "$formula (installed via brew, no binary on PATH)"
     else
         fail "$formula not found (binary: $binary)"

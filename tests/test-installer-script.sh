@@ -27,7 +27,7 @@ mkdir -p "$SANDBOX/bin" "$SANDBOX/home"
 cat > "$SANDBOX/vendor.sh" <<'VENDOR'
 echo "ran args=[$*] foo=[${FOO:-}]" >> "$HOME/script-ran"
 VENDOR
-VENDOR_SHA=$(cd "$SANDBOX" && (sha256sum vendor.sh 2>/dev/null || shasum -a 256 vendor.sh) | cut -d' ' -f1)
+VENDOR_SHA=$(file_sha256 "$SANDBOX/vendor.sh")
 
 # Fake curl: copy the fixture to the -o target, ignore everything else.
 cat > "$SANDBOX/bin/curl" <<CURL
@@ -51,8 +51,9 @@ run_fn() {
     export HOME="$SANDBOX/home" DOTFILES_MANIFEST="$SANDBOX/manifest.toml" \
            WD40_PLATFORM="${2:-linux}" PATH="$SANDBOX/bin:$PATH"
     script_dir="$REPO_ROOT"
+    . "$REPO_ROOT/helpers/shell-utils.sh"
     # shellcheck disable=SC1090
-    . <(sed -n '/^read_manifest()/,/^}/p;/^detect_platform()/,/^}/p;/^install_script_installers()/,/^}/p' "$REPO_ROOT/install.sh")
+    . <(sed -n '/^read_manifest()/,/^}/p;/^run_script_install()/,/^)/p;/^install_script_installers()/,/^}/p' "$REPO_ROOT/install.sh")
     install_script_installers
   ) > "$SANDBOX/out" 2>&1
 }
@@ -118,6 +119,51 @@ if run_fn "$(cat "$SANDBOX/bad.toml")"; then
   t_fail "missing creates not refused"
 else
   t_pass "missing creates refused"
+fi
+
+# --- Case 7: non-default shell is the interpreter
+reset_home
+printf '#!/bin/bash\necho used > "$HOME/shell-used"\nexec bash "$@"\n' > "$SANDBOX/bin/mysh"; chmod +x "$SANDBOX/bin/mysh"
+run_fn "$(entry thing absent-tool-7 'shell = "mysh"')"
+[ -e "$SANDBOX/home/shell-used" ] && [ -e "$SANDBOX/home/script-ran" ] \
+  && t_pass "configured shell runs the script" || t_fail "configured shell not used"
+
+# --- Case 8: brew.tools platform filter (empty binary + platform must not shift
+# fields; unfiltered and matching entries install, mismatching is skipped)
+printf '#!/bin/bash\n[ "$1" = install ] && echo "$*" >> "$HOME/brew-installed"\nexit 0\n' > "$SANDBOX/bin/brew"; chmod +x "$SANDBOX/bin/brew"
+run_brew() {
+  printf '%s\n' "$1" > "$SANDBOX/manifest.toml"
+  (
+    export HOME="$SANDBOX/home" DOTFILES_MANIFEST="$SANDBOX/manifest.toml" \
+           WD40_PLATFORM=linux PATH="$SANDBOX/bin:$PATH"
+    script_dir="$REPO_ROOT"
+    . "$REPO_ROOT/helpers/shell-utils.sh"
+    # shellcheck disable=SC1090
+    . <(sed -n '/^read_manifest()/,/^}/p;/^install_brew_tools()/,/^}/p' "$REPO_ROOT/install.sh")
+    install_brew_tools
+  ) > "$SANDBOX/out" 2>&1
+}
+reset_home
+run_brew '[[brew.tools]]
+formula = "everywhere-pkg"
+
+[[brew.tools]]
+formula = "linux-pkg"
+platform = "linux"
+
+[[brew.tools]]
+formula = "darwin-pkg"
+platform = "darwin"
+
+[[brew.tools]]
+formula = "darwin-flagged"
+flags = "--cask"
+platform = "darwin"'
+installed=$(cat "$SANDBOX/home/brew-installed" 2>/dev/null)
+if [ "$installed" = "$(printf 'install everywhere-pkg\ninstall linux-pkg')" ]; then
+  t_pass "brew platform filter installs only matching entries"
+else
+  t_fail "brew platform filter wrong: $installed"
 fi
 
 echo ""

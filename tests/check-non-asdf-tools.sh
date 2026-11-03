@@ -20,12 +20,11 @@ expand_path() {
     echo "$p"
 }
 
-host_platform="${WD40_PLATFORM:-$(uname -s | tr '[:upper:]' '[:lower:]')}"
+host_platform=$(detect_platform)
 
-# Unit-separator delimiter: tab would collapse empty optional fields.
-"$REPO_ROOT/helpers/read-manifest.py" resources --format tsv --sep $'\x1f' \
+"$REPO_ROOT/helpers/read-manifest.py" resources --format tsv --sep "$MANIFEST_SEP" \
     --fields "name,type,path,creates,platform" \
-    | while IFS=$'\x1f' read -r name rtype rpath creates platform; do
+    | while IFS=$MANIFEST_SEP read -r name rtype rpath creates platform; do
     rpath=$(expand_path "$rpath")
 
     case "$rtype" in
@@ -44,13 +43,11 @@ host_platform="${WD40_PLATFORM:-$(uname -s | tr '[:upper:]' '[:lower:]')}"
             fi
             ;;
         script-install)
-            if [ -n "$platform" ] && [ "$platform" != "$host_platform" ]; then
-                continue
-            fi
+            platform_matches "$platform" "$host_platform" || continue
             if command -v "$creates" &>/dev/null; then
                 pass "$name ($creates)"
             else
-                fail "$name not found (binary: $creates)"
+                fail "$name not found (creates: $creates)"
             fi
             ;;
         *)
