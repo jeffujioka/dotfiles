@@ -78,8 +78,9 @@ install_brew_tools() {
   echo "Installing brew tools..."
   local failed_installs=0
 
-  local host_platform formula binary flags platform
+  local host_platform formula binary flags platform installed_names
   host_platform=$(detect_platform)
+  installed_names=$'\n'"$(brew_installed_names)"$'\n'
 
   while IFS=$'\t' read -r formula binary flags platform; do
     # Platform filter: empty field = install on every platform.
@@ -87,8 +88,12 @@ install_brew_tools() {
       continue
     fi
     binary="${binary:-$formula}"
+    # Installed if the binary is on PATH, or brew itself lists the package
+    # (covers formulae whose binary differs from the name, or that ship none).
     if command -v "$binary" &>/dev/null; then
       echo "'$binary' is already installed."
+    elif [[ "$installed_names" == *$'\n'"${formula##*/}"$'\n'* ]]; then
+      echo "'$formula' is already installed (brew)."
     else
       echo "Installing $formula via brew..."
       # shellcheck disable=SC2086
