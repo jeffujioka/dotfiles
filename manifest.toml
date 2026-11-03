@@ -265,7 +265,7 @@ path = ".git_downloads/nerd-fonts"
 url = "https://github.com/ryanoasis/nerd-fonts"
 branch = "master"
 shallow = true
-post_install = "./install.sh"
+post_install = 'fc-list | grep -qi "SauceCodePro Nerd Font" || ./install.sh -s install SourceCodePro'
 
 # type = "script-install": run a vendor install script (downloaded to a temp
 # file, then run with `shell`; never piped). Skipped when `creates` is on PATH.
