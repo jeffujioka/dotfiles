@@ -292,6 +292,10 @@ creates = "terminal-browser"
 platform = "linux"
 
 [[symlinks]]
+source = "bashrc"
+target = "~/.bashrc"
+
+[[symlinks]]
 source = "zprofile"
 target = "~/.zprofile"
 

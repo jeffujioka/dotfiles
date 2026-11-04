@@ -1,61 +1,161 @@
-[[ $- == *i* ]] && source ${HOME}/.local/share/blesh/ble.sh --noattach
+# ~/.bashrc — mirrors ~/.zshrc for bash.
+#
+# Layout:
+#   1. Environment and PATH, for EVERY bash, interactive or not. Non-interactive
+#      bash (ssh commands, herdr-core started over ssh) reads this file and
+#      stops at the interactive guard, so anything it needs must sit above it.
+#   2. Interactive guard.
+#   3. exec zsh: no sudo for chsh, so zsh becomes the default shell from here.
+#   4. Interactive bash only (DISABLE_ZSH set or stdout not a tty): the bash
+#      equivalent of zshrc's interactive setup.
 
-# If not running interactively, don't do anything
+export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-${HOME}/.config}"
+
+# _path_prepend DIR... — put DIRs at the front of PATH, in the given order,
+# dropping any other copy. Same effect as zshrc's `path=(DIR... $path)` under
+# `typeset -U path`: a guard that skips dirs already present would leave them
+# behind system dirs (path_helper on macOS login shells), so always move.
+_path_prepend() {
+  local i dir p
+  for (( i = $#; i >= 1; i-- )); do
+    dir=${!i}
+    p=":${PATH}:"
+    while [[ $p == *":${dir}:"* ]]; do p=${p//":${dir}:"/:}; done
+    p=${p#:}; p=${p%:}
+    PATH="${dir}${p:+:$p}"
+  done
+  export PATH
+}
+
+# PATH priority (highest → lowest): .local/bin > .scripts > Homebrew > NVM > cargo
+# Each block PREPENDs — the LAST one to run ends up at the FRONT of PATH.
+
+# cargo — lowest priority (Rust toolchain, manual use)
+CARGO_HOME="${XDG_CONFIG_HOME}/cargo"
+CARGO_ENV="${CARGO_HOME}/env"
+if [ -f "${CARGO_ENV}" ]; then
+  source "${CARGO_ENV}"
+elif [ -d "${CARGO_HOME}/bin" ]; then
+  _path_prepend "${CARGO_HOME}/bin"
+fi
+
+# NVM — above cargo
+export NVM_DIR="${XDG_CONFIG_HOME}/nvm"
+# nvm.sh costs ~500ms, so only interactive bash loads it (below).
+# The default node bin goes on PATH now so node/npm/npx work everywhere.
+if [[ -s "$NVM_DIR/nvm.sh" ]]; then
+  _nvm_alias=
+  [[ -r "$NVM_DIR/alias/default" ]] && read -r _nvm_alias < "$NVM_DIR/alias/default"
+  [[ $_nvm_alias == [v0-9]* ]] || _nvm_alias=
+  _nvm_bin=
+  [[ -n $_nvm_alias ]] && _nvm_bin=$(compgen -G "$NVM_DIR/versions/node/${_nvm_alias}*" | sort -V | tail -n 1)
+  [[ -z $_nvm_bin ]] && _nvm_bin=$(compgen -G "$NVM_DIR/versions/node/*" | sort -V | tail -n 1)
+  [[ -n $_nvm_bin && -d $_nvm_bin/bin ]] && _path_prepend "$_nvm_bin/bin"
+  unset _nvm_alias _nvm_bin
+fi
+
+# Homebrew — above NVM. Static equivalent of `brew shellenv` (saves a fork).
+if [[ "$OSTYPE" == darwin* ]] && [[ -x /opt/homebrew/bin/brew ]]; then
+  export HOMEBREW_PREFIX="/opt/homebrew"
+elif [[ "$OSTYPE" == linux* ]] && [[ -x "$HOME/.homebrew/bin/brew" ]]; then
+  export HOMEBREW_PREFIX="$HOME/.homebrew"
+fi
+if [[ -n $HOMEBREW_PREFIX ]]; then
+  export HOMEBREW_CELLAR="$HOMEBREW_PREFIX/Cellar"
+  export HOMEBREW_REPOSITORY="$HOMEBREW_PREFIX"
+  _path_prepend "$HOMEBREW_PREFIX/bin" "$HOMEBREW_PREFIX/sbin"
+  [[ -n ${MANPATH-} ]] && export MANPATH=":${MANPATH#:}"
+  export INFOPATH="$HOMEBREW_PREFIX/share/info:${INFOPATH:-}"
+fi
+
+# VIMRUNTIME — fix for user homebrew vim compiled with system linuxbrew fallback path
+if [[ -d "$HOME/.homebrew/share/vim/vim92" ]]; then
+  export VIMRUNTIME="$HOME/.homebrew/share/vim/vim92"
+fi
+
+# Homebrew glibc locale data (needed for tmux 3.6a+)
+if [[ -d "$HOME/.homebrew/Cellar/glibc/2.39/lib/locale" ]]; then
+  export LOCPATH="$HOME/.homebrew/Cellar/glibc/2.39/lib/locale"
+fi
+
+# Go — toolchain and `go install` binaries, above Homebrew
+export GO_ROOTDIR="$HOME/.local/share/go"
+[[ -d "$GO_ROOTDIR/bin" ]] && _path_prepend "$GO_ROOTDIR/bin"
+[[ -d "$HOME/go/bin" ]] && _path_prepend "$HOME/go/bin"
+
+# Graphviz for PlantUML (user-local install)
+[[ -x "$HOME/.local/bin/dot" ]] && export GRAPHVIZ_DOT="$HOME/.local/bin/dot"
+
+# .scripts — above Homebrew
+_path_prepend "$HOME/.scripts"
+
+# .asdf shims — above .scripts
+_path_prepend "$HOME/.asdf/shims"
+
+# .local/sbin + .local/bin — always first in PATH.
+_path_prepend "${HOME}/.local/sbin" "${HOME}/.local/bin" "${HOME}/.bun/bin"
+
+# TMPDIR, HOMEBREW_TEMP, JAVA_TOOL_OPTIONS → zprofile
+# (sourced at login by both bash and zsh so daemons inherit them)
+if [ -z "$TMPDIR" ] && [ -r "$HOME/.zprofile" ]; then
+  source "$HOME/.zprofile"
+fi
+
+export KUBECONFIG="$HOME/.kube/config"
+
+[ -f "$HOME/.local/bin/env" ] && . "$HOME/.local/bin/env"
+
+# fnm
+FNM_PATH="$HOME/.local/share/fnm"
+if [ -d "$FNM_PATH" ]; then
+  _path_prepend "$FNM_PATH"
+  eval "$(fnm env --shell bash)"
+fi
+
+export EDITOR=vim
+
+# If not running interactively, don't do anything more
 case $- in
-    *i*) ;;
-      *) return;;
+  *i*) ;;
+  *) return ;;
 esac
 
-# don't put duplicate lines or lines starting with space in the history.
-# See bash(1) for more options
-export HISTCONTROL=ignoredups:erasedups
+# zsh as the default shell without chsh (no sudo): replace an interactive
+# terminal bash with zsh. DISABLE_ZSH=1 bash keeps bash.
+if [ -t 1 ] && [ -z "$DISABLE_ZSH" ]; then
+  exec zsh
+fi
 
-# append to the history file, don't overwrite it
-shopt -s histappend
+# ---- interactive bash only ------------------------------------------------
 
-# How many commands can be stored in a file
+[[ -r "${HOME}/.local/share/blesh/ble.sh" ]] && source "${HOME}/.local/share/blesh/ble.sh" --noattach
+
+# History — bash counterparts of zshrc's setopt hist_* options.
+export HISTCONTROL=ignoreboth:erasedups
 HISTFILESIZE=5000
-# how many commands of the current session can be stored in the memory,
-HISTSIZE=2000
-
-# check the window size after each command and, if necessary,
-# update the values of LINES and COLUMNS.
+HISTSIZE=${HISTFILESIZE}
+shopt -s histappend
 shopt -s checkwinsize
-
-# If set, the pattern "**" used in a pathname expansion context will
-# match all files and zero or more directories and subdirectories.
-#shopt -s globstar
 
 # make less more friendly for non-text input files, see lesspipe(1)
 [ -x /usr/bin/lesspipe ] && eval "$(SHELL=/bin/sh lesspipe)"
 
 # enable color support of ls and also add handy aliases
 if [ -x /usr/bin/dircolors ]; then
-    test -r ${HOME}/.dircolors && eval "$(dircolors -b ${HOME}/.dircolors)" || eval "$(dircolors -b)"
-    alias ls='ls --color=auto'
-    #alias dir='dir --color=auto'
-    #alias vdir='vdir --color=auto'
-
-    alias grep='grep --color=auto'
-    alias fgrep='fgrep --color=auto'
-    alias egrep='egrep --color=auto'
+  test -r "${HOME}/.dircolors" && eval "$(dircolors -b "${HOME}/.dircolors")" || eval "$(dircolors -b)"
+  alias ls='ls --color=auto'
+  alias grep='grep --color=auto'
+  alias fgrep='fgrep --color=auto'
+  alias egrep='egrep --color=auto'
 fi
-
-# colored GCC warnings and errors
-#export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
-
-# some more ls aliases
 alias ll='ls -laFh'
 alias la='ls -a'
 alias l='ls -F'
+alias jira="jira-dc"
 
-# Add an "alert" alias for long running commands.  Use like so:
-#   sleep 10; alert
-alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo error)" "$(history|tail -n1|sed -e '\''s/^\s*[0-9]\+\s*//;s/[;&|]\s*alert$//'\'')"'
+[ -f "${HOME}/.bash_aliases" ] && . "${HOME}/.bash_aliases"
 
-# enable programmable completion features (you don't need to enable
-# this, if it's already enabled in /etc/bash.bashrc and /etc/profile
-# sources /etc/bash.bashrc).
+# programmable completion
 if ! shopt -oq posix; then
   if [ -f /usr/share/bash-completion/bash_completion ]; then
     . /usr/share/bash-completion/bash_completion
@@ -66,39 +166,39 @@ fi
 
 if [ -d "${HOME}/.bashrc.d" ]; then
   for rc in "${HOME}"/.bashrc.d/*.sh; do
-    if [ -x "$rc" ]; then
-      #echo "Reading bashrc file: $rc"
-      . $rc
-    fi
+    [ -x "$rc" ] && . "$rc"
   done
   unset rc
 fi
 
-if [[ ! "$PATH" == *${HOME}/.local/bin* ]]; then
-  export PATH="$HOME/.local/bin:${PATH:+${PATH}:}"
-fi
-if [[ ! "$PATH" == *.scripts* ]]; then
-  export PATH="$HOME/.scripts:${PATH:+${PATH}:}"
-fi
-
-export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-${HOME}/.config}"
-
 # turn off "suspend/resume" feature
-stty -ixon
+stty -ixon 2>/dev/null
 
-export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+# Secrets (API tokens, etc.) live outside this repo, in ~/.zsh_secrets,
+# so they never end up in a public dotfiles history. sourced only if present.
+if [ -r "$HOME/.zsh_secrets" ]; then
+  source "$HOME/.zsh_secrets"
+fi
 
-# if ps -o 'cmd=' -p $(ps -o 'ppid=' -p $$) | grep -vq warp && [ -x /usr/bin/zsh ] && [ "$SHELL" != "/usr/bin/zsh" ]; then
-#   export SHELL="/usr/bin/zsh"
-#   exec /usr/bin/zsh -l    # -l: login shell again
-# fi
+# Keep the terminal title meaningful: shell name when idle, command name when running.
+_set_title_precmd()  { printf '\e]0;%s\a' "${SHELL##*/}"; }
+_set_title_preexec() { printf '\e]0;%s\a' "${1%% *}"; }
+if [[ ${BLE_VERSION-} ]]; then
+  blehook PRECMD+=_set_title_precmd
+  blehook PREEXEC+=_set_title_preexec
+else
+  # PROMPT_COMMAND arms the DEBUG trap; the first command after a prompt fires it once.
+  _title_armed=
+  _title_precmd() { _set_title_precmd; _title_armed=1; }
+  _title_debug()  { [[ -n $_title_armed ]] || return 0; _title_armed=; _set_title_preexec "$BASH_COMMAND"; }
+  PROMPT_COMMAND="${PROMPT_COMMAND:+${PROMPT_COMMAND%;};}_title_precmd"
+  trap '_title_debug' DEBUG
+fi
 
-# neofetch --ascii_distro Linux
-# neofetch --ascii ~/.config/neofetch/ascii-art-goku.txt --ascii_colors 7 2 5 2 3
-cat ~/.config/ascii-art-goku.txt 
+cat "${XDG_CONFIG_HOME}/ascii-art-goku.txt" 2>/dev/null
 
 echo "setting up..."
 
@@ -108,34 +208,24 @@ if command -v starship &> /dev/null ; then
   eval "$(starship init bash)"
 fi
 
+if [[ -L "${XDG_CONFIG_HOME}/fzf/fzf.bash" || -f "${XDG_CONFIG_HOME}/fzf/fzf.bash" ]]; then
+  echo "   fzf"
+  source "${XDG_CONFIG_HOME}/fzf/fzf.bash"
+fi
+
+if command -v tv &> /dev/null ; then
+  echo "   television"
+  eval "$(tv init bash)"
+fi
+
 if command -v zoxide &> /dev/null ; then
-  echo "  󰰸 zoxide"
-  eval "$(zoxide init --cmd j bash)"
-fi
-
-if [ -f "${XDG_CONFIG_HOME}/fzf.bash" ]; then
-  echo "  󰮗 fzf"
-  source "${XDG_CONFIG_HOME}/fzf.bash"
-fi
-
-if [ -f "${XDG_CONFIG_HOME}/cargo/env" ]; then
-  echo "  󱣘 cargo"
-  source "${XDG_CONFIG_HOME}/cargo/env"
-fi
-
-if [ -f "${HOME}/.bash_completion/alacritty" ]; then
-  echo "   alacrity"
-  source "${HOME}/.bash_completion/alacritty"
-fi
-
-[[ ${BLE_VERSION-} ]] && ble-attach
-
-# added by wd40 install.sh
-if [[ ! "$PATH" == *"$HOME/.local/sbin"* ]]; then
-  export PATH="$HOME/.local/sbin:${PATH:+${PATH}:}"
+  echo "  󰆤 zoxide"
+  eval "$(zoxide init --cmd cd bash)"
 fi
 
 # added by wd40 install.sh
 if [ -r "$HOME/.config/wd40/wd40rc" ]; then
   . "$HOME/.config/wd40/wd40rc"
 fi
+
+[[ ${BLE_VERSION-} ]] && ble-attach
