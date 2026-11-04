@@ -426,6 +426,7 @@ AWK
 wd40/common/scripts/wd40.sh
 wd40/common/scripts/smem-groups.sh
 wd40/common/shell/wd40-paths.sh
+wd40/linux/scripts/pbcopy
 wd40/wd40rc
 wd40/test/smoke.sh
 "
@@ -841,6 +842,86 @@ section_begin 'fp and the clipboard'
       "$(sed -n '2p' "$scratch/noclip.err")" \
       "$sh: and the second line says how to fix it"
   done
+
+  section_report
+)
+section_end $?
+
+section_begin 'linux pbcopy script'
+(
+  set -e
+  section_reset
+  PBCOPY="$REPO/wd40/linux/scripts/pbcopy"
+  tmp=$(mktemp -d)
+  trap 'rm -rf "$tmp"' EXIT
+  scratch=$(cd "$tmp" && pwd -P)
+
+  if [ "$(uname -s)" != Linux ]; then
+    skip 'pbcopy script' 'Linux only: macOS nc has no OpenBSD -N, and macOS has a native pbcopy'
+  elif ! command -v python3 >/dev/null 2>&1 || ! command -v nc >/dev/null 2>&1; then
+    skip 'pbcopy script' 'needs python3 and nc'
+  else
+    # A port nothing listens on: bind, note the number, close.
+    free_port() {
+      python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1])'
+    }
+
+    # One-shot stand-in for the Mac listener: accepts a connection, writes
+    # every byte received to $scratch/tunnel, exits. Its port is announced
+    # in $scratch/port once it is listening.
+    python3 - "$scratch" > /dev/null 2>&1 <<'PY' &
+import socket, sys
+d = sys.argv[1]
+s = socket.socket()
+s.bind(("127.0.0.1", 0))
+s.listen(1)
+open(d + "/port", "w").write(str(s.getsockname()[1]))
+c, _ = s.accept()
+buf = b""
+while True:
+    b = c.recv(4096)
+    if not b:
+        break
+    buf += b
+open(d + "/tunnel", "wb").write(buf)
+PY
+    listener=$!
+    for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+      [ -s "$scratch/port" ] && break
+      sleep 0.25
+    done
+    port=$(cat "$scratch/port")
+
+    # No SSH_* variables and no display: the state of a pane started by a
+    # Herdr server that outlived its ssh session. No trailing newline, and
+    # more than one line, because those are what a lossy spool would eat.
+    printf 'line one\nline two' | env -u SSH_TTY -u SSH_CONNECTION -u SSH_CLIENT \
+      -u DISPLAY -u WAYLAND_DISPLAY WD40_PBCOPY_PORT="$port" "$PBCOPY"
+    wait "$listener" || true
+    assert_eq 'line one
+line two' "$(cat "$scratch/tunnel")" \
+      'with no SSH_* variables, stdin reaches the tunnel byte for byte'
+
+    # Tunnel down, X display up: falls through to the local clipboard.
+    mkdir -p "$scratch/bin"
+    printf '#!/bin/sh\ncat > "%s/local"\n' "$scratch" > "$scratch/bin/xclip"
+    chmod +x "$scratch/bin/xclip"
+    dead=$(free_port)
+    printf 'local text' | env -u WAYLAND_DISPLAY DISPLAY=:0 PATH="$scratch/bin:$PATH" \
+      WD40_PBCOPY_PORT="$dead" "$PBCOPY"
+    assert_eq 'local text' "$(cat "$scratch/local")" \
+      'tunnel refused and DISPLAY set: text goes to xclip'
+
+    # Tunnel down, nothing else: loud failure, not a silent success.
+    set +e
+    printf 'x' | env -u DISPLAY -u WAYLAND_DISPLAY WD40_PBCOPY_PORT="$dead" "$PBCOPY" \
+      >/dev/null 2>"$scratch/err"
+    rc=$?
+    set -e
+    assert_eq "rc=1 err=[pbcopy: nothing listening on localhost:$dead and no local clipboard available]" \
+      "rc=$rc err=[$(cat "$scratch/err")]" \
+      'tunnel refused and no local clipboard: exit 1 with a message'
+  fi
 
   section_report
 )
