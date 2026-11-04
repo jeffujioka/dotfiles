@@ -20,6 +20,7 @@ list = [
   "libfreetype-dev",
   "libncurses-dev",
   "make",
+  "netcat-openbsd",
   "pkg-config",
   "xsel",
 ]

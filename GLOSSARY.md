@@ -32,6 +32,12 @@ _Avoid_: tmux, multiplexer (unqualified)
 A Herdr container of tabs and panes, used to keep one project's terminals together.
 _Avoid_: session (that was the tmux term)
 
+## Clipboard
+
+**Clipboard bridge**:
+The path that carries text copied on a remote Linux host to the Mac clipboard: the SSH reverse tunnel, the Mac listener, and the Linux-side `pbcopy`.
+_Avoid_: clipboard tunnel, pbcopy shim
+
 ## Installation
 
 **Script installer**:

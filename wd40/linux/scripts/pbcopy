@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# wd40: pbcopy - copy stdin to the Mac clipboard through the SSH reverse tunnel on localhost:2224, else to the local clipboard
+
+# The Mac side is the localhost.pbcopy launchd listener; reach it with an
+# ssh session that has RemoteForward 2224 localhost:2224. See wd40/README.md.
+#
+# The tunnel is tried first, whether or not this shell has SSH_* variables:
+# panes started by a Herdr server that outlived the ssh session have none,
+# and that is when an SSH_TTY test silently picked the wrong sink.
+#
+# Nothing probes the port beforehand. The listener is spawned per
+# connection, so a bare connect-and-close hands it empty input and clears
+# the Mac clipboard. Instead stdin is spooled to a file and each sink is
+# tried against it in turn.
+#
+# Exit status is 0 only if some sink accepted the text.
+
+port="${WD40_PBCOPY_PORT:-2224}"
+
+spool=$(mktemp "${TMPDIR:-/tmp}/wd40-pbcopy.XXXXXX") || exit 1
+trap 'rm -f "$spool"' EXIT
+cat > "$spool"
+
+nc -N localhost "$port" < "$spool" 2>/dev/null && exit 0
+
+if [ -n "${WAYLAND_DISPLAY:-}" ] && command -v wl-copy >/dev/null 2>&1; then
+  wl-copy < "$spool" && exit 0
+elif [ -n "${DISPLAY:-}" ]; then
+  if command -v xclip >/dev/null 2>&1; then
+    xclip -selection clipboard < "$spool" && exit 0
+  elif command -v xsel >/dev/null 2>&1; then
+    xsel --clipboard --input < "$spool" && exit 0
+  fi
+fi
+
+printf 'pbcopy: nothing listening on localhost:%s and no local clipboard available\n' "$port" >&2
+exit 1

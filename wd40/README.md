@@ -42,6 +42,22 @@ New wd40-native bash files (this directory's own tooling, not absorbed
 scripts) must pass the bash 3.2 / BSD portability guard in
 `wd40/test/smoke.sh` — add them to its file list.
 
+## Clipboard bridge
+
+On a remote Linux box, `pbcopy` (`linux/scripts/pbcopy`) sends stdin to the
+Mac clipboard through an SSH reverse tunnel, and falls back to the local
+clipboard (`wl-copy`, `xclip`, `xsel`) when nothing is listening. It does
+not depend on `SSH_*` variables, so panes that outlived their ssh session
+still work. Needs `netcat-openbsd`. `WD40_PBCOPY_PORT` overrides 2224.
+
+The Mac side is not in this repo: a launchd agent labelled
+`localhost.pbcopy` listens on 127.0.0.1:2224 (inetd-style, one process per
+connection) and runs `pbcopy-launchd`, which `exec`s `/usr/bin/pbcopy`
+with a UTF-8 locale. The ssh host entry needs
+`RemoteForward 2224 localhost:2224`. Because the listener spawns per
+connection, never probe the port (`nc -z`): a bare connect clears the Mac
+clipboard.
+
 ## Tests
 
     wd40/test/smoke.sh          # standalone
