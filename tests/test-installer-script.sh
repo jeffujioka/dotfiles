@@ -166,6 +166,25 @@ else
   t_fail "brew platform filter wrong: $installed"
 fi
 
+
+# --- Case 9: a brew install that drains stdin (a dependency's post-install, e.g.
+# gtk+3 under colima) must not swallow the remaining manifest entries
+printf '#!/bin/bash\n[ "$1" = install ] && echo "$*" >> "$HOME/brew-installed"\ncat > /dev/null\nexit 0\n' > "$SANDBOX/bin/brew"; chmod +x "$SANDBOX/bin/brew"
+reset_home
+run_brew '[[brew.tools]]
+formula = "first-pkg"
+
+[[brew.tools]]
+formula = "second-pkg"
+
+[[brew.tools]]
+formula = "third-pkg"'
+installed=$(cat "$SANDBOX/home/brew-installed" 2>/dev/null)
+if [ "$installed" = "$(printf 'install first-pkg\ninstall second-pkg\ninstall third-pkg')" ]; then
+  t_pass "stdin-draining brew install does not truncate the tool list"
+else
+  t_fail "tool list truncated by stdin-draining brew: $installed"
+fi
 echo ""
 echo "$PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
