@@ -240,6 +240,7 @@ formula = "wget"
 
 [[brew.tools]]
 formula = "xcodegen"
+platform = "darwin"
 
 [[brew.tools]]
 formula = "zlib"
