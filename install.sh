@@ -76,7 +76,10 @@ install_brew_tools() {
   host_platform=$(detect_platform)
   installed_names=$'\n'"$(brew_installed_names)"$'\n'
 
-  while IFS=$MANIFEST_SEP read -r formula binary flags platform; do
+  # Manifest rows arrive on fd 3, not stdin: `brew install` can run dependency
+  # post-install steps (e.g. gtk+3 under colima) that drain stdin, which
+  # silently truncated the list and skipped every later formula.
+  while IFS=$MANIFEST_SEP read -r formula binary flags platform <&3; do
     platform_matches "$platform" "$host_platform" || continue
     binary="${binary:-$formula}"
     # Installed if the binary is on PATH, or brew itself lists the package
@@ -91,7 +94,7 @@ install_brew_tools() {
       brew install $flags "$formula" \
         || { echo "Warning: Failed to install $formula"; failed_installs=$((failed_installs + 1)); }
     fi
-  done < <(read_manifest brew.tools --format tsv --sep "$MANIFEST_SEP" \
+  done 3< <(read_manifest brew.tools --format tsv --sep "$MANIFEST_SEP" \
               --fields "formula,binary:,flags:,platform:")
 
   if [ "$failed_installs" -gt 0 ]; then
@@ -125,7 +128,7 @@ install_sys_packages() {
     echo "Installing packages:"
     get_system_package_list | while IFS= read -r package; do
       echo "Installing ${package}..."
-      brew install "${package}"
+      brew install "${package}" </dev/null
     done
 
   elif [[ "$OSTYPE" == linux* ]]; then
@@ -148,7 +151,7 @@ install_sys_packages() {
       echo "Installing system packages via Homebrew:"
       get_brew_package_list | while IFS= read -r package; do
         echo "Installing ${package}..."
-        brew install "${package}"
+        brew install "${package}" </dev/null
       done
     fi
   fi
@@ -157,9 +160,7 @@ install_sys_packages() {
 }
 
 install_non_asdf_tools() {
-  "$script_dir/helpers/read-manifest.py" resources --format tsv \
-      --fields "name,type,path,url,branch:main,shallow:false,post_install:" \
-      | while IFS=$'\t' read -r name rtype rpath url branch shallow post_install; do
+  while IFS=$'\t' read -r name rtype rpath url branch shallow post_install <&3; do
 
     # Expand ~ to $HOME
     rpath="${rpath/#\~/$HOME}"
@@ -197,7 +198,8 @@ install_non_asdf_tools() {
         fi
         ;;
     esac
-  done
+  done 3< <("$script_dir/helpers/read-manifest.py" resources --format tsv \
+      --fields "name,type,path,url,branch:main,shallow:false,post_install:")
 }
 
 # Download URL to a temp file and run it with SHELL_BIN (never piped). Runs as
@@ -247,7 +249,7 @@ install_script_installers() {
   local name rtype url creates shell_bin args env_vars sha256 platform required post_install
   host_platform=$(detect_platform)
 
-  while IFS=$MANIFEST_SEP read -r name rtype url creates shell_bin args env_vars sha256 platform required post_install; do
+  while IFS=$MANIFEST_SEP read -r name rtype url creates shell_bin args env_vars sha256 platform required post_install <&3; do
     [ "$rtype" = "script-install" ] || continue
     platform_matches "$platform" "$host_platform" || continue
 
@@ -275,7 +277,7 @@ install_script_installers() {
       echo "Warning: Failed to install $name"
       failed_installs=$((failed_installs + 1))
     fi
-  done < <(read_manifest resources --format tsv --sep "$MANIFEST_SEP" \
+  done 3< <(read_manifest resources --format tsv --sep "$MANIFEST_SEP" \
               --fields "name,type,url,creates,shell:bash,args,env,sha256,platform,required,post_install")
 
   if [ "$failed_installs" -gt 0 ]; then
