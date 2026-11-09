@@ -425,6 +425,7 @@ AWK
   GUARDED_FILES="
 wd40/common/scripts/wd40.sh
 wd40/common/scripts/smem-groups.sh
+wd40/common/scripts/cpu-groups.sh
 wd40/common/shell/wd40-paths.sh
 wd40/linux/scripts/pbcopy
 wd40/wd40rc

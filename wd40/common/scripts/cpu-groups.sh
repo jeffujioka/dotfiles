@@ -6,8 +6,8 @@
 #
 # `ps`/`top` show one line per process, which turns one build job into
 # dozens of unrelated-looking `java`/`javac`/`ninja` lines. This script
-# walks every process's parent chain up to its root ancestor (PID 1 by
-# default, or a shallower stop via --depth), sums %CPU/%MEM per root and
+# walks every process's parent chain up to its root ancestor (the child of
+# PID 1 by default, or a shallower stop via --depth), sums %CPU/%MEM per root and
 # shows the top N groups - so "docker run ... build" shows up as one
 # group with 47 member PIDs instead of 47 separate lines.
 #
@@ -39,7 +39,7 @@ Usage: cpu-groups.sh [options]
   -n N             Top N groups to show (default: 10)
   -u USER          Only this user's processes (default: all users)
   -d, --depth N    Max hops to climb toward the root ancestor
-                   (default: unlimited, i.e. climb to PID 1)
+                   (default: unlimited, i.e. climb to the child of PID 1)
   -s, --sort SPEC  Sort key: cpu, mem, name (default: cpu)
   -h               Show this help
 USAGE
@@ -54,7 +54,11 @@ while [ $# -gt 0 ]; do
           echo "Error: -n requires a positive integer (got '$2')" >&2
           exit 1 ;;
       esac
-      [ "$2" -gt 0 ] || { echo "Error: -n requires a positive integer (got '$2')" >&2; exit 1; }
+      # Length cap keeps the numeric test below from overflowing.
+      if [ "${#2}" -gt 9 ] || [ "$2" -le 0 ]; then
+        echo "Error: -n requires a positive integer up to 9 digits (got '$2')" >&2
+        exit 1
+      fi
       TOP_N="$2"; shift 2 ;;
     -u)
       [ $# -ge 2 ] || { echo "Error: -u requires an argument" >&2; exit 1; }
@@ -66,10 +70,16 @@ while [ $# -gt 0 ]; do
           echo "Error: $1 requires a positive integer (got '$2')" >&2
           exit 1 ;;
       esac
+      if [ "${#2}" -gt 9 ] || [ "$2" -le 0 ]; then
+        echo "Error: $1 requires a positive integer up to 9 digits (got '$2')" >&2
+        exit 1
+      fi
       MAX_DEPTH="$2"; shift 2 ;;
     -s|--sort)
       [ $# -ge 2 ] || { echo "Error: $1 requires an argument" >&2; exit 1; }
       SORT_SPEC="$2"; shift 2 ;;
+    --sort=*)
+      SORT_SPEC="${1#--sort=}"; shift ;;
     -h|--help)
       usage; exit 0 ;;
     *)
@@ -86,19 +96,9 @@ case "$SORT_SPEC" in
     exit 1 ;;
 esac
 
-# WHY -e VS -A: GNU ps (Linux) accepts -e for "every process". BSD ps
-# (macOS/Darwin) does not recognize -e and requires -A instead. Both accept
-# the same -o field-list syntax, so detecting the right "all processes"
-# flag is the only branch needed - same portability shape as
-# smem-groups.sh's -U passthrough, but decided once here instead of at
-# every call site.
-ps_all_flag() {
-  if ps -e >/dev/null 2>&1; then
-    printf '%s\n' "-e"
-  else
-    printf '%s\n' "-A"
-  fi
-}
+# `-A` selects every process on both GNU ps and BSD/macOS ps. Do NOT use `-e`:
+# on macOS it means "show the environment", so it would list only the current
+# user's processes with environment variables in the args column.
 
 # Prints "PID PPID PCPU PMEM ARGS" - one line per process, snapshotted once.
 # ARGS is always the last column so it can hold spaces. Do not add `comm`:
@@ -107,13 +107,13 @@ ps_all_flag() {
 # LC_ALL=C: pcpu/pmem use the locale's decimal separator; a comma would make
 # awk read 3,5 as 3.
 #
-# With -u, `-U` is used INSTEAD of -e/-A: ps ORs selection options, so
-# `ps -e -U user` still lists every process.
+# With -u, `-U` is used INSTEAD of -A: ps ORs selection options, so
+# `ps -A -U user` still lists every process.
 ps_snapshot() {
   if [ -n "$FILTER_USER" ]; then
     LC_ALL=C ps -U "$FILTER_USER" -o pid=,ppid=,pcpu=,pmem=,args= 2>/dev/null || true
   else
-    LC_ALL=C ps "$(ps_all_flag)" -o pid=,ppid=,pcpu=,pmem=,args=
+    LC_ALL=C ps -A -o pid=,ppid=,pcpu=,pmem=,args=
   fi
 }
 
@@ -153,6 +153,9 @@ group_by_root() {
           if (parent == "" || parent == root) break
           if (!(parent in CMD_OF)) break
           if (parent == 1) break
+          # A PID reused mid-snapshot can form a parent cycle; no real
+          # chain is longer than the number of processes read.
+          if (depth >= n) break
           root = parent
           depth++
         }
@@ -210,7 +213,7 @@ group_by_root() {
 # true count is always in the N column regardless of truncation.
 format_groups() {
   local cols="${1:-120}"
-  awk -F'\t' -v cols="$cols" '
+  LC_ALL=C awk -F'\t' -v cols="$cols" '
     function truncate_pids(pids,    parts, i, count, out) {
       count = split(pids, parts, ",")
       if (count <= 8) return pids
@@ -245,6 +248,10 @@ format_groups() {
 }
 
 main() {
+  if [ -n "$FILTER_USER" ] && ! id -u "$FILTER_USER" >/dev/null 2>&1; then
+    echo "Error: unknown user '$FILTER_USER'" >&2
+    exit 1
+  fi
   snapshot="$(ps_snapshot)"
   count="$(printf '%s\n' "$snapshot" | grep -c . || true)"
   if [ "$count" -eq 0 ]; then
@@ -255,8 +262,15 @@ main() {
     fi
     exit 0
   fi
-  ncpu="$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 1)"
-  cols="$(tput cols 2>/dev/null || echo 120)"
+  # `nproc --all`, not plain `nproc`: plain honours OMP_NUM_THREADS and the
+  # affinity mask, while ps %CPU is relative to the whole machine.
+  ncpu="$(nproc --all 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 1)"
+  # tput cols reports 80 when stdout is a pipe; only ask when it is a terminal.
+  if [ -t 1 ]; then
+    cols="$(tput cols 2>/dev/null || echo 120)"
+  else
+    cols=120
+  fi
   printf '%s\n' "$snapshot" | group_by_root "$ncpu" | format_groups "$cols"
 }
 
