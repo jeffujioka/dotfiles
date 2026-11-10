@@ -27,7 +27,7 @@ _path_prepend() {
   export PATH
 }
 
-# PATH priority (highest → lowest): .local/bin > .scripts > Homebrew > NVM > cargo
+# PATH priority (highest → lowest): .local/bin > .scripts > asdf shims > Homebrew > cargo
 # Each block PREPENDs — the LAST one to run ends up at the FRONT of PATH.
 
 # cargo — lowest priority (Rust toolchain, manual use)
@@ -39,22 +39,7 @@ elif [ -d "${CARGO_HOME}/bin" ]; then
   _path_prepend "${CARGO_HOME}/bin"
 fi
 
-# NVM — above cargo
-export NVM_DIR="${XDG_CONFIG_HOME}/nvm"
-# nvm.sh costs ~500ms, so only interactive bash loads it (below).
-# The default node bin goes on PATH now so node/npm/npx work everywhere.
-if [[ -s "$NVM_DIR/nvm.sh" ]]; then
-  _nvm_alias=
-  [[ -r "$NVM_DIR/alias/default" ]] && read -r _nvm_alias < "$NVM_DIR/alias/default"
-  [[ $_nvm_alias == [v0-9]* ]] || _nvm_alias=
-  _nvm_bin=
-  [[ -n $_nvm_alias ]] && _nvm_bin=$(compgen -G "$NVM_DIR/versions/node/${_nvm_alias}*" | sort -V | tail -n 1)
-  [[ -z $_nvm_bin ]] && _nvm_bin=$(compgen -G "$NVM_DIR/versions/node/*" | sort -V | tail -n 1)
-  [[ -n $_nvm_bin && -d $_nvm_bin/bin ]] && _path_prepend "$_nvm_bin/bin"
-  unset _nvm_alias _nvm_bin
-fi
-
-# Homebrew — above NVM. Static equivalent of `brew shellenv` (saves a fork).
+# Homebrew. Static equivalent of `brew shellenv` (saves a fork).
 if [[ "$OSTYPE" == darwin* ]] && [[ -x /opt/homebrew/bin/brew ]]; then
   export HOMEBREW_PREFIX="/opt/homebrew"
 elif [[ "$OSTYPE" == linux* ]] && [[ -x "$HOME/.homebrew/bin/brew" ]]; then
@@ -173,9 +158,6 @@ fi
 
 # turn off "suspend/resume" feature
 stty -ixon 2>/dev/null
-
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 
 # Secrets (API tokens, etc.) live outside this repo, in ~/.zsh_secrets,
 # so they never end up in a public dotfiles history. sourced only if present.

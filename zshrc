@@ -84,7 +84,7 @@ zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
 bindkey "^[[1;5C" forward-word
 bindkey "^[[1;5D" backward-word
 
-# PATH priority (highest → lowest): .local/bin > .scripts > Homebrew > NVM > cargo
+# PATH priority (highest → lowest): .local/bin > .scripts > asdf shims > Homebrew > cargo
 # Each block PREPENDs — the LAST one to run ends up at the FRONT of PATH.
 
 # cargo — lowest priority (Rust toolchain, manual use)
@@ -98,21 +98,7 @@ elif [ -d "${CARGO_HOME}/bin" ]; then
   fi
 fi
 
-# NVM — above cargo
-export NVM_DIR="${XDG_CONFIG_HOME}/nvm"
-# nvm.sh costs ~500ms, so it is deferred until after the first prompt.
-# The default node bin goes on PATH now so node/npm/npx work immediately.
-if [[ -s "$NVM_DIR/nvm.sh" ]]; then
-  _nvm_alias=$(<"$NVM_DIR/alias/default" 2>/dev/null)
-  _nvm_bin=("$NVM_DIR"/versions/node/${_nvm_alias:#[^v0-9]*}*(N/nOn[1]))
-  [[ -z $_nvm_bin ]] && _nvm_bin=("$NVM_DIR"/versions/node/*(N/nOn[1]))
-  [[ -n $_nvm_bin ]] && path=("$_nvm_bin/bin" $path)
-  unset _nvm_alias _nvm_bin
-  zinit light romkatv/zsh-defer
-  zsh-defer source "$NVM_DIR/nvm.sh"
-fi
-
-# Homebrew — above NVM. Static equivalent of `brew shellenv` (saves a fork);
+# Homebrew. Static equivalent of `brew shellenv` (saves a fork);
 # site-functions is already on fpath from the completions block above.
 if [[ "$OSTYPE" == darwin* ]] && [[ -x /opt/homebrew/bin/brew ]]; then
   export HOMEBREW_PREFIX="/opt/homebrew"
