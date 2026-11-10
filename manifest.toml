@@ -173,9 +173,6 @@ formula = "mutagen-io/mutagen/mutagen"
 binary = "mutagen"
 
 [[brew.tools]]
-formula = "node"
-
-[[brew.tools]]
 formula = "openjdk@11"
 
 [[brew.tools]]
