@@ -43,3 +43,17 @@ _Avoid_: clipboard tunnel, pbcopy shim
 **Script installer**:
 A tool installed by running the vendor's own install script instead of a package manager.
 _Avoid_: curl-bash, curl pipe
+
+## Tool versions
+
+**Global tool versions**:
+The versions of each asdf-managed tool that apply everywhere no repo says otherwise, kept in the untracked `~/.tool-versions` and moved to the newest release automatically.
+_Avoid_: default versions, system versions
+
+**Repo pin**:
+A version a repo fixes for itself in its own `.tool-versions`; it wins over the global tool versions inside that repo and is never changed by this setup.
+_Avoid_: local version, project version
+
+**Node owner**:
+The one tool allowed to put `node` on the `PATH`. It is asdf; nvm and Homebrew's `node` are not used.
+_Avoid_: node manager (unqualified)
