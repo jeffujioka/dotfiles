@@ -316,6 +316,12 @@ install_dependencies() {
 
   install_brew_tools
 
+  # Newest version of every asdf plugin, written to ~/.tool-versions. Called by
+  # repo path: the ~/.local/sbin link does not exist yet on a first install.
+  if command -v asdf >/dev/null 2>&1; then
+    "$script_dir/wd40/common/scripts/asdf-update.sh" || echo "Warning: asdf-update failed"
+  fi
+
   install_non_asdf_tools
 }
 

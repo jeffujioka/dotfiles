@@ -104,6 +104,7 @@ upd() {
   command -v openchamber >/dev/null && _cmds+=("openchamber update")
   command -v uv >/dev/null && _cmds+=("uv tool upgrade litellm")
   _cmds+=(
+    "asdf-update --weekly"
     "DISABLE_TELEMETRY=1 npx --yes skills@latest update -g -y"
     "claude_update_all_plugins"
     "opencode plugin update"
