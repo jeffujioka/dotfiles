@@ -157,32 +157,37 @@ _set_title_preexec() { printf '\e]0;%s\a' "${1%% *}" }
 add-zsh-hook precmd  _set_title_precmd
 add-zsh-hook preexec _set_title_preexec
 
+# The banner below is for people. A shell that omp, opencode, claude or codex starts, such as omp's own `!` command, runs
+# this file too; its parent process tells, and the banner stays off so it never reaches the agent's context.
+_quiet_banner=0
+[[ ${$(ps -o comm= -p $PPID 2>/dev/null):t} == (omp|opencode|claude|codex) ]] && _quiet_banner=1
 if [[ -o interactive ]]; then
-  cat ~/.config/ascii-art-goku.txt
+  (( _quiet_banner )) || cat ~/.config/ascii-art-goku.txt
   
-  echo "setting up..."
+  (( _quiet_banner )) || echo "setting up..."
   
   if command -v starship &> /dev/null ; then
-    echo "   starship"
+    (( _quiet_banner )) || echo "   starship"
     export STARSHIP_CONFIG="${XDG_CONFIG_HOME}/starship/config.toml"
     eval "$(starship init zsh)"
   fi
   
   if [[ -L "${XDG_CONFIG_HOME}/fzf/fzf.zsh" || -f "${XDG_CONFIG_HOME}/fzf/fzf.zsh" ]]; then
-    echo "   fzf"
+    (( _quiet_banner )) || echo "   fzf"
     source "${XDG_CONFIG_HOME}/fzf/fzf.zsh"
   fi
   
   if command -v tv &> /dev/null ; then
-    echo "   television"
+    (( _quiet_banner )) || echo "   television"
     eval "$(tv init zsh)"
   fi
   
   if command -v zoxide &> /dev/null ; then
-    echo "  󰆤 zoxide"
+    (( _quiet_banner )) || echo "  󰆤 zoxide"
     eval "$(zoxide init --cmd cd zsh)"
   fi
 fi
+unset _quiet_banner
 
 # added by wd40 install.sh
 if [ -r "$HOME/.config/wd40/wd40rc" ]; then
