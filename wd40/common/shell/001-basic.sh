@@ -198,7 +198,6 @@ alias ct="copilot"
 alias cta="copilot --allow-all"
 alias oc="opencode --auto"
 alias tb="terminal-browser"
-alias hr="herdr"
 
 ##
 ## Utils

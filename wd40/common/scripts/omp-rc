@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # wd40: omp-rc - $VISUAL wrapper for omp: open FILE in VS Code on the Mac via
-# remote-code, without blocking omp's pane. The wait runs in a sibling herdr
-# pane (or on /dev/tty outside herdr) until you press Enter.
+# remote-code, without blocking omp's pane. Waits on /dev/tty until you press
+# Enter.
 set -euo pipefail
 
 file=${1:?usage: omp-rc FILE}
@@ -10,17 +10,7 @@ file=${1:?usage: omp-rc FILE}
 # REMOTE_CODE_MAC_HOST / REMOTE_CODE_REMOTE_HOST.
 remote-code "$file"
 
-# Sentinel is split so the typed command line never matches it.
-marker='__OMP_RC_DO''NE__'
 prompt="Edit in VS Code, save, then press Enter here to return to omp."
 
-if [[ "${HERDR_ENV:-}" == 1 && -n "${HERDR_PANE_ID:-}" ]] && command -v herdr >/dev/null; then
-  pane=$(herdr pane split --current --direction down --cwd "$PWD" --no-focus \
-    | jq -r '.result.pane.pane_id')
-  herdr pane run "$pane" "printf '%s\n' '$prompt'; read -r _ </dev/tty; echo $marker"
-  herdr pane wait-output "$pane" --match "$marker" >/dev/null
-  herdr pane close "$pane" >/dev/null
-else
-  printf '%s\n' "$prompt"
-  read -r _ </dev/tty
-fi
+printf '%s\n' "$prompt"
+read -r _ </dev/tty
