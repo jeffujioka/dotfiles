@@ -1,6 +1,8 @@
 #!/bin/env bash
 # wd40: upd - update brew, Claude Code, OpenChamber, litellm, skills, plugins, and zsh completions, then restart zsh (--no-restart to skip)
 # wd40: zcomp_update - regenerate zsh completion scripts for installed CLIs and rebuild the dump, then restart zsh (--no-restart to skip)
+# wd40: skills_install_or_update - install missing and update my agent skills (global, every agent)
+# wd40: plugins_install_or_update - install missing and update my claude and omp plugins and marketplaces
 
 claude_update_all_plugins() (
   json=$(claude plugin list --json) || exit $?
@@ -15,6 +17,148 @@ $names
 EOF
   exit "$rc"
 )
+
+# --- skills and plugins I use most: install what is missing, update the rest ---
+# Sourced into interactive bash and zsh: no `set` options, no zsh-only syntax.
+# A failing step never aborts the run: it is appended to the comma-separated
+# _iou_failed list (via _iou_run or _iou_record_failure) and the next
+# step still runs. _iou_finish then reports the list and returns 1.
+# Each public function resets _iou_failed on entry.
+_iou_failed=""
+
+_iou_record_failure() { # DESCRIPTION
+  _iou_failed="${_iou_failed}${_iou_failed:+, }$1"
+}
+
+# Print "+ CMD ARG...", run it, and on a non-zero exit record it in _iou_failed.
+# Returns the command's success (0) or 1 on failure; callers ignore it.
+_iou_run() { # CMD [ARG...]
+  echo "+ $*"
+  "$@" || {
+    _iou_record_failure "$*"
+    return 1
+  }
+}
+
+# The `skills` CLI with telemetry off (aliases do not expand inside functions).
+_iou_sk() {
+  DISABLE_TELEMETRY=1 npx --yes skills@latest "$@"
+}
+
+_iou_finish() { # NAME
+  [ -z "$_iou_failed" ] && return 0
+  echo "$1: failed: $_iou_failed" >&2
+  return 1
+}
+
+# `skills add` on an installed skill refreshes it, so one run reaches the latest.
+skills_install_or_update() {
+  _iou_failed=""
+  if ! command -v npx >/dev/null 2>&1; then
+    echo "skills_install_or_update: npx not found" >&2
+    return 1
+  fi
+  _iou_run _iou_sk add anthropics/skills -s pptx docx pdf xlsx changelog-generator -g -y -a universal
+  _iou_run _iou_sk add jeffujioka/skills -s '*' -g -y -a universal
+  _iou_run _iou_sk add mattpocock/skills -s '*' -g -y -a universal
+  _iou_run _iou_sk add vercel-labs/agent-browser -s agent-browser vercel-react-best-practices -g -y -a universal
+  _iou_run _iou_sk add voicestudiohq/voicestudio -s voicestudio-cli -g -y -a universal
+  _iou_run _iou_sk add herdrdev/herdr-core -s herdr-core -g -y -a universal
+  _iou_finish skills_install_or_update
+}
+
+# Marketplace sources and plugins (PLUGIN@MARKETPLACE) I use, one per line.
+# A marketplace's name is the last part of its source.
+_IOU_MARKETPLACES="obsidianmd/obsidian-skills
+lackeyjb/playwright-skill
+obra/superpowers-marketplace"
+_IOU_PLUGINS="obsidian@obsidian-skills
+playwright-skill@playwright-skill
+superpowers@superpowers-marketplace"
+
+_iou_foreach() { # LIST CMD [ARG...]: run CMD ARG... ITEM for each line of LIST
+  local list=$1 item
+  shift
+  while IFS= read -r item; do
+    "$@" "$item"
+  done <<EOF
+$list
+EOF
+}
+
+# claude's marketplace add and plugin install succeed when already present; omp's
+# exit 1, so omp only adds what is missing.
+_iou_omp_add_marketplace() { # SOURCE
+  if omp plugin marketplace 2>&1 | grep -q "^  ${1##*/} "; then
+    echo "omp marketplace ${1##*/} already added"
+  else
+    _iou_run omp plugin marketplace add "$1"
+  fi
+}
+
+_iou_omp_install() { # PLUGIN@MARKETPLACE
+  if omp plugin list 2>&1 | grep -q "^  $1 "; then
+    echo "omp plugin $1 already installed"
+  else
+    _iou_run omp plugin install "$1"
+  fi
+}
+
+# Run `npm run setup` in the newest playwright-skill dir under ROOT when the
+# plugin changed (BEFORE != AFTER) or has no node_modules yet.
+_iou_playwright_setup() { # BEFORE AFTER ROOT PATH_PATTERN
+  local dir
+  dir=$(find "$3" -maxdepth 4 -type d -path "$4" 2>/dev/null | sort | tail -n 1)
+  if [ -z "$dir" ]; then
+    echo "plugins_install_or_update: playwright-skill dir not found under $3, skipping npm run setup" >&2
+  elif [ "$1" != "$2" ] || [ ! -d "$dir/node_modules" ]; then
+    echo "+ npm run setup ($dir)"
+    (cd "$dir" && npm run setup) || _iou_record_failure "npm run setup ($dir)"
+  fi
+}
+
+# Neither CLI's install updates an installed plugin, hence the explicit update
+# steps. A missing CLI is skipped.
+plugins_install_or_update() {
+  local pw_before pw_after
+  _iou_failed=""
+
+  if command -v claude >/dev/null 2>&1; then
+    pw_before=$(claude plugin list 2>&1 | grep -A1 "playwright-skill@")
+    _iou_foreach "$_IOU_MARKETPLACES" _iou_run claude plugin marketplace add
+    _iou_run claude plugin marketplace update
+    _iou_foreach "$_IOU_PLUGINS" _iou_run claude plugin install
+    _iou_foreach "$_IOU_PLUGINS" _iou_run claude plugin update
+    pw_after=$(claude plugin list 2>&1 | grep -A1 "playwright-skill@")
+    _iou_playwright_setup "$pw_before" "$pw_after" "$HOME/.claude/plugins/cache/playwright-skill" '*/skills/playwright-skill'
+  else
+    echo "plugins_install_or_update: claude not found, skipping" >&2
+  fi
+
+  if command -v omp >/dev/null 2>&1; then
+    pw_before=$(omp plugin list 2>&1 | grep "^  playwright-skill@")
+    _iou_foreach "$_IOU_MARKETPLACES" _iou_omp_add_marketplace
+    _iou_run omp plugin marketplace update
+    _iou_foreach "$_IOU_PLUGINS" _iou_omp_install
+    _iou_run omp plugin upgrade
+    pw_after=$(omp plugin list 2>&1 | grep "^  playwright-skill@")
+    _iou_playwright_setup "$pw_before" "$pw_after" "$HOME/.omp/plugins/cache/plugins" '*playwright-skill___playwright-skill___*/skills/playwright-skill'
+  else
+    echo "plugins_install_or_update: omp not found, skipping" >&2
+  fi
+
+  _iou_finish plugins_install_or_update
+}
+
+# Path of the machine-local update script (gitignored), found through the
+# ~/.config/wd40/wd40rc link the installer makes. Prints nothing when absent.
+_upd_local_script() {
+  local rc f
+  rc=$(readlink "$HOME/.config/wd40/wd40rc") || return 0
+  f="$(dirname "$rc")/local/scripts/update.sh"
+  [ -f "$f" ] && printf '%s\n' "$f"
+  return 0
+}
 
 _zcomp_gen_cmd() {
   case "$1" in
@@ -107,9 +251,14 @@ upd() {
     "asdf-update --weekly"
     "DISABLE_TELEMETRY=1 npx --yes skills@latest update -g -y"
     "claude_update_all_plugins"
+    "skills_install_or_update"
+    "plugins_install_or_update"
     "opencode plugin update"
     "zcomp_update --no-restart"
   )
+  local _local
+  _local=$(_upd_local_script)
+  [ -n "$_local" ] && _cmds+=("bash '$_local'")
   for _cmd in "${_cmds[@]}"; do
     echo '################################################################################'
     echo "... $_cmd..."
