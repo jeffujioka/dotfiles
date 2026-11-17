@@ -72,6 +72,10 @@ list = [
 # this list drives cargo install runs.
 tools = []
 
+[uv]
+# Python CLIs installed with `uv tool install` (uv itself comes from brew.tools).
+tools = ["litellm"]
+
 [[brew.tools]]
 formula = "anomalyco/tap/opencode-v2"
 binary = "opencode"

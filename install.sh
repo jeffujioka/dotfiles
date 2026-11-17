@@ -102,6 +102,32 @@ install_brew_tools() {
   fi
 }
 
+# Install the manifest's `uv.tools` with `uv tool install`, skipping any that
+# `uv tool list` already shows. A failure warns and the install continues.
+install_uv_tools() {
+  if ! command -v uv &>/dev/null; then
+    echo "Warning: uv not found, skipping uv tools."
+    return 0
+  fi
+  echo "Installing uv tools..."
+  local tool installed failed_installs=0
+  installed=$(uv tool list 2>/dev/null)
+  while IFS= read -r tool <&3; do
+    [ -n "$tool" ] || continue
+    if grep -q "^$tool " <<<"$installed"; then
+      echo "'$tool' is already installed (uv)."
+    else
+      echo "Installing $tool via uv..."
+      uv tool install "$tool" \
+        || { echo "Warning: Failed to install $tool"; failed_installs=$((failed_installs + 1)); }
+    fi
+  done 3< <(read_manifest uv.tools)
+
+  if [ "$failed_installs" -gt 0 ]; then
+    echo "Warning: $failed_installs uv tool(s) failed to install."
+  fi
+}
+
 # shellcheck source=helpers/shell-utils.sh
 . "$(dirname "$(readlink -f "$0")")/helpers/shell-utils.sh"
 
@@ -315,6 +341,7 @@ install_dependencies() {
   fi
 
   install_brew_tools
+  install_uv_tools
 
   # Newest version of every asdf plugin, written to ~/.tool-versions. Called by
   # repo path: the ~/.local/sbin link does not exist yet on a first install.
