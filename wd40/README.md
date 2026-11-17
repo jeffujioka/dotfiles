@@ -12,6 +12,7 @@ move and it should: WD-40.").
     darwin/   scripts/ shell/  macOS only
     linux/    scripts/ shell/  Linux only
     local/    shell/           THIS machine only — gitignored, never committed
+                                (local/scripts/update.sh, if present, is run by `upd`)
 
 `scripts/` files are symlinked into `~/.local/sbin` by the repo's
 `./install.sh` (driven by `manifest.toml`), with a final `.sh`/`.py`
