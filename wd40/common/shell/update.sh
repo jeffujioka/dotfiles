@@ -246,7 +246,7 @@ upd() {
   esac
   local _cmds=("brew update" "brew upgrade -y" "claude --update")
   command -v openchamber >/dev/null && _cmds+=("openchamber update")
-  command -v uv >/dev/null && _cmds+=("uv tool upgrade litellm")
+  command -v uv >/dev/null && uv tool list 2>/dev/null | grep -q '^litellm ' && _cmds+=("uv tool upgrade litellm")
   _cmds+=(
     "asdf-update --weekly"
     "DISABLE_TELEMETRY=1 npx --yes skills@latest update -g -y"
