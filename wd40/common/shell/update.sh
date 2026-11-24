@@ -64,6 +64,8 @@ skills_install_or_update() {
   _iou_run _iou_sk add vercel-labs/agent-browser -s agent-browser vercel-react-best-practices -g -y -a universal
   _iou_run _iou_sk add voicestudiohq/voicestudio -s voicestudio-cli -g -y -a universal
   _iou_run _iou_sk add herdrdev/herdr-core -s herdr-core -g -y -a universal
+  _iou_run _iou_sk add stablyai/orca -s 'orchestration' -s 'orca-cli' -s 'orca-computer-use' -s 'orca-plugin-authoring' -g -y -a universal
+  _iou_run _iou_sk add github/awesome-copilot -s 'excalidraw-diagram-generator' -g -y -a universal
   _iou_finish skills_install_or_update
 }
 
