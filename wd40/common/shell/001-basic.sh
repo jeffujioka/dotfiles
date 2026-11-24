@@ -197,6 +197,8 @@ alias ccar="claude --dangerously-skip-permissions --resume"
 alias ct="copilot"
 alias cta="copilot --allow-all"
 alias oc="opencode --auto"
+alias ompc="omp -c"
+alias ompr="omp -r"
 alias tb="terminal-browser"
 
 ##
