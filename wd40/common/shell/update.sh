@@ -6,7 +6,8 @@
 
 claude_update_all_plugins() (
   json=$(claude plugin list --json) || exit $?
-  names=$(printf '%s\n' "$json" | jq -r '.[].id | split("@")[0]') || exit $?
+  # Session-scoped plugins (e.g. orca-agent-view@inline, injected via --plugin-dir) are not installed.
+  names=$(printf '%s\n' "$json" | jq -r '.[] | select(.scope != "session") | .id | split("@")[0]') || exit $?
   [ -n "$names" ] || exit 0
 
   rc=0
