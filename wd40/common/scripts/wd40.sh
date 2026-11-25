@@ -83,6 +83,7 @@ wd40_manifest() {
 
 # Expand a leading ~ in a manifest target.
 wd40_expand() {
+  # shellcheck disable=SC2088  # the patterns match a literal tilde in manifest text; they are not paths to expand
   case $1 in
     "~") printf '%s\n' "$HOME" ;;
     "~/"*) printf '%s%s\n' "$HOME" "${1#\~}" ;;

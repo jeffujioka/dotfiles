@@ -340,11 +340,10 @@ fp() {
 
   [ "$_wd40_copy" -eq 1 ] || return 0
 
-  printf '%s' "$_wd40_out" | _wd40_clip
-  # $? after a pipeline is the exit status of its *last* command in both
-  # bash and zsh. _wd40_clip is last, so the clipboard's verdict arrives
-  # here intact without `set -o pipefail`, which this file must not touch.
-  if [ "$?" -ne 0 ]; then
+  # The status of a pipeline is that of its *last* command in both bash and
+  # zsh. _wd40_clip is last, so the clipboard's verdict decides here without
+  # `set -o pipefail`, which this file must not touch.
+  if ! printf '%s' "$_wd40_out" | _wd40_clip; then
     return 1
   fi
   return 0

@@ -146,6 +146,7 @@ if [[ -n "$local_mode" ]]; then
   [[ "$target_path" == /* ]] || die "--local requires an absolute PATH on the remote host, got '$target_path'"
 
   # printf %q: the path crosses ssh's shell, so quote it for that side.
+  # shellcheck disable=SC2029  # the path is quoted with printf %q here on purpose; the remote shell only runs it
   if ! ssh "$remote_host" "test -d $(printf '%q' "$target_path")"; then
     die "'$target_path' is not a directory on '$remote_host' (or ssh to it failed)"
   fi
@@ -172,6 +173,7 @@ if [[ -n "$target_path" && -f "$target_path" ]]; then
 
   remote_cmd="'/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code' --remote 'ssh-remote+${remote_host}' --goto '${abs_path}${loc}'"
 
+  # shellcheck disable=SC2029  # remote_cmd is built on this side on purpose; the remote shell only runs it
   if ! ssh "$mac_host" "$remote_cmd"; then
     die "ssh to '$mac_host' failed, or VS Code could not be launched there"
   fi
@@ -193,6 +195,7 @@ uri="vscode-remote://ssh-remote+${remote_host}${abs_path}"
 
 remote_cmd="open -n -a 'Visual Studio Code' --args --folder-uri '${uri}'"
 
+# shellcheck disable=SC2029  # remote_cmd is built on this side on purpose; the remote shell only runs it
 if ! ssh "$mac_host" "$remote_cmd"; then
   die "ssh to '$mac_host' failed, or VS Code could not be launched there"
 fi

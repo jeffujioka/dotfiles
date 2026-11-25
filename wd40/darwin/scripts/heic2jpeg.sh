@@ -1,7 +1,7 @@
 #!/bin/bash
 # wd40: heic2jpeg - convert .heic files under a directory to .jpg (macOS sips)
 
-pushd "$1" >/dev/null
+pushd "$1" >/dev/null || exit 1
 
 find "$1" -type f \( -iname '*.heic' \) -print0 \
   | while IFS= read -r -d '' f; do
@@ -9,4 +9,4 @@ find "$1" -type f \( -iname '*.heic' \) -print0 \
   done
 
 echo "Conversion complete!"
-popd >/dev/null
+popd >/dev/null || exit 1

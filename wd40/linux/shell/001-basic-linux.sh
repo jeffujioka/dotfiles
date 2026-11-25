@@ -18,6 +18,7 @@ alias meminfo='free -m -l -t'
 alias gpumeminfo='grep -i --color memory /var/log/Xorg.0.log'
 
 export BEEP=/usr/share/sounds/ubuntu/notifications/Positive.ogg
+# shellcheck disable=SC2139  # BEEP is meant to expand once, when the alias is defined
 alias beep="paplay --volume=65536 $BEEP"
 alias mic-list="pactl list short sources"
 

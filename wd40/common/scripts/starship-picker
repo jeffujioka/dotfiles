@@ -60,6 +60,7 @@ if [[ ! -f "$STARSHIP_TOML" ]]; then
   fi
 
   # Find first preset and create symlink
+  # shellcheck disable=SC2012  # preset names are plain starship-*.toml; ls is only there to feed sort
   first_preset=$(ls "$PRESETS_DIR"/starship-*.toml 2>/dev/null | sort | head -1)
   if [[ -z "$first_preset" ]]; then
     echo "Error: No preset files (starship-*.toml) found in $PRESETS_DIR" >&2
@@ -70,6 +71,7 @@ if [[ ! -f "$STARSHIP_TOML" ]]; then
 fi
 
 PRESETS=()
+# shellcheck disable=SC2012  # preset names are plain starship-*.toml; ls is only there to feed sort
 while IFS= read -r f; do
   PRESETS+=("$f")
 done < <(ls "$PRESETS_DIR"/starship-*.toml 2>/dev/null | sort)
@@ -115,7 +117,7 @@ trap '_cleanup_on_exit' EXIT
 
 # Backup the original state (content or symlink target)
 if [[ -L "$STARSHIP_TOML" ]]; then
-  echo "$(readlink "$STARSHIP_TOML")" >"$BACKUP"
+  readlink "$STARSHIP_TOML" >"$BACKUP"
 else
   cp "$STARSHIP_TOML" "$BACKUP"
 fi
@@ -156,10 +158,12 @@ _extract_preset_info() {
   # Parse style and description from comments
   # Line 1: "# ~/.config/starship.toml — clean · Aurora gradient  (Tokyo Night style)"
   # Extract just the style part after the — separator
-  local style_info=$(head -1 "$preset_file" | sed 's/^# .*— //' | sed 's/  .*//')
+  local style_info
+  style_info=$(head -1 "$preset_file" | sed 's/^# .*— //' | sed 's/  .*//')
 
   # Line 2: color palette description
-  local color_info=$(sed -n '2p' "$preset_file" | sed 's/^# //')
+  local color_info
+  color_info=$(sed -n '2p' "$preset_file" | sed 's/^# //')
 
   printf "%s\n%s" "$style_info" "$color_info"
 }
@@ -170,7 +174,8 @@ _format_preset_display() {
   local style_info="$2"
 
   # Extract category from style info (before · separator)
-  local category=$(echo "$style_info" | sed 's/ ·.*//' | tr '[:lower:]' '[:upper:]')
+  local category
+  category=$(echo "$style_info" | sed 's/ ·.*//' | tr '[:lower:]' '[:upper:]')
 
   # Create category badge
   local badge=""
@@ -192,7 +197,8 @@ _pick_with_fzf() {
 
     local info
     info=$(_extract_preset_info "$f")
-    local style_info=$(echo "$info" | head -1)
+    local style_info
+    style_info=$(echo "$info" | head -1)
 
     local display
     display=$(_format_preset_display "$name" "$style_info")

@@ -184,11 +184,13 @@ _zcomp_gen_cmd() {
 _upd_restart_shell() {
   [ -n "${ZSH_VERSION:-}" ] || return 1
   case $- in *i*) ;; *) return 1 ;; esac
+  # shellcheck disable=SC2154  # jobstates is a zsh special parameter; this branch only runs under zsh
   if [ "${#jobstates}" -gt 0 ]; then
     echo "upd: background jobs exist, not restarting the shell" >&2
     return 1
   fi
   [ -n "$1" ] && export UPD_SUMMARY="$1"
+  # shellcheck disable=SC2093  # exec can fail; the lines after it are the fallback when the shell is not replaced
   exec zsh
   unset UPD_SUMMARY
   return 1

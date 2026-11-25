@@ -72,6 +72,7 @@ build_sort_cmd() {
   local spec="$1" key entry col numeric result="" old_ifs
   old_ifs="$IFS"
   IFS=','
+  # shellcheck disable=SC2086  # splitting spec on the comma IFS set above is the point
   set -- $spec
   IFS="$old_ifs"
 

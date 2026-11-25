@@ -20,8 +20,8 @@ while [ $connected == false ]; do
     && bluetoothctl disconnect CC:98:8B:21:38:7B \
     && bluetoothctl connect CC:98:8B:21:38:7B
 
-  x=$(($x + 1))
-  if [[ $(pactl list short sinks | grep $SONY_WH_1000XM3_SINK_NAME) ]]; then
+  x=$((x + 1))
+  if pactl list short sinks | grep -q $SONY_WH_1000XM3_SINK_NAME; then
     pactl set-default-sink $SONY_WH_1000XM3_SINK_NAME
     pactl set-default-sink alsa_output.pci-0000_00_1f.3.analog-stereo
     pactl set-default-sink $SONY_WH_1000XM3_SINK_NAME

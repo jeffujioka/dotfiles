@@ -46,6 +46,7 @@ _wd40_load() {
       if [ -r "$_wd40_f" ]; then
         # No exit-status check: a file that returns nonzero must not stop
         # the loop or shell startup. There is no `set -e` here to trip.
+        # shellcheck disable=SC1090  # the file name comes from a glob over the wd40 shell directories at run time
         . "$_wd40_f"
       elif [ -L "$_wd40_f" ] || [ -e "$_wd40_f" ]; then
         printf 'wd40: skipped unreadable %s\n' "$_wd40_f" >&2

@@ -11,6 +11,7 @@
 
 set -eu
 
+# shellcheck disable=SC2034  # not read in this file; kept as the test's own location next to SOURCE_REPO
 TEST_DIR=$(cd "$(dirname "$0")" && pwd -P)
 SOURCE_REPO=$(cd "$(dirname "$0")/../.." && pwd -P)
 
@@ -343,6 +344,7 @@ section_begin 'run sandbox'
   modes_of() {
     # modes_of DIR
     (cd "$1" && find . -print | LC_ALL=C sort | while IFS= read -r p; do
+      # shellcheck disable=SC2012  # the mode column of ls -l is what is compared; find has no portable equivalent
       printf '%s %s\n' "$(ls -ld "$p" | cut -c1-10)" "$p"
     done)
   }
@@ -1169,9 +1171,11 @@ section_begin 'loader wiring'
       alias t_linux  >/dev/null 2>&1 && printf L
       set | grep -c '^_wd40_' || true")
     assert_eq "$out" "CAD0" "$sh: sources common+platform, survives a failing file, skips other platform, cleans vars"
-    grep -q 'skipped unreadable' "$SANDBOX/lderr" \
-      && pass "$sh: dangling symlink warned about" \
-      || fail "$sh: no dangling-symlink warning"
+    if grep -q 'skipped unreadable' "$SANDBOX/lderr"; then
+      pass "$sh: dangling symlink warned about"
+    else
+      fail "$sh: no dangling-symlink warning"
+    fi
   done
 
   # empty dirs must not error (zsh nullglob path)
@@ -1231,7 +1235,7 @@ section_begin 'scripts are executable and carry shebangs'
   for f in "$REPO"/wd40/common/scripts/* "$REPO"/wd40/darwin/scripts/* "$REPO"/wd40/linux/scripts/*; do
     [ -e "$f" ] || continue
     b=$(basename "$f")
-    [ -x "$f" ] && pass "$b is executable" || fail "$b is not executable"
+    if [ -x "$f" ]; then pass "$b is executable"; else fail "$b is not executable"; fi
     case $(head -1 "$f") in
       '#!'*) pass "$b has a shebang" ;;
       *) fail "$b has no shebang" ;;

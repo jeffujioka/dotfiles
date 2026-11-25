@@ -29,7 +29,7 @@ function print_info() {
 
 function print_alive_processes() {
   cnt=$(pgrep -cif "$1")
-  if (($cnt > 0)); then
+  if ((cnt > 0)); then
     echo -e "\nThere is/are '$cnt' process[es] still running...\n"
     p "$1"
   fi
@@ -45,7 +45,7 @@ function ka() {
 
   print_info "$1"
 
-  if (($cnt > 0)); then
+  if ((cnt > 0)); then
     pkill -"$klevel" -if "$1"
 
     print_alive_processes "$1"
@@ -64,7 +64,7 @@ function ska() {
 
   print_info "$1"
 
-  if (($cnt > 0)); then
+  if ((cnt > 0)); then
     sudo pkill -"$klevel" -if "$1"
 
     print_alive_processes "$1"
@@ -81,7 +81,7 @@ function mkcd() {
 
   local dir="$1"
   mkdir -p "$dir"
-  cd "$dir"
+  cd "$dir" || return
 }
 
 function f() {
@@ -93,14 +93,15 @@ function f() {
   if [ $# -eq 0 ]; then
     fzf
   else
+    # shellcheck disable=SC2124  # the slice is a single element, so the string holds exactly the last argument
     local search_path="${@: -1}" # Get the last argument
     if [ ! -d "$search_path" ]; then
       echo "Error: Last argument is not a valid directory"
       return 1
     fi
-    pushd "$search_path" &>/dev/null
+    pushd "$search_path" &>/dev/null || return
     fzf "${@:1:$#-1}" # Forward all arguments except the last one
-    popd &>/dev/null
+    popd &>/dev/null || return
   fi
 }
 
@@ -110,10 +111,14 @@ function fq() {
     return 1
   fi
 
+  # shellcheck disable=SC2124  # joined into one string on purpose; word-split again when passed to f below
   search_dir="${@: -1}"
+  # shellcheck disable=SC2124  # joined into one string on purpose; word-split again when passed to f below
   query="${@: -2:1}"
+  # shellcheck disable=SC2124  # joined into one string on purpose; word-split again when passed to f below
   opts="${@:1:$#-2}"
 
+  # shellcheck disable=SC2086  # opts, query and search_dir are split into words on purpose
   f $opts -q $query $search_dir
 }
 
@@ -126,10 +131,14 @@ function fqi() {
   if [ $# -eq 1 ]; then
     f -i -q "$1" .
   else
+    # shellcheck disable=SC2124  # joined into one string on purpose; word-split again when passed to f below
     search_dir="${@: -1}"
+    # shellcheck disable=SC2124  # joined into one string on purpose; word-split again when passed to f below
     query="${@: -2:1}"
+    # shellcheck disable=SC2124  # joined into one string on purpose; word-split again when passed to f below
     opts="${@:1:$#-2}"
 
+    # shellcheck disable=SC2086  # opts, query and search_dir are split into words on purpose
     f $opts -i -q $query $search_dir
   fi
 }
@@ -143,13 +152,21 @@ alias ez="exec zsh"
 
 # Use eza instead of ls (modern replacement for exa)
 EZA_DEFAULT="--icons --group-directories-first"
+# shellcheck disable=SC2139  # EZA_DEFAULT is meant to expand once, when the alias is defined
 alias ls="eza $EZA_DEFAULT"
+# shellcheck disable=SC2139  # EZA_DEFAULT is meant to expand once, when the alias is defined
 alias ll="eza -l $EZA_DEFAULT"
+# shellcheck disable=SC2139  # EZA_DEFAULT is meant to expand once, when the alias is defined
 alias lla="eza -la $EZA_DEFAULT"
+# shellcheck disable=SC2139  # EZA_DEFAULT is meant to expand once, when the alias is defined
 alias llt="eza -lT $EZA_DEFAULT"
+# shellcheck disable=SC2139  # EZA_DEFAULT is meant to expand once, when the alias is defined
 alias llta="eza -lTa $EZA_DEFAULT"
+# shellcheck disable=SC2139  # EZA_DEFAULT is meant to expand once, when the alias is defined
 alias tree="eza -T $EZA_DEFAULT"
+# shellcheck disable=SC2139  # EZA_DEFAULT is meant to expand once, when the alias is defined
 alias treel="eza -lT $EZA_DEFAULT"
+# shellcheck disable=SC2139  # EZA_DEFAULT is meant to expand once, when the alias is defined
 alias treela="eza -lTa $EZA_DEFAULT"
 
 if command -v pbcopy &>/dev/null; then
