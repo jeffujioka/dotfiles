@@ -4,6 +4,13 @@
 	pager = hunk pager
 	hooksPath = ~/.config/git/hooks
 
+# Runs pre-commit in any repo with a .pre-commit-config.yaml, alongside the
+# hooks in hooksPath (Git runs config hooks first, then the hooks directory),
+# so `pre-commit install` is never needed. Repos without a config: no-op.
+[hook "pre-commit-framework"]
+	event = pre-commit
+	command = pre-commit hook-impl --config=.pre-commit-config.yaml --hook-type=pre-commit --skip-on-missing-config --
+
 [color]
 	ui = auto
 	diff = auto
