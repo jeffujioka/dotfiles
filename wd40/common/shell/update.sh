@@ -210,7 +210,10 @@ zcomp_update() {
   case "${1:-}" in
     "") ;;
     --no-restart) _zc_restart=0 ;;
-    *) echo "usage: zcomp_update [--no-restart]" >&2; return 2 ;;
+    *)
+      echo "usage: zcomp_update [--no-restart]" >&2
+      return 2
+      ;;
   esac
   _zc_brew=$(command -v brew 2>/dev/null)
   [ -n "$_zc_brew" ] && _zc_sf="$(dirname "$(dirname "$_zc_brew")")/share/zsh/site-functions"
@@ -245,7 +248,10 @@ upd() {
   case "${1:-}" in
     "") ;;
     --no-restart) _restart=0 ;;
-    *) echo "usage: upd [--no-restart]" >&2; return 2 ;;
+    *)
+      echo "usage: upd [--no-restart]" >&2
+      return 2
+      ;;
   esac
   local _cmds=("brew update" "brew upgrade -y" "claude --update")
   command -v openchamber >/dev/null && _cmds+=("openchamber update")
@@ -287,4 +293,3 @@ alias opupd="openchamber update"
 alias litellmupdate="uv tool upgrade litellm"
 alias ccuap="claude_update_all_plugins"
 alias zupd="zcomp_update"
-

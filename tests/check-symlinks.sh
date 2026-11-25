@@ -11,7 +11,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 section "Symlinks"
 
 expand_path() {
-    echo "${1/#\~/$HOME}"
+  echo "${1/#\~/$HOME}"
 }
 
 HOST_PLATFORM="${WD40_PLATFORM:-$(uname -s | tr '[:upper:]' '[:lower:]')}"
@@ -19,102 +19,108 @@ SEEN_GLOB_LINKS=$(mktemp)
 trap 'rm -f "$SEEN_GLOB_LINKS"' EXIT
 
 "$REPO_ROOT/helpers/read-manifest.py" symlinks --format tsv \
-    --fields "source,target,type:symlink,strip_ext:false,platform:" \
-    | while IFS=$'\t' read -r src tgt typ strip_ext platform; do
+  --fields "source,target,type:symlink,strip_ext:false,platform:" \
+  | while IFS=$'\t' read -r src tgt typ strip_ext platform; do
     tgt=$(expand_path "$tgt")
 
     # Entries for the other platform are not installed here — skip, loudly.
     if [ -n "$platform" ] && [ "$platform" != "$HOST_PLATFORM" ]; then
-        warn "skipped ($platform-only): $src"
-        continue
+      warn "skipped ($platform-only): $src"
+      continue
     fi
 
     case "$typ" in
-        symlink)
-            # A `~/` source names an already-installed link (the macOS alias)
-            # and is linked verbatim; any other source is a repo-relative path.
-            case "$src" in
-                \~/*) src_path=$(expand_path "$src"); verbatim=true ;;
-                *)    src_path="$REPO_ROOT/$src";     verbatim=false ;;
+      symlink)
+        # A `~/` source names an already-installed link (the macOS alias)
+        # and is linked verbatim; any other source is a repo-relative path.
+        case "$src" in
+          \~/*)
+            src_path=$(expand_path "$src")
+            verbatim=true
+            ;;
+          *)
+            src_path="$REPO_ROOT/$src"
+            verbatim=false
+            ;;
+        esac
+        if [ -L "$tgt" ]; then
+          actual=$(resolve_path "$tgt")
+          expected=$(resolve_path "$src_path")
+          if [ "$actual" = "$expected" ]; then
+            pass "$tgt → $src"
+          else
+            fail "$tgt → $(basename "$actual") (expected $src)"
+          fi
+          if [ "$verbatim" = true ] && [ "$(readlink "$tgt")" != "$src_path" ]; then
+            fail "$tgt → $(readlink "$tgt") (expected a verbatim link to $src_path)"
+          fi
+          # Guard against ln -sf creating a nested symlink inside
+          # a directory-targeting symlink (recursive symlink bug).
+          if [ -d "$src_path" ]; then
+            base=$(basename "$src")
+            if [ -L "$src_path/$base" ]; then
+              fail "$src/$base is a recursive symlink (ln -sfn missing?)"
+            fi
+          fi
+        elif [ -e "$tgt" ]; then
+          fail "$tgt exists but is not a symlink"
+        else
+          fail "$tgt missing"
+        fi
+        ;;
+      seed)
+        if [ -e "$tgt" ]; then
+          pass "$tgt exists (seed)"
+        else
+          fail "$tgt not found (expected seed to have created $src)"
+        fi
+        ;;
+      glob)
+        src_pattern="$REPO_ROOT/$src"
+        tgt_dir=$(dirname "$tgt")
+        matches=0
+        failures=0
+        for f in $src_pattern; do
+          [ -e "$f" ] || continue
+          base=$(basename "$f")
+          if [ "$strip_ext" = "true" ]; then
+            case "$base" in
+              *.sh) base="${base%.sh}" ;;
+              *.py) base="${base%.py}" ;;
             esac
-            if [ -L "$tgt" ]; then
-                actual=$(resolve_path "$tgt")
-                expected=$(resolve_path "$src_path")
-                if [ "$actual" = "$expected" ]; then
-                    pass "$tgt → $src"
-                else
-                    fail "$tgt → $(basename "$actual") (expected $src)"
-                fi
-                if [ "$verbatim" = true ] && [ "$(readlink "$tgt")" != "$src_path" ]; then
-                    fail "$tgt → $(readlink "$tgt") (expected a verbatim link to $src_path)"
-                fi
-                # Guard against ln -sf creating a nested symlink inside
-                # a directory-targeting symlink (recursive symlink bug).
-                if [ -d "$src_path" ]; then
-                    base=$(basename "$src")
-                    if [ -L "$src_path/$base" ]; then
-                        fail "$src/$base is a recursive symlink (ln -sfn missing?)"
-                    fi
-                fi
-            elif [ -e "$tgt" ]; then
-                fail "$tgt exists but is not a symlink"
+          fi
+          link="$tgt_dir/$base"
+          # uniqueness across ALL glob entries (collision = installer bug)
+          if grep -qxF "$link" "$SEEN_GLOB_LINKS"; then
+            fail "$link claimed by two glob sources (collision)"
+            failures=$((failures + 1))
+          fi
+          echo "$link" >>"$SEEN_GLOB_LINKS"
+          if [ -L "$link" ]; then
+            actual=$(resolve_path "$link")
+            expected=$(resolve_path "$f")
+            if [ "$actual" = "$expected" ]; then
+              matches=$((matches + 1))
             else
-                fail "$tgt missing"
+              fail "$link → $(readlink "$link") (expected $f)"
+              failures=$((failures + 1))
             fi
-            ;;
-        seed)
-            if [ -e "$tgt" ]; then
-                pass "$tgt exists (seed)"
-            else
-                fail "$tgt not found (expected seed to have created $src)"
-            fi
-            ;;
-        glob)
-            src_pattern="$REPO_ROOT/$src"
-            tgt_dir=$(dirname "$tgt")
-            matches=0
-            failures=0
-            for f in $src_pattern; do
-                [ -e "$f" ] || continue
-                base=$(basename "$f")
-                if [ "$strip_ext" = "true" ]; then
-                    case "$base" in
-                        *.sh) base="${base%.sh}" ;;
-                        *.py) base="${base%.py}" ;;
-                    esac
-                fi
-                link="$tgt_dir/$base"
-                # uniqueness across ALL glob entries (collision = installer bug)
-                if grep -qxF "$link" "$SEEN_GLOB_LINKS"; then
-                    fail "$link claimed by two glob sources (collision)"
-                    failures=$((failures + 1))
-                fi
-                echo "$link" >> "$SEEN_GLOB_LINKS"
-                if [ -L "$link" ]; then
-                    actual=$(resolve_path "$link")
-                    expected=$(resolve_path "$f")
-                    if [ "$actual" = "$expected" ]; then
-                        matches=$((matches + 1))
-                    else
-                        fail "$link → $(readlink "$link") (expected $f)"
-                        failures=$((failures + 1))
-                    fi
-                elif [ -e "$link" ]; then
-                    fail "$link exists but is not a symlink"
-                    failures=$((failures + 1))
-                else
-                    fail "$link missing"
-                    failures=$((failures + 1))
-                fi
-            done
-            if [ "$failures" -eq 0 ] && [ "$matches" -gt 0 ]; then
-                pass "$tgt ($matches files linked)"
-            elif [ "$matches" -eq 0 ] && [ "$failures" -eq 0 ]; then
-                fail "$tgt: no matching source files"
-            fi
-            ;;
-        *)
-            warn "Unknown symlink type '$typ' for $tgt"
-            ;;
+          elif [ -e "$link" ]; then
+            fail "$link exists but is not a symlink"
+            failures=$((failures + 1))
+          else
+            fail "$link missing"
+            failures=$((failures + 1))
+          fi
+        done
+        if [ "$failures" -eq 0 ] && [ "$matches" -gt 0 ]; then
+          pass "$tgt ($matches files linked)"
+        elif [ "$matches" -eq 0 ] && [ "$failures" -eq 0 ]; then
+          fail "$tgt: no matching source files"
+        fi
+        ;;
+      *)
+        warn "Unknown symlink type '$typ' for $tgt"
+        ;;
     esac
-done
+  done

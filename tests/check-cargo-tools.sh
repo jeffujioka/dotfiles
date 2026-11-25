@@ -11,17 +11,17 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 section "Cargo Tools"
 
 if ! command -v cargo &>/dev/null; then
-    warn "cargo not found in PATH — skipping cargo tools check"
-    exit 0
+  warn "cargo not found in PATH — skipping cargo tools check"
+  exit 0
 fi
 
 "$REPO_ROOT/helpers/read-manifest.py" cargo.tools --format tsv --fields "crate,binary:" \
-    | while IFS=$'\t' read -r crate binary; do
+  | while IFS=$'\t' read -r crate binary; do
     binary="${binary:-$crate}"
     if command -v "$binary" &>/dev/null; then
-        version=$("$binary" --version 2>/dev/null | head -1)
-        pass "$crate ($version)"
+      version=$("$binary" --version 2>/dev/null | head -1)
+      pass "$crate ($version)"
     else
-        fail "$crate not found (binary: $binary)"
+      fail "$crate not found (binary: $binary)"
     fi
-done
+  done

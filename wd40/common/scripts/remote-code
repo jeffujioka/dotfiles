@@ -79,11 +79,11 @@ goto_loc=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -h|--help)
+    -h | --help)
       usage
       exit 0
       ;;
-    -m|--mac-host)
+    -m | --mac-host)
       [[ $# -ge 2 ]] || die "$1 requires a value"
       mac_host=$2
       mac_host_flag=1
@@ -94,7 +94,7 @@ while [[ $# -gt 0 ]]; do
       mac_host_flag=1
       shift
       ;;
-    -g|--goto)
+    -g | --goto)
       [[ $# -ge 2 ]] || die "$1 requires a value"
       goto_loc=$2
       shift 2
@@ -103,11 +103,11 @@ while [[ $# -gt 0 ]]; do
       goto_loc=${1#*=}
       shift
       ;;
-    -l|--local)
+    -l | --local)
       local_mode=1
       shift
       ;;
-    -r|--remote-host)
+    -r | --remote-host)
       [[ $# -ge 2 ]] || die "$1 requires a value"
       remote_host=$2
       shift 2

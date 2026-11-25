@@ -27,7 +27,7 @@ if [ -L "$_wd40_me" ]; then
   _wd40_link=$(readlink "$_wd40_me")
   case "$_wd40_link" in
     /*) _wd40_me="$_wd40_link" ;;
-    *)  _wd40_me="$(dirname "$_wd40_me")/$_wd40_link" ;;
+    *) _wd40_me="$(dirname "$_wd40_me")/$_wd40_link" ;;
   esac
 fi
 _wd40_dir=$(dirname "$_wd40_me")

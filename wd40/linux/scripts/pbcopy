@@ -19,17 +19,17 @@ port="${WD40_PBCOPY_PORT:-2224}"
 
 spool=$(mktemp "${TMPDIR:-/tmp}/wd40-pbcopy.XXXXXX") || exit 1
 trap 'rm -f "$spool"' EXIT
-cat > "$spool"
+cat >"$spool"
 
-nc -N localhost "$port" < "$spool" 2>/dev/null && exit 0
+nc -N localhost "$port" <"$spool" 2>/dev/null && exit 0
 
 if [ -n "${WAYLAND_DISPLAY:-}" ] && command -v wl-copy >/dev/null 2>&1; then
-  wl-copy < "$spool" && exit 0
+  wl-copy <"$spool" && exit 0
 elif [ -n "${DISPLAY:-}" ]; then
   if command -v xclip >/dev/null 2>&1; then
-    xclip -selection clipboard < "$spool" && exit 0
+    xclip -selection clipboard <"$spool" && exit 0
   elif command -v xsel >/dev/null 2>&1; then
-    xsel --clipboard --input < "$spool" && exit 0
+    xsel --clipboard --input <"$spool" && exit 0
   fi
 fi
 

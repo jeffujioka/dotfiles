@@ -20,7 +20,10 @@ weekly=0
 case "${1:-}" in
   "") ;;
   --weekly) weekly=1 ;;
-  *) echo "usage: asdf-update [--weekly]" >&2; exit 2 ;;
+  *)
+    echo "usage: asdf-update [--weekly]" >&2
+    exit 2
+    ;;
 esac
 
 if ! command -v asdf >/dev/null 2>&1; then

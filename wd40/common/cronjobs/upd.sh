@@ -49,7 +49,12 @@ echo "=== upd started $(stamp) ===" >>"$log"
 set -m
 bash -c '. "$1"; upd' _ "$here/../shell/update.sh" </dev/null >>"$log" 2>&1 &
 pid=$!
-( sleep "$timeout_seconds"; kill -TERM -- "-$pid" 2>/dev/null; sleep 5; kill -KILL -- "-$pid" 2>/dev/null ) &
+(
+  sleep "$timeout_seconds"
+  kill -TERM -- "-$pid" 2>/dev/null
+  sleep 5
+  kill -KILL -- "-$pid" 2>/dev/null
+) &
 watchdog=$!
 wait "$pid"
 rc=$?

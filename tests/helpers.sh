@@ -15,53 +15,53 @@ SANITY_COUNTERS_FILE="${SANITY_COUNTERS_FILE:-$(mktemp)}"
 export SANITY_COUNTERS_FILE
 
 if [ ! -s "$SANITY_COUNTERS_FILE" ]; then
-    printf '0 0 0' > "$SANITY_COUNTERS_FILE"
+  printf '0 0 0' >"$SANITY_COUNTERS_FILE"
 fi
 
 _update_counter() {
-    # NOTE: Non-atomic read-modify-write — check scripts must run sequentially.
-    # Parallelising them (e.g. with &) would corrupt counter state.
-    local field="$1"  # 1=pass, 2=fail, 3=warn
-    local counters
-    counters=$(cat "$SANITY_COUNTERS_FILE")
-    local p f w
-    read -r p f w <<< "$counters"
-    case "$field" in
-        1) p=$((p + 1)) ;;
-        2) f=$((f + 1)) ;;
-        3) w=$((w + 1)) ;;
-    esac
-    printf '%d %d %d' "$p" "$f" "$w" > "$SANITY_COUNTERS_FILE"
+  # NOTE: Non-atomic read-modify-write — check scripts must run sequentially.
+  # Parallelising them (e.g. with &) would corrupt counter state.
+  local field="$1" # 1=pass, 2=fail, 3=warn
+  local counters
+  counters=$(cat "$SANITY_COUNTERS_FILE")
+  local p f w
+  read -r p f w <<<"$counters"
+  case "$field" in
+    1) p=$((p + 1)) ;;
+    2) f=$((f + 1)) ;;
+    3) w=$((w + 1)) ;;
+  esac
+  printf '%d %d %d' "$p" "$f" "$w" >"$SANITY_COUNTERS_FILE"
 }
 
 pass() {
-    _update_counter 1
-    printf "  ${_GREEN}✓${_NC} %s\n" "$1"
+  _update_counter 1
+  printf "  ${_GREEN}✓${_NC} %s\n" "$1"
 }
 
 fail() {
-    _update_counter 2
-    printf "  ${_RED}✗${_NC} %s\n" "$1"
+  _update_counter 2
+  printf "  ${_RED}✗${_NC} %s\n" "$1"
 }
 
 warn() {
-    _update_counter 3
-    printf "  ${_YELLOW}⚠${_NC} %s\n" "$1"
+  _update_counter 3
+  printf "  ${_YELLOW}⚠${_NC} %s\n" "$1"
 }
 
 section() {
-    printf "\n${_BOLD}=== %s ===${_NC}\n" "$1"
+  printf "\n${_BOLD}=== %s ===${_NC}\n" "$1"
 }
 
 summary() {
-    local counters
-    counters=$(cat "$SANITY_COUNTERS_FILE")
-    local p f w
-    read -r p f w <<< "$counters"
-    printf "\n${_BOLD}════════════════════════${_NC}\n"
-    printf "  Results: ${_GREEN}%d passed${_NC}, ${_RED}%d failed${_NC}, ${_YELLOW}%d warnings${_NC}\n" "$p" "$f" "$w"
-    printf "${_BOLD}════════════════════════${_NC}\n"
-    [ "$f" -eq 0 ]
+  local counters
+  counters=$(cat "$SANITY_COUNTERS_FILE")
+  local p f w
+  read -r p f w <<<"$counters"
+  printf "\n${_BOLD}════════════════════════${_NC}\n"
+  printf "  Results: ${_GREEN}%d passed${_NC}, ${_RED}%d failed${_NC}, ${_YELLOW}%d warnings${_NC}\n" "$p" "$f" "$w"
+  printf "${_BOLD}════════════════════════${_NC}\n"
+  [ "$f" -eq 0 ]
 }
 
 # shellcheck source=../helpers/shell-utils.sh

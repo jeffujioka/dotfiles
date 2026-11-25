@@ -61,7 +61,10 @@ install_linux_brew() {
   mkdir -p "$HOME/.homebrew"
   curl -fsSL https://github.com/Homebrew/brew/tarball/main \
     | tar xz --strip-components 1 -C "$HOME/.homebrew" \
-    || { echo "Error: Homebrew installation failed. Aborting."; exit 1; }
+    || {
+      echo "Error: Homebrew installation failed. Aborting."
+      exit 1
+    }
   eval "$("$HOME/.homebrew/bin/brew" shellenv)"
   brew update --force --quiet
   chmod -R go-w "$(brew --prefix)/share/zsh" 2>/dev/null || true
@@ -92,10 +95,13 @@ install_brew_tools() {
       echo "Installing $formula via brew..."
       # shellcheck disable=SC2086
       brew install $flags "$formula" \
-        || { echo "Warning: Failed to install $formula"; failed_installs=$((failed_installs + 1)); }
+        || {
+          echo "Warning: Failed to install $formula"
+          failed_installs=$((failed_installs + 1))
+        }
     fi
   done 3< <(read_manifest brew.tools --format tsv --sep "$MANIFEST_SEP" \
-              --fields "formula,binary:,flags:,platform:")
+    --fields "formula,binary:,flags:,platform:")
 
   if [ "$failed_installs" -gt 0 ]; then
     echo "Warning: $failed_installs brew tool(s) failed to install."
@@ -119,7 +125,10 @@ install_uv_tools() {
     else
       echo "Installing $tool via uv..."
       uv tool install "$tool" \
-        || { echo "Warning: Failed to install $tool"; failed_installs=$((failed_installs + 1)); }
+        || {
+          echo "Warning: Failed to install $tool"
+          failed_installs=$((failed_installs + 1))
+        }
     fi
   done 3< <(read_manifest uv.tools)
 
@@ -132,8 +141,11 @@ install_uv_tools() {
 . "$(dirname "$(readlink -f "$0")")/helpers/shell-utils.sh"
 
 # Validate manifest.toml before doing any destructive work.
-read_manifest brew.tools --format tsv --fields "formula,binary:,flags:" > /dev/null \
-  || { echo "Error: manifest.toml is missing or invalid. Aborting."; exit 1; }
+read_manifest brew.tools --format tsv --fields "formula,binary:,flags:" >/dev/null \
+  || {
+    echo "Error: manifest.toml is missing or invalid. Aborting."
+    exit 1
+  }
 
 install_sys_packages() {
   [ -n "${DEBUG:-}" ] && set -x
@@ -143,7 +155,10 @@ install_sys_packages() {
       echo "Homebrew is not installed. Installing..."
       NONINTERACTIVE=1 /bin/bash -c \
         "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" \
-        || { echo "Error: Homebrew installation failed. Aborting."; exit 1; }
+        || {
+          echo "Error: Homebrew installation failed. Aborting."
+          exit 1
+        }
       eval "$(/opt/homebrew/bin/brew shellenv)"
     fi
 
@@ -203,17 +218,20 @@ install_non_asdf_tools() {
           git clone "${clone_args[@]}" "$url" "$rpath"
         else
           echo "Updating $name..."
-          pushd "$rpath" > /dev/null 2>&1 || { echo "Failed to pushd $rpath"; continue; }
+          pushd "$rpath" >/dev/null 2>&1 || {
+            echo "Failed to pushd $rpath"
+            continue
+          }
           git fetch --all --prune
           git pull --rebase origin "$branch"
-          popd > /dev/null 2>&1 || echo "Failed to popd"
+          popd >/dev/null 2>&1 || echo "Failed to popd"
         fi
 
-        if [ -n "$post_install" ] && pushd "$rpath" > /dev/null 2>&1; then
+        if [ -n "$post_install" ] && pushd "$rpath" >/dev/null 2>&1; then
           echo "Running post-install for $name..."
           # Intentional: post_install is a trusted shell snippet from manifest.toml
           eval "$post_install"
-          popd > /dev/null 2>&1 || echo "Failed to popd"
+          popd >/dev/null 2>&1 || echo "Failed to popd"
         fi
         ;;
       file-download)
@@ -225,7 +243,7 @@ install_non_asdf_tools() {
         ;;
     esac
   done 3< <("$script_dir/helpers/read-manifest.py" resources --format tsv \
-      --fields "name,type,path,url,branch:main,shallow:false,post_install:")
+    --fields "name,type,path,url,branch:main,shallow:false,post_install:")
 }
 
 # Download URL to a temp file and run it with SHELL_BIN (never piped). Runs as
@@ -304,7 +322,7 @@ install_script_installers() {
       failed_installs=$((failed_installs + 1))
     fi
   done 3< <(read_manifest resources --format tsv --sep "$MANIFEST_SEP" \
-              --fields "name,type,url,creates,shell:bash,args,env,sha256,platform,required,post_install")
+    --fields "name,type,url,creates,shell:bash,args,env,sha256,platform,required,post_install")
 
   if [ "$failed_installs" -gt 0 ]; then
     echo "Warning: $failed_installs script install(s) failed."
@@ -367,7 +385,7 @@ function backup_this() {
 
   bak_name="${file}"
   echo "creating back for: ${file}"
-  if [[ ${file} == ${HOME}* ]] ; then
+  if [[ ${file} == ${HOME}* ]]; then
     bak_name="${bak_name##*${HOME}/}"
   fi
   echo "creating backup: moving ${file} to ${bak_dir}/${bak_name}"
@@ -415,7 +433,11 @@ function apply_dotfiles() {
     # alias entries). Note it before the expansion erases the distinction: the
     # symlink case links such a source verbatim, never resolved through.
     home_source=""
-    case "$src" in \~/*) home_source="1"; src="${src/#\~/$HOME}" ;; esac
+    case "$src" in \~/*)
+      home_source="1"
+      src="${src/#\~/$HOME}"
+      ;;
+    esac
     # Resolve src relative to repo root (not $PWD) — C2 fix
     if [[ "$src" != /* ]]; then src="$script_dir/$src"; fi
 
@@ -482,7 +504,7 @@ function apply_dotfiles() {
         ;;
     esac
   done < <(read_manifest symlinks --format tsv \
-      --fields "source,target,type:symlink,backup:true,strip_ext:false,platform:")
+    --fields "source,target,type:symlink,backup:true,strip_ext:false,platform:")
 
   # Remove old dangling symlink if it exists
   if [ -L "$script_dir/config/starship.toml" ]; then
@@ -539,10 +561,9 @@ Options:
 EOF
 }
 
-while [ -n "$1" ]
-do
+while [ -n "$1" ]; do
   case "$1" in
-    -h|--help)
+    -h | --help)
       usage
       exit 0
       ;;

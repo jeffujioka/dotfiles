@@ -7,7 +7,7 @@ set -euo pipefail
 self=$(readlink -f "${BASH_SOURCE[0]}")
 
 if [[ -z "${SSH_CONNECTION:-}" ]]; then
-  IFS=: read -ra dirs <<< "$PATH"
+  IFS=: read -ra dirs <<<"$PATH"
   for dir in "${dirs[@]}"; do
     [[ -n "$dir" ]] || continue
     cand="$dir/xdg-open"

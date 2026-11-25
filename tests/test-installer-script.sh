@@ -15,22 +15,29 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 section "Installer: script-install (creates / platform / sha256 / required)"
 
-PASS=0; FAIL=0
-t_pass() { PASS=$((PASS+1)); pass "$1"; }
-t_fail() { FAIL=$((FAIL+1)); fail "$1"; }
+PASS=0
+FAIL=0
+t_pass() {
+  PASS=$((PASS + 1))
+  pass "$1"
+}
+t_fail() {
+  FAIL=$((FAIL + 1))
+  fail "$1"
+}
 
 SANDBOX=$(mktemp -d)
 trap 'rm -rf "$SANDBOX"' EXIT
 mkdir -p "$SANDBOX/bin" "$SANDBOX/home"
 
 # Fixture "vendor script": records its args and the exported env var.
-cat > "$SANDBOX/vendor.sh" <<'VENDOR'
+cat >"$SANDBOX/vendor.sh" <<'VENDOR'
 echo "ran args=[$*] foo=[${FOO:-}]" >> "$HOME/script-ran"
 VENDOR
 VENDOR_SHA=$(file_sha256 "$SANDBOX/vendor.sh")
 
 # Fake curl: copy the fixture to the -o target, ignore everything else.
-cat > "$SANDBOX/bin/curl" <<CURL
+cat >"$SANDBOX/bin/curl" <<CURL
 #!/bin/bash
 while [ \$# -gt 0 ]; do
   if [ "\$1" = "-o" ]; then cp "$SANDBOX/vendor.sh" "\$2"; exit 0; fi
@@ -41,27 +48,32 @@ CURL
 chmod +x "$SANDBOX/bin/curl"
 
 # Stub binary that makes `creates` already satisfied.
-printf '#!/bin/sh\n' > "$SANDBOX/bin/present-tool"; chmod +x "$SANDBOX/bin/present-tool"
+printf '#!/bin/sh\n' >"$SANDBOX/bin/present-tool"
+chmod +x "$SANDBOX/bin/present-tool"
 
 # run_fn MANIFEST_BODY PLATFORM — runs install_script_installers from
 # install.sh in a subshell; combined output in $SANDBOX/out.
 run_fn() {
-  printf '%s\n' "$1" > "$SANDBOX/manifest.toml"
+  printf '%s\n' "$1" >"$SANDBOX/manifest.toml"
   (
     export HOME="$SANDBOX/home" DOTFILES_MANIFEST="$SANDBOX/manifest.toml" \
-           WD40_PLATFORM="${2:-linux}" PATH="$SANDBOX/bin:$PATH"
+      WD40_PLATFORM="${2:-linux}" PATH="$SANDBOX/bin:$PATH"
     script_dir="$REPO_ROOT"
     . "$REPO_ROOT/helpers/shell-utils.sh"
     # shellcheck disable=SC1090
     . <(sed -n '/^read_manifest()/,/^}/p;/^run_script_install()/,/^)/p;/^install_script_installers()/,/^}/p' "$REPO_ROOT/install.sh")
     install_script_installers
-  ) > "$SANDBOX/out" 2>&1
+  ) >"$SANDBOX/out" 2>&1
 }
-reset_home() { rm -rf "$SANDBOX/home"; mkdir -p "$SANDBOX/home"; }
+reset_home() {
+  rm -rf "$SANDBOX/home"
+  mkdir -p "$SANDBOX/home"
+}
 
 entry() { # name creates extra-lines...
   printf '[[resources]]\nname = "%s"\ntype = "script-install"\nurl = "https://example.invalid/i"\ncreates = "%s"\n' "$1" "$2"
-  shift 2; printf '%s\n' "$@"
+  shift 2
+  printf '%s\n' "$@"
 }
 
 # --- Case 1: runs script; shell default, args, env, post_install plumbed
@@ -114,7 +126,7 @@ fi
 
 # --- Case 6: manifest bug (no creates) is refused
 reset_home
-printf '[[resources]]\nname = "bad"\ntype = "script-install"\nurl = "https://example.invalid/i"\n' > "$SANDBOX/bad.toml"
+printf '[[resources]]\nname = "bad"\ntype = "script-install"\nurl = "https://example.invalid/i"\n' >"$SANDBOX/bad.toml"
 if run_fn "$(cat "$SANDBOX/bad.toml")"; then
   t_fail "missing creates not refused"
 else
@@ -123,25 +135,27 @@ fi
 
 # --- Case 7: non-default shell is the interpreter
 reset_home
-printf '#!/bin/bash\necho used > "$HOME/shell-used"\nexec bash "$@"\n' > "$SANDBOX/bin/mysh"; chmod +x "$SANDBOX/bin/mysh"
+printf '#!/bin/bash\necho used > "$HOME/shell-used"\nexec bash "$@"\n' >"$SANDBOX/bin/mysh"
+chmod +x "$SANDBOX/bin/mysh"
 run_fn "$(entry thing absent-tool-7 'shell = "mysh"')"
 [ -e "$SANDBOX/home/shell-used" ] && [ -e "$SANDBOX/home/script-ran" ] \
   && t_pass "configured shell runs the script" || t_fail "configured shell not used"
 
 # --- Case 8: brew.tools platform filter (empty binary + platform must not shift
 # fields; unfiltered and matching entries install, mismatching is skipped)
-printf '#!/bin/bash\n[ "$1" = install ] && echo "$*" >> "$HOME/brew-installed"\nexit 0\n' > "$SANDBOX/bin/brew"; chmod +x "$SANDBOX/bin/brew"
+printf '#!/bin/bash\n[ "$1" = install ] && echo "$*" >> "$HOME/brew-installed"\nexit 0\n' >"$SANDBOX/bin/brew"
+chmod +x "$SANDBOX/bin/brew"
 run_brew() {
-  printf '%s\n' "$1" > "$SANDBOX/manifest.toml"
+  printf '%s\n' "$1" >"$SANDBOX/manifest.toml"
   (
     export HOME="$SANDBOX/home" DOTFILES_MANIFEST="$SANDBOX/manifest.toml" \
-           WD40_PLATFORM=linux PATH="$SANDBOX/bin:$PATH"
+      WD40_PLATFORM=linux PATH="$SANDBOX/bin:$PATH"
     script_dir="$REPO_ROOT"
     . "$REPO_ROOT/helpers/shell-utils.sh"
     # shellcheck disable=SC1090
     . <(sed -n '/^read_manifest()/,/^}/p;/^install_brew_tools()/,/^}/p' "$REPO_ROOT/install.sh")
     install_brew_tools
-  ) > "$SANDBOX/out" 2>&1
+  ) >"$SANDBOX/out" 2>&1
 }
 reset_home
 run_brew '[[brew.tools]]
@@ -166,10 +180,10 @@ else
   t_fail "brew platform filter wrong: $installed"
 fi
 
-
 # --- Case 9: a brew install that drains stdin (a dependency's post-install, e.g.
 # gtk+3 under colima) must not swallow the remaining manifest entries
-printf '#!/bin/bash\n[ "$1" = install ] && echo "$*" >> "$HOME/brew-installed"\ncat > /dev/null\nexit 0\n' > "$SANDBOX/bin/brew"; chmod +x "$SANDBOX/bin/brew"
+printf '#!/bin/bash\n[ "$1" = install ] && echo "$*" >> "$HOME/brew-installed"\ncat > /dev/null\nexit 0\n' >"$SANDBOX/bin/brew"
+chmod +x "$SANDBOX/bin/brew"
 reset_home
 run_brew '[[brew.tools]]
 formula = "first-pkg"

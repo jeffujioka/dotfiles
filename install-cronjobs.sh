@@ -54,7 +54,10 @@ warn_missing_tools() {
 }
 
 install_linux() {
-  command -v crontab >/dev/null 2>&1 || { echo "Error: crontab not found." >&2; return 1; }
+  command -v crontab >/dev/null 2>&1 || {
+    echo "Error: crontab not found." >&2
+    return 1
+  }
   local current block f
   current=$(crontab -l 2>/dev/null || true)
   block=""
@@ -116,5 +119,8 @@ warn_missing_tools
 case "$platform" in
   linux) install_linux ;;
   darwin) install_darwin ;;
-  *) echo "Unsupported platform: $platform" >&2; exit 1 ;;
+  *)
+    echo "Unsupported platform: $platform" >&2
+    exit 1
+    ;;
 esac

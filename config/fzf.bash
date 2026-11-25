@@ -8,7 +8,6 @@ fi
 # don't print error codes
 bleopt exec_errexit_mark=
 
-
 # https://github.com/akinomyoga/ble.sh/issues/41#issuecomment-583868999
 # clear blesh completer for cd
 blehook/eval-after-load complete 'unset -f ble/cmdinfo/complete:cd'
@@ -18,12 +17,15 @@ blehook/eval-after-load complete 'unset -f ble/cmdinfo/complete:cd'
 # ble/function#advice around _fzf_complete                 _fzf_complete.advice
 # ble/function#advice around _fzf_complete_kill            _fzf_complete.advice
 function _fzf_complete.advice {
-  [[ :$comp_type: == *:auto:* ]] && { compopt -o default; return; }
+  [[ :$comp_type: == *:auto:* ]] && {
+    compopt -o default
+    return
+  }
   compopt -o noquote
   COMP_WORDS=("${comp_words[@]}") COMP_CWORD=$comp_cword
   COMP_LINE=$comp_line COMP_POINT=$comp_point
   ble/function#push printf '[[ $1 == "\e[5n" ]] || builtin printf "$@"'
-  ble/function#advice/do < /dev/tty &> /dev/tty
+  ble/function#advice/do </dev/tty &>/dev/tty
   ble/function#pop printf
   ble/textarea#invalidate
 }

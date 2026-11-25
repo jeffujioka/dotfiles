@@ -18,15 +18,22 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 section "Installer: ~/ link sources (verbatim alias / missing-source refusal)"
 
-PASS=0; FAIL=0
-t_pass() { PASS=$((PASS+1)); pass "$1"; }
-t_fail() { FAIL=$((FAIL+1)); fail "$1"; }
+PASS=0
+FAIL=0
+t_pass() {
+  PASS=$((PASS + 1))
+  pass "$1"
+}
+t_fail() {
+  FAIL=$((FAIL + 1))
+  fail "$1"
+}
 
 SANDBOX=$(mktemp -d)
 trap 'rm -rf "$SANDBOX"' EXIT
 
 mkdir -p "$SANDBOX/src/biome" "$SANDBOX/home"
-printf '{ "marker": "%s" }\n' "$$" > "$SANDBOX/src/biome/biome.jsonc"
+printf '{ "marker": "%s" }\n' "$$" >"$SANDBOX/src/biome/biome.jsonc"
 
 # shellcheck disable=SC2088  # literal manifest text; install.sh expands the ~
 CANONICAL='~/.config/biome'
@@ -42,17 +49,20 @@ write_manifest() {
       printf '\n[[symlinks]]\nsource = "%s/src/biome"\ntarget = "%s"\n' "$SANDBOX" "$CANONICAL"
     fi
     printf '\n[[symlinks]]\nsource = "%s"\ntarget = "%s"\nplatform = "darwin"\n' "$CANONICAL" "$ALIAS"
-  } > "$SANDBOX/manifest.toml"
+  } >"$SANDBOX/manifest.toml"
 }
 
 # run_install PLATFORM — combined stdout+stderr captured to $SANDBOX/out
 run_install() {
   HOME="$SANDBOX/home" DOTFILES_MANIFEST="$SANDBOX/manifest.toml" \
     WD40_PLATFORM="${1:-darwin}" \
-    "$REPO_ROOT/install.sh" --no-install-deps > "$SANDBOX/out" 2>&1
+    "$REPO_ROOT/install.sh" --no-install-deps >"$SANDBOX/out" 2>&1
 }
 
-reset_home() { rm -rf "$SANDBOX/home"; mkdir -p "$SANDBOX/home"; }
+reset_home() {
+  rm -rf "$SANDBOX/home"
+  mkdir -p "$SANDBOX/home"
+}
 
 HOME_DIR="$SANDBOX/home"
 ALIAS_PATH="$HOME_DIR/Library/Application Support/biome"
@@ -79,7 +89,7 @@ fi
 
 # --- Case 2: second run is idempotent (re-linking a dir symlink) ---
 if run_install darwin && [ "$(readlink "$ALIAS_PATH")" = "$CANON_PATH" ] \
-    && [ ! -L "$SANDBOX/src/biome/biome" ]; then
+  && [ ! -L "$SANDBOX/src/biome/biome" ]; then
   t_pass "re-run keeps the alias and creates no nested link"
 else
   t_fail "re-run broke the alias or nested a link: $(tail -3 "$SANDBOX/out")"

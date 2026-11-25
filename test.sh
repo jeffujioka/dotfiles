@@ -11,7 +11,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 usage() {
-    cat <<'EOF'
+  cat <<'EOF'
 Usage:
   ./test.sh build-image <sudo|no-sudo|all>
   ./test.sh sanity-check [--docker] <sudo|no-sudo|all>
@@ -32,122 +32,122 @@ Targets:
   no-sudo         No-sudo install / skip system package checks
   all             (default) Both scenarios
 EOF
-    exit 1
+  exit 1
 }
 
 # ── build-image ──────────────────────────────────────────────────────
 
 cmd_build_image() {
-    local target="${1:-all}"
-    case "$target" in
-        sudo)
-            echo "Building dotfiles-test-sudo..."
-            docker build -t dotfiles-test-sudo \
-                -f "$SCRIPT_DIR/tests/docker/Dockerfile.sudo" \
-                "$SCRIPT_DIR/tests/docker"
-            ;;
-        no-sudo)
-            echo "Building dotfiles-test-no-sudo..."
-            docker build -t dotfiles-test-no-sudo \
-                -f "$SCRIPT_DIR/tests/docker/Dockerfile.no-sudo" \
-                "$SCRIPT_DIR"
-            ;;
-        all)
-            cmd_build_image sudo
-            cmd_build_image no-sudo
-            ;;
-        *)
-            echo "Error: invalid target '$target' (use: sudo, no-sudo, all)"
-            exit 1
-            ;;
-    esac
+  local target="${1:-all}"
+  case "$target" in
+    sudo)
+      echo "Building dotfiles-test-sudo..."
+      docker build -t dotfiles-test-sudo \
+        -f "$SCRIPT_DIR/tests/docker/Dockerfile.sudo" \
+        "$SCRIPT_DIR/tests/docker"
+      ;;
+    no-sudo)
+      echo "Building dotfiles-test-no-sudo..."
+      docker build -t dotfiles-test-no-sudo \
+        -f "$SCRIPT_DIR/tests/docker/Dockerfile.no-sudo" \
+        "$SCRIPT_DIR"
+      ;;
+    all)
+      cmd_build_image sudo
+      cmd_build_image no-sudo
+      ;;
+    *)
+      echo "Error: invalid target '$target' (use: sudo, no-sudo, all)"
+      exit 1
+      ;;
+  esac
 }
 
 # ── sanity-check (local) ────────────────────────────────────────────
 
 run_local_checks() {
-    local target="${1:-all}"
-    local rc=0
+  local target="${1:-all}"
+  local rc=0
 
-    export SANITY_COUNTERS_FILE
-    SANITY_COUNTERS_FILE=$(mktemp)
-    trap 'rm -f "$SANITY_COUNTERS_FILE"' EXIT
-    printf '0 0 0' > "$SANITY_COUNTERS_FILE"
+  export SANITY_COUNTERS_FILE
+  SANITY_COUNTERS_FILE=$(mktemp)
+  trap 'rm -f "$SANITY_COUNTERS_FILE"' EXIT
+  printf '0 0 0' >"$SANITY_COUNTERS_FILE"
 
-    # Source shell config to ensure PATH is set up correctly
-    # Try zshrc for zsh shells, bashrc for bash shells
-    if [ -n "$ZSH_VERSION" ] && [ -f "$HOME/.zshrc" ]; then
-        source "$HOME/.zshrc" 2>/dev/null || true
-    elif [ -z "$ZSH_VERSION" ] && [ -f "$HOME/.bashrc" ]; then
-        source "$HOME/.bashrc" 2>/dev/null || true
-    fi
-    # Also ensure cargo is in PATH (for non-interactive shells)
-    CARGO_HOME="${XDG_CONFIG_HOME:-$HOME/.config}/cargo"
-    [ -d "${CARGO_HOME}/bin" ] && export PATH="${CARGO_HOME}/bin:$PATH"
+  # Source shell config to ensure PATH is set up correctly
+  # Try zshrc for zsh shells, bashrc for bash shells
+  if [ -n "$ZSH_VERSION" ] && [ -f "$HOME/.zshrc" ]; then
+    source "$HOME/.zshrc" 2>/dev/null || true
+  elif [ -z "$ZSH_VERSION" ] && [ -f "$HOME/.bashrc" ]; then
+    source "$HOME/.bashrc" 2>/dev/null || true
+  fi
+  # Also ensure cargo is in PATH (for non-interactive shells)
+  CARGO_HOME="${XDG_CONFIG_HOME:-$HOME/.config}/cargo"
+  [ -d "${CARGO_HOME}/bin" ] && export PATH="${CARGO_HOME}/bin:$PATH"
 
-    # Ensure Homebrew is in PATH (Linux user-local install)
-    if [ -x "$HOME/.homebrew/bin/brew" ]; then
-        eval "$("$HOME/.homebrew/bin/brew" shellenv)"
-    fi
+  # Ensure Homebrew is in PATH (Linux user-local install)
+  if [ -x "$HOME/.homebrew/bin/brew" ]; then
+    eval "$("$HOME/.homebrew/bin/brew" shellenv)"
+  fi
 
-    # Propagate install mode to check scripts
-    if [ "$target" = "no-sudo" ]; then
-        export NO_SUDO_INSTALL=1
-    fi
+  # Propagate install mode to check scripts
+  if [ "$target" = "no-sudo" ]; then
+    export NO_SUDO_INSTALL=1
+  fi
 
-    "$SCRIPT_DIR/tests/check-system-packages.sh" || rc=1
-    "$SCRIPT_DIR/tests/check-asdf-tools.sh"      || rc=1
-    "$SCRIPT_DIR/tests/check-cargo-tools.sh"      || rc=1
-    "$SCRIPT_DIR/tests/check-brew-tools.sh"       || rc=1
-    "$SCRIPT_DIR/tests/check-non-asdf-tools.sh"   || rc=1
-    "$SCRIPT_DIR/tests/check-symlinks.sh"         || rc=1
-    "$SCRIPT_DIR/tests/test-installer-seed.sh"    || rc=1
-    "$SCRIPT_DIR/tests/test-installer-home-source.sh" || rc=1
-    "$SCRIPT_DIR/tests/test-tool-configs.sh"      || rc=1
-    "$SCRIPT_DIR/tests/test-lint.sh"              || rc=1
-    "$SCRIPT_DIR/tests/test-baseline.sh"          || rc=1
-    "$SCRIPT_DIR/tests/test-installer-script.sh"  || rc=1
-    "$SCRIPT_DIR/tests/test-install-cronjobs.sh"  || rc=1
-    "$SCRIPT_DIR/tests/test-asdf-update.sh"       || rc=1
-    "$SCRIPT_DIR/tests/check-hammerspoon.sh"      || rc=1
-    "$SCRIPT_DIR/tests/check-git-credentials.sh"  || rc=1
-    "$SCRIPT_DIR/tests/check-wd40.sh"             || rc=1
+  "$SCRIPT_DIR/tests/check-system-packages.sh" || rc=1
+  "$SCRIPT_DIR/tests/check-asdf-tools.sh" || rc=1
+  "$SCRIPT_DIR/tests/check-cargo-tools.sh" || rc=1
+  "$SCRIPT_DIR/tests/check-brew-tools.sh" || rc=1
+  "$SCRIPT_DIR/tests/check-non-asdf-tools.sh" || rc=1
+  "$SCRIPT_DIR/tests/check-symlinks.sh" || rc=1
+  "$SCRIPT_DIR/tests/test-installer-seed.sh" || rc=1
+  "$SCRIPT_DIR/tests/test-installer-home-source.sh" || rc=1
+  "$SCRIPT_DIR/tests/test-tool-configs.sh" || rc=1
+  "$SCRIPT_DIR/tests/test-lint.sh" || rc=1
+  "$SCRIPT_DIR/tests/test-baseline.sh" || rc=1
+  "$SCRIPT_DIR/tests/test-installer-script.sh" || rc=1
+  "$SCRIPT_DIR/tests/test-install-cronjobs.sh" || rc=1
+  "$SCRIPT_DIR/tests/test-asdf-update.sh" || rc=1
+  "$SCRIPT_DIR/tests/check-hammerspoon.sh" || rc=1
+  "$SCRIPT_DIR/tests/check-git-credentials.sh" || rc=1
+  "$SCRIPT_DIR/tests/check-wd40.sh" || rc=1
 
-    . "$SCRIPT_DIR/tests/helpers.sh"
-    summary || rc=1
+  . "$SCRIPT_DIR/tests/helpers.sh"
+  summary || rc=1
 
-    return "$rc"
+  return "$rc"
 }
 
 # ── sanity-check (docker) ───────────────────────────────────────────
 
 run_docker_scenario() {
-    local scenario="$1"
-    local image="dotfiles-test-$scenario"
-    local install_flags=""
-    local check_target="$scenario"
+  local scenario="$1"
+  local image="dotfiles-test-$scenario"
+  local install_flags=""
+  local check_target="$scenario"
 
-    if [ "$scenario" = "no-sudo" ]; then
-        install_flags="--no-sudo-install"
-    fi
+  if [ "$scenario" = "no-sudo" ]; then
+    install_flags="--no-sudo-install"
+  fi
 
-    echo ""
-    echo "🐳 [$scenario] Running in Docker..."
+  echo ""
+  echo "🐳 [$scenario] Running in Docker..."
 
-    if ! docker image inspect "$image" &>/dev/null; then
-        echo "Image '$image' not found. Building first..."
-        cmd_build_image "$scenario"
-    fi
+  if ! docker image inspect "$image" &>/dev/null; then
+    echo "Image '$image' not found. Building first..."
+    cmd_build_image "$scenario"
+  fi
 
-    # :exec — the wd40 smoke suite builds and runs its own fixture scripts
-    # under mktemp -d (which lands on /tmp); Docker's default tmpfs mount
-    # is noexec, which fails those fixtures for reasons unrelated to any
-    # real defect.
-    docker run --rm \
-        -v "$SCRIPT_DIR:/home/testuser/.dotfiles:ro" \
-        --tmpfs /tmp:exec \
-        "$image" \
-        bash -c "
+  # :exec — the wd40 smoke suite builds and runs its own fixture scripts
+  # under mktemp -d (which lands on /tmp); Docker's default tmpfs mount
+  # is noexec, which fails those fixtures for reasons unrelated to any
+  # real defect.
+  docker run --rm \
+    -v "$SCRIPT_DIR:/home/testuser/.dotfiles:ro" \
+    --tmpfs /tmp:exec \
+    "$image" \
+    bash -c "
             mkdir -p /home/testuser/dotfiles-work
             tar -C /home/testuser/.dotfiles --exclude=.git_downloads --exclude=.git -cf - . \
                 | tar -C /home/testuser/dotfiles-work -xf -
@@ -160,42 +160,51 @@ run_docker_scenario() {
 }
 
 run_docker_checks() {
-    local target="${1:-all}"
-    local rc=0
+  local target="${1:-all}"
+  local rc=0
 
-    case "$target" in
-        sudo)    run_docker_scenario sudo    || rc=1 ;;
-        no-sudo) run_docker_scenario no-sudo || rc=1 ;;
-        all)
-            run_docker_scenario sudo    || rc=1
-            run_docker_scenario no-sudo || rc=1
-            ;;
-        *)
-            echo "Error: invalid target '$target'"
-            exit 1
-            ;;
-    esac
+  case "$target" in
+    sudo) run_docker_scenario sudo || rc=1 ;;
+    no-sudo) run_docker_scenario no-sudo || rc=1 ;;
+    all)
+      run_docker_scenario sudo || rc=1
+      run_docker_scenario no-sudo || rc=1
+      ;;
+    *)
+      echo "Error: invalid target '$target'"
+      exit 1
+      ;;
+  esac
 
-    return "$rc"
+  return "$rc"
 }
 
 cmd_sanity_check() {
-    local docker_mode=false
-    local target="all"
+  local docker_mode=false
+  local target="all"
 
-    while [ $# -gt 0 ]; do
-        case "$1" in
-            --docker) docker_mode=true; shift ;;
-            sudo|no-sudo|all) target="$1"; shift ;;
-            *) echo "Error: unknown argument '$1'"; usage ;;
-        esac
-    done
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --docker)
+        docker_mode=true
+        shift
+        ;;
+      sudo | no-sudo | all)
+        target="$1"
+        shift
+        ;;
+      *)
+        echo "Error: unknown argument '$1'"
+        usage
+        ;;
+    esac
+  done
 
-    if [ "$docker_mode" = true ]; then
-        run_docker_checks "$target"
-    else
-        run_local_checks "$target"
-    fi
+  if [ "$docker_mode" = true ]; then
+    run_docker_checks "$target"
+  else
+    run_local_checks "$target"
+  fi
 }
 
 # ── lint ─────────────────────────────────────────────────────────────
@@ -204,59 +213,71 @@ cmd_sanity_check() {
 # never sees them. The generated zsh_completions.d/_bun, _opencode and
 # _starship are regenerated by wd40/common/shell/update.sh and stay out.
 LINT_ZSH_FILES=(
-    zshrc
-    zshenv
-    zprofile
-    wd40/linux/shell/002-audio.sh
-    zsh_completions.d/_install.sh
-    zsh_completions.d/_test.sh
+  zshrc
+  zshenv
+  zprofile
+  wd40/linux/shell/002-audio.sh
+  zsh_completions.d/_install.sh
+  zsh_completions.d/_test.sh
 )
 
 # Tracked bash/sh scripts: files with a bash/sh shebang, *.sh and *.bash files,
 # and bashrc (no shebang). zsh is skipped because ShellCheck does not support
 # it; zsh_completions.d holds zsh completion functions that are named *.sh.
 lint_shell_files() {
-    local f first
-    git -C "$SCRIPT_DIR" ls-files | while IFS= read -r f; do
-        case "$f" in zsh_completions.d/*) continue ;; esac
-        [ -f "$SCRIPT_DIR/$f" ] || continue
-        first=$(head -n 1 "$SCRIPT_DIR/$f")
-        case "$first" in
-            '#!'*zsh*) ;;
-            '#!'*sh*) echo "$f" ;;
-            *) case "$f" in *.sh|*.bash|bashrc) echo "$f" ;; esac ;;
-        esac
-    done
+  local f first
+  git -C "$SCRIPT_DIR" ls-files | while IFS= read -r f; do
+    case "$f" in zsh_completions.d/*) continue ;; esac
+    [ -f "$SCRIPT_DIR/$f" ] || continue
+    first=$(head -n 1 "$SCRIPT_DIR/$f")
+    case "$first" in
+      '#!'*zsh*) ;;
+      '#!'*sh*) echo "$f" ;;
+      *) case "$f" in *.sh | *.bash | bashrc) echo "$f" ;; esac ;;
+    esac
+  done
 }
 
 cmd_lint() {
-    local rc=0 tool f files=() zsh_files=()
-    for tool in shellcheck shfmt biome; do
-        command -v "$tool" >/dev/null \
-            || { echo "Error: $tool not found (run ./install.sh)" >&2; exit 1; }
-    done
-    while IFS= read -r f; do files+=("$f"); done < <(lint_shell_files)
-    cd "$SCRIPT_DIR"
-    for f in "${LINT_ZSH_FILES[@]}"; do
-        [ -f "$f" ] && zsh_files+=("$f")
-    done
+  local rc=0 tool f files=() zsh_files=()
+  for tool in shellcheck shfmt biome; do
+    command -v "$tool" >/dev/null \
+      || {
+        echo "Error: $tool not found (run ./install.sh)" >&2
+        exit 1
+      }
+  done
+  while IFS= read -r f; do files+=("$f"); done < <(lint_shell_files)
+  cd "$SCRIPT_DIR"
+  for f in "${LINT_ZSH_FILES[@]}"; do
+    [ -f "$f" ] && zsh_files+=("$f")
+  done
 
-    echo "== ShellCheck (${#files[@]} files)"
-    shellcheck "${files[@]}" || rc=1
-    echo "== shfmt"
-    shfmt -d "${files[@]}" || rc=1
-    [ "${#zsh_files[@]}" -eq 0 ] || shfmt -ln zsh -d "${zsh_files[@]}" || rc=1
-    echo "== Biome (Markdown)"
-    biome check || rc=1
-    return "$rc"
+  echo "== ShellCheck (${#files[@]} files)"
+  shellcheck "${files[@]}" || rc=1
+  echo "== shfmt"
+  shfmt -d "${files[@]}" || rc=1
+  [ "${#zsh_files[@]}" -eq 0 ] || shfmt -ln zsh -d "${zsh_files[@]}" || rc=1
+  echo "== Biome (Markdown)"
+  biome check || rc=1
+  return "$rc"
 }
 
 # ── Main ─────────────────────────────────────────────────────────────
 
 case "${1:-}" in
-    build-image)   shift; cmd_build_image "$@" ;;
-    sanity-check)  shift; cmd_sanity_check "$@" ;;
-    lint)          shift; cmd_lint "$@" ;;
-    lint-files)    lint_shell_files ;;
-    *)             usage ;;
+  build-image)
+    shift
+    cmd_build_image "$@"
+    ;;
+  sanity-check)
+    shift
+    cmd_sanity_check "$@"
+    ;;
+  lint)
+    shift
+    cmd_lint "$@"
+    ;;
+  lint-files) lint_shell_files ;;
+  *) usage ;;
 esac

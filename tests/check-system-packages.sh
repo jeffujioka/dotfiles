@@ -11,29 +11,29 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 section "System Packages"
 
 if [[ "$OSTYPE" == darwin* ]]; then
-    manifest_key="packages.darwin.list"
-    check_installed() { brew list "$1" &>/dev/null; }
+  manifest_key="packages.darwin.list"
+  check_installed() { brew list "$1" &>/dev/null; }
 elif [[ "$OSTYPE" == linux* ]]; then
-    if [[ -n "${NO_SUDO_INSTALL:-}" ]]; then
-        manifest_key="packages.linux_brew.list"
-        if ! command -v brew &>/dev/null; then
-            fail "NO_SUDO_INSTALL is set but brew not found in PATH"
-            exit 1
-        fi
-        check_installed() { brew list "$1" &>/dev/null; }
-    else
-        manifest_key="packages.linux.list"
-        check_installed() { dpkg -s "$1" &>/dev/null; }
+  if [[ -n "${NO_SUDO_INSTALL:-}" ]]; then
+    manifest_key="packages.linux_brew.list"
+    if ! command -v brew &>/dev/null; then
+      fail "NO_SUDO_INSTALL is set but brew not found in PATH"
+      exit 1
     fi
+    check_installed() { brew list "$1" &>/dev/null; }
+  else
+    manifest_key="packages.linux.list"
+    check_installed() { dpkg -s "$1" &>/dev/null; }
+  fi
 else
-    fail "Unsupported OS: $OSTYPE"
-    exit 1
+  fail "Unsupported OS: $OSTYPE"
+  exit 1
 fi
 
 "$REPO_ROOT/helpers/read-manifest.py" "$manifest_key" | while IFS= read -r pkg; do
-    if check_installed "$pkg"; then
-        pass "$pkg installed"
-    else
-        fail "$pkg not found"
-    fi
+  if check_installed "$pkg"; then
+    pass "$pkg installed"
+  else
+    fail "$pkg not found"
+  fi
 done

@@ -32,7 +32,7 @@ set -euo pipefail
 
 DUMP=""
 SMEM_USER=""
-SORT_SPEC="pss,swap"   # default: real RAM (PSS) first, swap breaks ties
+SORT_SPEC="pss,swap" # default: real RAM (PSS) first, swap breaks ties
 
 usage() {
   cat <<'USAGE'
@@ -57,12 +57,12 @@ USAGE
 sort_col_for() {
   case "$1" in
     name) echo "1:0" ;;
-    n)    echo "2:1" ;;
+    n) echo "2:1" ;;
     swap) echo "3:1" ;;
-    uss)  echo "4:1" ;;
-    pss)  echo "5:1" ;;
-    rss)  echo "6:1" ;;
-    *)    return 1 ;;
+    uss) echo "4:1" ;;
+    pss) echo "5:1" ;;
+    rss) echo "6:1" ;;
+    *) return 1 ;;
   esac
 }
 
@@ -82,7 +82,8 @@ build_sort_cmd() {
       echo "Error: unknown sort key '$key'. Valid keys: pss, rss, uss, swap, n, name" >&2
       exit 1
     }
-    col="${entry%%:*}"; numeric="${entry##*:}"
+    col="${entry%%:*}"
+    numeric="${entry##*:}"
     if [ "$numeric" = "1" ]; then
       result="$result -k${col},${col}rn"
     else
@@ -100,20 +101,41 @@ build_sort_cmd() {
 while [ $# -gt 0 ]; do
   case "$1" in
     -f)
-      [ $# -ge 2 ] || { echo "Error: -f requires an argument" >&2; exit 1; }
-      DUMP="$2"; shift 2 ;;
+      [ $# -ge 2 ] || {
+        echo "Error: -f requires an argument" >&2
+        exit 1
+      }
+      DUMP="$2"
+      shift 2
+      ;;
     -u)
-      [ $# -ge 2 ] || { echo "Error: -u requires an argument" >&2; exit 1; }
-      SMEM_USER="$2"; shift 2 ;;
-    -s|--sort)
-      [ $# -ge 2 ] || { echo "Error: $1 requires an argument" >&2; exit 1; }
-      SORT_SPEC="$2"; shift 2 ;;
+      [ $# -ge 2 ] || {
+        echo "Error: -u requires an argument" >&2
+        exit 1
+      }
+      SMEM_USER="$2"
+      shift 2
+      ;;
+    -s | --sort)
+      [ $# -ge 2 ] || {
+        echo "Error: $1 requires an argument" >&2
+        exit 1
+      }
+      SORT_SPEC="$2"
+      shift 2
+      ;;
     --sort=*)
-      SORT_SPEC="${1#--sort=}"; shift ;;
-    -h|--help)
-      usage; exit 0 ;;
+      SORT_SPEC="${1#--sort=}"
+      shift
+      ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
     *)
-      usage >&2; exit 1 ;;
+      usage >&2
+      exit 1
+      ;;
   esac
 done
 
@@ -126,7 +148,10 @@ SORT_CMD="$(build_sort_cmd "$SORT_SPEC")"
 if [ "$DUMP" = "-" ]; then
   INPUT_CMD=(cat)
 elif [ -n "$DUMP" ]; then
-  [ -f "$DUMP" ] || { echo "Error: file '$DUMP' not found" >&2; exit 1; }
+  [ -f "$DUMP" ] || {
+    echo "Error: file '$DUMP' not found" >&2
+    exit 1
+  }
   INPUT_CMD=(cat "$DUMP")
 else
   command -v smem >/dev/null 2>&1 || {

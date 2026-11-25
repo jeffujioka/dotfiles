@@ -17,13 +17,13 @@ rc=$?
 verdict=$(printf '%s\n' "$out" | tail -1)
 
 if [ "$rc" -eq 0 ]; then
-    pass "wd40/test/smoke.sh — $verdict"
+  pass "wd40/test/smoke.sh — $verdict"
 else
-    # Full dump, not a tail: a red run must be self-diagnosing from this
-    # sanity-check's own console, and the smoke suite's own output is
-    # already concise enough that truncating it only hides the failure.
-    printf '%s\n' "$out"
-    fail "wd40/test/smoke.sh — $verdict"
+  # Full dump, not a tail: a red run must be self-diagnosing from this
+  # sanity-check's own console, and the smoke suite's own output is
+  # already concise enough that truncating it only hides the failure.
+  printf '%s\n' "$out"
+  fail "wd40/test/smoke.sh — $verdict"
 fi
 
 exit "$rc"

@@ -29,7 +29,7 @@ while [ -L "$wd40_self" ] && [ "$wd40_hops" -lt 40 ]; do
   wd40_link=$(readlink "$wd40_self")
   case $wd40_link in
     /*) wd40_self=$wd40_link ;;
-    *)  wd40_self=$(dirname "$wd40_self")/$wd40_link ;;
+    *) wd40_self=$(dirname "$wd40_self")/$wd40_link ;;
   esac
   wd40_hops=$((wd40_hops + 1))
 done
@@ -63,7 +63,10 @@ WD40_TAB=$(printf '\t')
 WD40_RECORDS=''
 
 warn() { printf '! %s\n' "$*" >&2; }
-die()  { printf 'Error: %s\n' "$1" >&2; exit "${2:-1}"; }
+die() {
+  printf 'Error: %s\n' "$1" >&2
+  exit "${2:-1}"
+}
 
 # --- manifest facts ----------------------------------------------------------
 # Same field spec as install.sh and tests/check-symlinks.sh.
@@ -81,9 +84,9 @@ wd40_manifest() {
 # Expand a leading ~ in a manifest target.
 wd40_expand() {
   case $1 in
-    "~")   printf '%s\n' "$HOME" ;;
+    "~") printf '%s\n' "$HOME" ;;
     "~/"*) printf '%s%s\n' "$HOME" "${1#\~}" ;;
-    *)     printf '%s\n' "$1" ;;
+    *) printf '%s\n' "$1" ;;
   esac
 }
 
@@ -94,7 +97,7 @@ wd40_strip_name() {
   case $1 in
     *.sh) printf '%s\n' "${1%.sh}" ;;
     *.py) printf '%s\n' "${1%.py}" ;;
-    *)    printf '%s\n' "$1" ;;
+    *) printf '%s\n' "$1" ;;
   esac
 }
 
@@ -107,7 +110,7 @@ wd40_resolve() {
     _wd40_l=$(readlink "$_wd40_p")
     case $_wd40_l in
       /*) _wd40_p=$_wd40_l ;;
-      *)  _wd40_p=$(dirname "$_wd40_p")/$_wd40_l ;;
+      *) _wd40_p=$(dirname "$_wd40_p")/$_wd40_l ;;
     esac
     _wd40_h=$((_wd40_h + 1))
   done
@@ -129,7 +132,10 @@ wd40_install_mark() {
   fi
   if target=$(wd40_resolve "$dest"); then
     case $target in
-      "$WD40_REPO"/*) printf '1\n'; return 0 ;;
+      "$WD40_REPO"/*)
+        printf '1\n'
+        return 0
+        ;;
     esac
   fi
   printf '0\n'
@@ -296,7 +302,7 @@ wd40_list() {
   # records — silently. mktemp, check, then read: a failure dies loudly.
   manifest_tmp=$(mktemp) || die "cannot create a temp file to read the manifest" 1
   trap 'rm -f "$manifest_tmp"' EXIT
-  if ! wd40_manifest > "$manifest_tmp"; then
+  if ! wd40_manifest >"$manifest_tmp"; then
     die "could not read $WD40_REPO/manifest.toml via helpers/read-manifest.py" 1
   fi
 
@@ -324,7 +330,7 @@ wd40_list() {
       fi
       wd40_collect scripts "$f" "$base" "$tgt_dir/$base" strict
     done
-  done < "$manifest_tmp"
+  done <"$manifest_tmp"
 
   rm -f "$manifest_tmp"
   trap - EXIT
@@ -361,11 +367,14 @@ shift
 
 case $wd40_command in
   list)
-    wd40_list "$@" ;;
-  help|-h|--help)
+    wd40_list "$@"
+    ;;
+  help | -h | --help)
     wd40_no_args "$wd40_command" "$@"
-    wd40_usage ;;
+    wd40_usage
+    ;;
   *)
     wd40_usage >&2
-    die "unknown argument '$wd40_command'" 1 ;;
+    die "unknown argument '$wd40_command'" 1
+    ;;
 esac

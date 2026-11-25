@@ -222,10 +222,25 @@ fp() {
     # does: after it, the five names below are ordinary words again.
     if [ "$_wd40_end" -eq 0 ]; then
       case "$_wd40_arg" in
-        -h|--help)      _wd40_usage; return 0 ;;
-        --relative)     _wd40_rel=1;  shift; continue ;;
-        --no-clipboard) _wd40_copy=0; shift; continue ;;
-        --)             _wd40_end=1;  shift; continue ;;
+        -h | --help)
+          _wd40_usage
+          return 0
+          ;;
+        --relative)
+          _wd40_rel=1
+          shift
+          continue
+          ;;
+        --no-clipboard)
+          _wd40_copy=0
+          shift
+          continue
+          ;;
+        --)
+          _wd40_end=1
+          shift
+          continue
+          ;;
       esac
     fi
 
@@ -272,7 +287,7 @@ fp() {
         # both arms leave the empty string, which is the "right here" case
         # just below.
         case "$_wd40_path" in
-          .)   _wd40_path='' ;;
+          .) _wd40_path='' ;;
           ./*) _wd40_path="${_wd40_path#./}" ;;
         esac
 
@@ -338,6 +353,6 @@ fp() {
 # The three shorthands, each prepending its flag and passing the rest
 # through. "$@" and not $* : the caller's one argument is one argument
 # however many spaces are in it.
-fpr()  { fp --relative "$@"; }
-fpn()  { fp --no-clipboard "$@"; }
+fpr() { fp --relative "$@"; }
+fpn() { fp --no-clipboard "$@"; }
 fpnr() { fp --no-clipboard --relative "$@"; }

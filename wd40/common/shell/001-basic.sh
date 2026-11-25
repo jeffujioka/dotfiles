@@ -15,123 +15,123 @@
 
 # FIND PROCESS
 function p() {
-    pgrep -lif "$1"
+  pgrep -lif "$1"
 }
 
 function print_info() {
-    cnt=$(pgrep -cif "$1")
+  cnt=$(pgrep -cif "$1")
 
-    echo -e "\nSearching for '$1' -- Found $cnt Running Processes .."
-    p "$1"
+  echo -e "\nSearching for '$1' -- Found $cnt Running Processes .."
+  p "$1"
 
-    echo -e "\nTerminating $cnt processes .."
+  echo -e "\nTerminating $cnt processes .."
 }
 
 function print_alive_processes() {
-    cnt=$(pgrep -cif "$1")
-    if (( $cnt > 0 )); then
-        echo -e "\nThere is/are '$cnt' process[es] still running...\n"
-        p "$1"
-    fi
+  cnt=$(pgrep -cif "$1")
+  if (($cnt > 0)); then
+    echo -e "\nThere is/are '$cnt' process[es] still running...\n"
+    p "$1"
+  fi
 }
 
 # KILL ALL
 function ka() {
-    if [ -z "$2" ]; then
-        klevel=15
-    else
-        klevel=$2
-    fi
+  if [ -z "$2" ]; then
+    klevel=15
+  else
+    klevel=$2
+  fi
 
-    print_info "$1"
+  print_info "$1"
 
-    if (( $cnt > 0 )); then
-        pkill -"$klevel" -if "$1"
+  if (($cnt > 0)); then
+    pkill -"$klevel" -if "$1"
 
-        print_alive_processes "$1"
-    else
-        echo -e "No '$1' process found.\n"
-    fi
+    print_alive_processes "$1"
+  else
+    echo -e "No '$1' process found.\n"
+  fi
 }
 
 # SUDO KILL ALL
 function ska() {
-    if [ -z "$2" ]; then
-        klevel=15
-    else
-        klevel=$2
-    fi
+  if [ -z "$2" ]; then
+    klevel=15
+  else
+    klevel=$2
+  fi
 
-    print_info "$1"
+  print_info "$1"
 
-    if (( $cnt > 0 )); then
-        sudo pkill -"$klevel" -if "$1"
+  if (($cnt > 0)); then
+    sudo pkill -"$klevel" -if "$1"
 
-        print_alive_processes "$1"
-    else
-        echo -e "No '$1' process found.\n"
-    fi
+    print_alive_processes "$1"
+  else
+    echo -e "No '$1' process found.\n"
+  fi
 }
 
 function mkcd() {
-    if [ -z "$1" ]; then
-        echo "empty dir... exiting..."
-        return 1
-    fi
+  if [ -z "$1" ]; then
+    echo "empty dir... exiting..."
+    return 1
+  fi
 
-    local dir="$1"
-    mkdir -p "$dir"
-    cd "$dir"
+  local dir="$1"
+  mkdir -p "$dir"
+  cd "$dir"
 }
 
 function f() {
-    if ! command -v fzf &> /dev/null; then
-        echo "Error: fzf is not installed"
-        return 1
-    fi
+  if ! command -v fzf &>/dev/null; then
+    echo "Error: fzf is not installed"
+    return 1
+  fi
 
-    if [ $# -eq 0 ]; then
-        fzf
-    else
-        local search_path="${@: -1}"  # Get the last argument
-        if [ ! -d "$search_path" ]; then
-            echo "Error: Last argument is not a valid directory"
-            return 1
-        fi
-        pushd "$search_path" &> /dev/null
-        fzf "${@:1:$#-1}"  # Forward all arguments except the last one
-        popd &> /dev/null
+  if [ $# -eq 0 ]; then
+    fzf
+  else
+    local search_path="${@: -1}" # Get the last argument
+    if [ ! -d "$search_path" ]; then
+      echo "Error: Last argument is not a valid directory"
+      return 1
     fi
+    pushd "$search_path" &>/dev/null
+    fzf "${@:1:$#-1}" # Forward all arguments except the last one
+    popd &>/dev/null
+  fi
 }
 
 function fq() {
-    if [ $# -lt 2 ]; then
-        echo "Error: fq requires at least two arguments: <query> <directory path>"
-        return 1
-    fi
+  if [ $# -lt 2 ]; then
+    echo "Error: fq requires at least two arguments: <query> <directory path>"
+    return 1
+  fi
 
+  search_dir="${@: -1}"
+  query="${@: -2:1}"
+  opts="${@:1:$#-2}"
+
+  f $opts -q $query $search_dir
+}
+
+function fqi() {
+  if [ $# -eq 0 ]; then
+    echo "Error: fqi requires at least two arguments: <query> <directory path>"
+    return 1
+  fi
+
+  if [ $# -eq 1 ]; then
+    f -i -q "$1" .
+  else
     search_dir="${@: -1}"
     query="${@: -2:1}"
     opts="${@:1:$#-2}"
 
-    f $opts -q $query $search_dir
-}
-
-function fqi() {
-    if [ $# -eq 0 ]; then
-        echo "Error: fqi requires at least two arguments: <query> <directory path>"
-        return 1
-    fi
-
-    if [ $# -eq 1 ]; then
-        f -i -q "$1" .
-    else
-        search_dir="${@: -1}"
-        query="${@: -2:1}"
-        opts="${@:1:$#-2}"
-
-        f $opts -i -q $query $search_dir
-    fi
+    f $opts -i -q $query $search_dir
+  fi
 }
 
 ##
@@ -152,11 +152,11 @@ alias tree="eza -T $EZA_DEFAULT"
 alias treel="eza -lT $EZA_DEFAULT"
 alias treela="eza -lTa $EZA_DEFAULT"
 
-if command -v pbcopy &> /dev/null; then
+if command -v pbcopy &>/dev/null; then
   alias pp="pbcopy"
 fi
 
-if command -v pbpaste &> /dev/null; then
+if command -v pbpaste &>/dev/null; then
   alias ppe="pbpaste"
 fi
 
@@ -214,7 +214,6 @@ alias timestamp='date +%Y%m%d_%H%M%S'
 alias path='echo $PATH'
 alias path-lines='echo -e ${PATH//:/\\n}'
 
-
 alias sourcebash-rc="source ~/.bashrc"
 alias sourcezsh-rc="source ~/.zshrc"
 alias sourcebash-aliases="source ~/.bash_aliases"
@@ -222,13 +221,11 @@ alias sourcebash-fns="source ~/.bash_fns"
 
 alias rclear="reset && clear"
 
-
 ##
 ## Common apps
 ##
 ################################################################################
 alias vi=vim
-
 
 ##
 ## sysadmin
@@ -237,15 +234,12 @@ alias vi=vim
 
 alias spwd='cat ~/.pwdrc | sudo -S'
 
-
 # list top process eating memory
 alias psmem='ps auxf | sort -nr -k 4'
 alias psmem10='ps auxf | sort -nr -k 4 | head -10'
 # list top process eating cpu
 alias pscpu='ps auxf | sort -nr -k 3'
 alias pscpu10='ps auxf | sort -nr -k 3 | head -10'
-
-
 
 alias clear="clear && printf '\e[3J'"
 
@@ -256,53 +250,52 @@ alias sim='sudo vim -S "$HOME/.vimrc"'
 ##
 ###############################################################################
 
-
 ##
 ## New utilities
 ##
 ################################################################################
 
 function x() {
-    if [ -z "$1" ]; then
-        echo "Usage: x <file>"
-        return 1
-    fi
+  if [ -z "$1" ]; then
+    echo "Usage: x <file>"
+    return 1
+  fi
 
-    if [ ! -f "$1" ]; then
-        echo "'$1' is not a valid file"
-        return 1
-    fi
+  if [ ! -f "$1" ]; then
+    echo "'$1' is not a valid file"
+    return 1
+  fi
 
-    case "$1" in
-        *.tar.bz2) tar xjf "$1"    ;;
-        *.tar.gz)  tar xzf "$1"    ;;
-        *.tar.xz)  tar xJf "$1"    ;;
-        *.bz2)     bunzip2 "$1"    ;;
-        *.gz)      gunzip "$1"     ;;
-        *.tar)     tar xf "$1"     ;;
-        *.tbz2)    tar xjf "$1"    ;;
-        *.tgz)     tar xzf "$1"    ;;
-        *.zip)     unzip "$1"      ;;
-        *.Z)       uncompress "$1" ;;
-        *.7z)      7z x "$1"       ;;
-        *.rar)     unrar x "$1"    ;;
-        *.xz)      unxz "$1"       ;;
-        *)         echo "'$1' cannot be extracted via x()" ;;
-    esac
+  case "$1" in
+    *.tar.bz2) tar xjf "$1" ;;
+    *.tar.gz) tar xzf "$1" ;;
+    *.tar.xz) tar xJf "$1" ;;
+    *.bz2) bunzip2 "$1" ;;
+    *.gz) gunzip "$1" ;;
+    *.tar) tar xf "$1" ;;
+    *.tbz2) tar xjf "$1" ;;
+    *.tgz) tar xzf "$1" ;;
+    *.zip) unzip "$1" ;;
+    *.Z) uncompress "$1" ;;
+    *.7z) 7z x "$1" ;;
+    *.rar) unrar x "$1" ;;
+    *.xz) unxz "$1" ;;
+    *) echo "'$1' cannot be extracted via x()" ;;
+  esac
 }
 
 function serve() {
-    local port="${1:-8000}"
-    echo "Serving on http://localhost:$port"
-    python3 -m http.server "$port"
+  local port="${1:-8000}"
+  echo "Serving on http://localhost:$port"
+  python3 -m http.server "$port"
 }
 
 function ports() {
-    if [[ "$(uname)" == "Darwin" ]]; then
-        lsof -iTCP -sTCP:LISTEN -n -P
-    else
-        ss -tlnp
-    fi
+  if [[ "$(uname)" == "Darwin" ]]; then
+    lsof -iTCP -sTCP:LISTEN -n -P
+  else
+    ss -tlnp
+  fi
 }
 
 alias myip='curl -s ifconfig.me && echo'

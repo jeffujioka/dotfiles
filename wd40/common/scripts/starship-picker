@@ -42,7 +42,7 @@ EOF
 
 for arg in "$@"; do
   case "$arg" in
-    -h|--help) usage ;;
+    -h | --help) usage ;;
   esac
 done
 
@@ -58,14 +58,14 @@ if [[ ! -f "$STARSHIP_TOML" ]]; then
     echo "Error: Presets directory not found at $PRESETS_DIR" >&2
     exit 1
   fi
-  
+
   # Find first preset and create symlink
   first_preset=$(ls "$PRESETS_DIR"/starship-*.toml 2>/dev/null | sort | head -1)
   if [[ -z "$first_preset" ]]; then
     echo "Error: No preset files (starship-*.toml) found in $PRESETS_DIR" >&2
     exit 1
   fi
-  
+
   ln -s "$first_preset" "$STARSHIP_TOML"
 fi
 
@@ -115,7 +115,7 @@ trap '_cleanup_on_exit' EXIT
 
 # Backup the original state (content or symlink target)
 if [[ -L "$STARSHIP_TOML" ]]; then
-  echo "$(readlink "$STARSHIP_TOML")" > "$BACKUP"
+  echo "$(readlink "$STARSHIP_TOML")" >"$BACKUP"
 else
   cp "$STARSHIP_TOML" "$BACKUP"
 fi
@@ -137,7 +137,7 @@ _PYTHON_PROJECT_DIR=""
 _setup_test_dirs() {
   _TEST_DIR=$(mktemp -d)
   _PYTHON_PROJECT_DIR=$(mktemp -d)
-  
+
   # Initialize Python test project
   touch "$_PYTHON_PROJECT_DIR/main.py"
   (cd "$_PYTHON_PROJECT_DIR" && git init -q 2>/dev/null && git symbolic-ref HEAD refs/heads/main 2>/dev/null || true)
@@ -149,19 +149,18 @@ _cleanup_test_dirs() {
   [[ -n "$_PYTHON_PROJECT_DIR" && -d "$_PYTHON_PROJECT_DIR" ]] && rm -rf "$_PYTHON_PROJECT_DIR"
 }
 
-
 # Extract metadata from preset file header
 _extract_preset_info() {
   local preset_file="$1"
-  
+
   # Parse style and description from comments
   # Line 1: "# ~/.config/starship.toml — clean · Aurora gradient  (Tokyo Night style)"
   # Extract just the style part after the — separator
   local style_info=$(head -1 "$preset_file" | sed 's/^# .*— //' | sed 's/  .*//')
-  
+
   # Line 2: color palette description
   local color_info=$(sed -n '2p' "$preset_file" | sed 's/^# //')
-  
+
   printf "%s\n%s" "$style_info" "$color_info"
 }
 
@@ -169,10 +168,10 @@ _extract_preset_info() {
 _format_preset_display() {
   local name="$1"
   local style_info="$2"
-  
+
   # Extract category from style info (before · separator)
   local category=$(echo "$style_info" | sed 's/ ·.*//' | tr '[:lower:]' '[:upper:]')
-  
+
   # Create category badge
   local badge=""
   case "$category" in
@@ -180,7 +179,7 @@ _format_preset_display() {
     POWERLINE) badge="⚡" ;;
     *) badge="✦" ;;
   esac
-  
+
   printf "%s %s" "$badge" "$name"
 }
 
@@ -203,20 +202,20 @@ _pick_with_fzf() {
 
   local selected
   selected=$(
-    printf '%s\n' "${items[@]}" | \
-    fzf \
-      --prompt="Starship Preset ❯ " \
-      --height=100% \
-      --border=rounded \
-      --header="↑↓ navigate · Enter confirm · Esc cancel · Type to search" \
-      --delimiter=$'\t' \
-      --with-nth=1 \
-      --ansi \
-      --preview="\"$SCRIPT_DIR/starship-picker\" --_preview {2}" \
-      --preview-label=" Preset Details " \
-      --preview-window="bottom:70%:wrap" \
-      --bind='focus:execute-silent(rm -f "'"$STARSHIP_TOML"'" && ln -s {2} "'"$STARSHIP_TOML"'" || true)'
-  ) || true  # fzf exits 130 on Esc — absorb it
+    printf '%s\n' "${items[@]}" \
+      | fzf \
+        --prompt="Starship Preset ❯ " \
+        --height=100% \
+        --border=rounded \
+        --header="↑↓ navigate · Enter confirm · Esc cancel · Type to search" \
+        --delimiter=$'\t' \
+        --with-nth=1 \
+        --ansi \
+        --preview="\"$SCRIPT_DIR/starship-picker\" --_preview {2}" \
+        --preview-label=" Preset Details " \
+        --preview-window="bottom:70%:wrap" \
+        --bind='focus:execute-silent(rm -f "'"$STARSHIP_TOML"'" && ln -s {2} "'"$STARSHIP_TOML"'" || true)'
+  ) || true # fzf exits 130 on Esc — absorb it
 
   # Return only the clean name (first field before TAB)
   printf '%s' "${selected%%$'\t'*}" | sed 's/^[🎨⚡✦] //'
@@ -240,7 +239,7 @@ SELECTED=""
 SELECTED=$(_pick_with_fzf)
 
 if [[ -n "$SELECTED" ]]; then
-  rm -f "$BACKUP"  # clear backup → EXIT trap becomes no-op
+  rm -f "$BACKUP" # clear backup → EXIT trap becomes no-op
   echo "✓ Applied: $SELECTED"
 fi
 # If SELECTED is empty (Esc/Ctrl+C), EXIT trap restores backup

@@ -48,52 +48,80 @@ USAGE
 while [ $# -gt 0 ]; do
   case "$1" in
     -n)
-      [ $# -ge 2 ] || { echo "Error: -n requires an argument" >&2; exit 1; }
+      [ $# -ge 2 ] || {
+        echo "Error: -n requires an argument" >&2
+        exit 1
+      }
       case "$2" in
-        ''|*[!0-9]*)
+        '' | *[!0-9]*)
           echo "Error: -n requires a positive integer (got '$2')" >&2
-          exit 1 ;;
+          exit 1
+          ;;
       esac
       # Length cap keeps the numeric test below from overflowing.
       if [ "${#2}" -gt 9 ] || [ "$2" -le 0 ]; then
         echo "Error: -n requires a positive integer up to 9 digits (got '$2')" >&2
         exit 1
       fi
-      TOP_N="$2"; shift 2 ;;
+      TOP_N="$2"
+      shift 2
+      ;;
     -u)
-      [ $# -ge 2 ] || { echo "Error: -u requires an argument" >&2; exit 1; }
-      FILTER_USER="$2"; shift 2 ;;
-    -d|--depth)
-      [ $# -ge 2 ] || { echo "Error: $1 requires an argument" >&2; exit 1; }
+      [ $# -ge 2 ] || {
+        echo "Error: -u requires an argument" >&2
+        exit 1
+      }
+      FILTER_USER="$2"
+      shift 2
+      ;;
+    -d | --depth)
+      [ $# -ge 2 ] || {
+        echo "Error: $1 requires an argument" >&2
+        exit 1
+      }
       case "$2" in
-        ''|*[!0-9]*)
+        '' | *[!0-9]*)
           echo "Error: $1 requires a positive integer (got '$2')" >&2
-          exit 1 ;;
+          exit 1
+          ;;
       esac
       if [ "${#2}" -gt 9 ] || [ "$2" -le 0 ]; then
         echo "Error: $1 requires a positive integer up to 9 digits (got '$2')" >&2
         exit 1
       fi
-      MAX_DEPTH="$2"; shift 2 ;;
-    -s|--sort)
-      [ $# -ge 2 ] || { echo "Error: $1 requires an argument" >&2; exit 1; }
-      SORT_SPEC="$2"; shift 2 ;;
+      MAX_DEPTH="$2"
+      shift 2
+      ;;
+    -s | --sort)
+      [ $# -ge 2 ] || {
+        echo "Error: $1 requires an argument" >&2
+        exit 1
+      }
+      SORT_SPEC="$2"
+      shift 2
+      ;;
     --sort=*)
-      SORT_SPEC="${1#--sort=}"; shift ;;
-    -h|--help)
-      usage; exit 0 ;;
+      SORT_SPEC="${1#--sort=}"
+      shift
+      ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
     *)
       echo "Error: unknown argument '$1'" >&2
       usage >&2
-      exit 1 ;;
+      exit 1
+      ;;
   esac
 done
 
 case "$SORT_SPEC" in
-  cpu|mem|name) ;;
+  cpu | mem | name) ;;
   *)
     echo "Error: unknown sort key '$SORT_SPEC'. Valid keys: cpu, mem, name" >&2
-    exit 1 ;;
+    exit 1
+    ;;
 esac
 
 # `-A` selects every process on both GNU ps and BSD/macOS ps. Do NOT use `-e`:

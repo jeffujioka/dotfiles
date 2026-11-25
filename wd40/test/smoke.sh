@@ -30,9 +30,9 @@ trap 'rm -rf "$SANDBOX"' EXIT
 # the tests need come along.
 REPO="$SANDBOX/repo"
 mkdir -p "$REPO"
-cp -a "$SOURCE_REPO/wd40"          "$REPO/wd40"
-cp -a "$SOURCE_REPO/helpers"       "$REPO/helpers"
-cp    "$SOURCE_REPO/manifest.toml" "$REPO/manifest.toml"
+cp -a "$SOURCE_REPO/wd40" "$REPO/wd40"
+cp -a "$SOURCE_REPO/helpers" "$REPO/helpers"
+cp "$SOURCE_REPO/manifest.toml" "$REPO/manifest.toml"
 
 # Sandbox HOME for the whole run: `wd40 list`'s install marks are read by
 # resolving manifest targets like ~/.local/sbin/* and ~/.config/wd40/wd40rc
@@ -57,8 +57,14 @@ SKIP=0
 # assertion was reported as nineteen failures. A file is the way back.
 COUNTS="$SANDBOX/counts"
 
-pass() { PASS=$((PASS + 1)); printf '  ok   %s\n' "$1"; }
-fail() { FAIL=$((FAIL + 1)); printf '  FAIL %s\n' "$1"; }
+pass() {
+  PASS=$((PASS + 1))
+  printf '  ok   %s\n' "$1"
+}
+fail() {
+  FAIL=$((FAIL + 1))
+  printf '  FAIL %s\n' "$1"
+}
 
 # An assertion that was not run, and why.
 #
@@ -106,7 +112,7 @@ section_reset() {
 
 section_report() {
   printf '%d passed, %d failed, %d skipped\n' "$PASS" "$FAIL" "$SKIP"
-  printf '%s %s %s\n' "$PASS" "$FAIL" "$SKIP" > "$COUNTS"
+  printf '%s %s %s\n' "$PASS" "$FAIL" "$SKIP" >"$COUNTS"
   [ "$FAIL" -eq 0 ] || exit 1
 }
 
@@ -119,7 +125,7 @@ section_end() {
   # section_end RC
   local rc=$1 p f s
   if [ -f "$COUNTS" ]; then
-    read -r p f s < "$COUNTS"
+    read -r p f s <"$COUNTS"
     PASS=$((PASS + p))
     FAIL=$((FAIL + f))
     SKIP=$((SKIP + s))
@@ -168,7 +174,10 @@ assert_empty() {
 # what `$(...)` throws away; bash 3.2 offers nothing better.
 capture() {
   # capture CMD...
-  CAPTURED=$("$@"; printf X)
+  CAPTURED=$(
+    "$@"
+    printf X
+  )
   CAPTURED=${CAPTURED%X}
 }
 
@@ -184,7 +193,10 @@ assert_ok() {
   local label=$1 rc
   shift
   set +e
-  ( "$@" >/dev/null 2>&1; exit $? ) 2>/dev/null
+  (
+    "$@" >/dev/null 2>&1
+    exit $?
+  ) 2>/dev/null
   rc=$?
   set -e
   if [ "$rc" -eq 0 ]; then
@@ -199,7 +211,10 @@ assert_fail() {
   local expected=$1 label=$2 actual
   shift 2
   set +e
-  ( "$@" >/dev/null 2>&1; exit $? ) 2>/dev/null
+  (
+    "$@" >/dev/null 2>&1
+    exit $?
+  ) 2>/dev/null
   actual=$?
   set -e
   assert_eq "$expected" "$actual" "$label"
@@ -221,7 +236,10 @@ assert_clean() {
   local label=$1 rc err="$SANDBOX/assert_clean.err"
   shift
   set +e
-  ( "$@" >/dev/null 2>"$err"; exit $? ) 2>/dev/null
+  (
+    "$@" >/dev/null 2>"$err"
+    exit $?
+  ) 2>/dev/null
   rc=$?
   set -e
   if [ "$rc" -ne 0 ]; then
@@ -273,15 +291,21 @@ probe_shell() {
   dir=$(mktemp -d "$SANDBOX/probe.XXXXXX")
   set +e
   if [ -n "$clean" ]; then
-    ( env -i PATH="$clean" "$(command -v "$sh")" -c "$snippet" \
-        >"$dir/out" 2>"$dir/err"; exit $? ) 2>/dev/null
+    (
+      env -i PATH="$clean" "$(command -v "$sh")" -c "$snippet" \
+        >"$dir/out" 2>"$dir/err"
+      exit $?
+    ) 2>/dev/null
   else
-    ( "$sh" -c "$snippet" >"$dir/out" 2>"$dir/err"; exit $? ) 2>/dev/null
+    (
+      "$sh" -c "$snippet" >"$dir/out" 2>"$dir/err"
+      exit $?
+    ) 2>/dev/null
   fi
   rc=$?
   set -e
-  outn=$(wc -l < "$dir/out" | tr -d ' ')
-  errn=$(wc -l < "$dir/err" | tr -d ' ')
+  outn=$(wc -l <"$dir/out" | tr -d ' ')
+  errn=$(wc -l <"$dir/err" | tr -d ' ')
   out1=$(head -n 1 "$dir/out")
   err1=$(head -n 1 "$dir/err")
   rm -rf "$dir"
@@ -318,9 +342,9 @@ section_begin 'run sandbox'
   # its mode, so a symlink that arrived as a regular file shows up here too.
   modes_of() {
     # modes_of DIR
-    ( cd "$1" && find . -print | LC_ALL=C sort | while IFS= read -r p; do
-        printf '%s %s\n' "$(ls -ld "$p" | cut -c1-10)" "$p"
-      done )
+    (cd "$1" && find . -print | LC_ALL=C sort | while IFS= read -r p; do
+      printf '%s %s\n' "$(ls -ld "$p" | cut -c1-10)" "$p"
+    done)
   }
   assert_eq "$(modes_of "$SOURCE_REPO/wd40")" "$(modes_of "$REPO/wd40")" \
     "and wd40/ carries every mode the repository had"
@@ -432,10 +456,10 @@ wd40/wd40rc
 wd40/test/smoke.sh
 "
   code="$SANDBOX/portability-code"
-  : > "$code"
+  : >"$code"
   for f in $GUARDED_FILES; do
-    awk "$STRIPPER" "$REPO/$f" |
-      awk -v name="$f" '{ printf "%s:%d: %s\n", name, NR, $0 }' >> "$code"
+    awk "$STRIPPER" "$REPO/$f" \
+      | awk -v name="$f" '{ printf "%s:%d: %s\n", name, NR, $0 }' >>"$code"
   done
 
   # `--` before the pattern, and it is the difference between a guard and a
@@ -506,11 +530,11 @@ CONSTRUCTS
     printf '# a comment that names realpath\n'
     printf 'x="realpath in a double-quoted string"\n'
     printf "y='realpath in a single-quoted one'\n"
-  } > "$probe"
+  } >"$probe"
   assert_empty "prose and quoted text are read as neither" \
     "$(awk "$STRIPPER" "$probe" | grep -E -- 'realpath' || true)"
 
-  printf 'realpath /tmp\n' >> "$probe"
+  printf 'realpath /tmp\n' >>"$probe"
   assert_eq "realpath /tmp" \
     "$(awk "$STRIPPER" "$probe" | grep -E -- 'realpath' | sed 's/^ *//;s/ *$//')" \
     "and a real use of one is read as code"
@@ -518,7 +542,7 @@ CONSTRUCTS
   # And the pattern that could not be looked for until `--` was added. A row
   # of the table above is only worth its line if planting the construct it
   # names turns it red, and this is the one row where planting it did not.
-  printf 'find . -printf "%%p\\n"\n' >> "$probe"
+  printf 'find . -printf "%%p\\n"\n' >>"$probe"
   assert_eq "find . -printf" \
     "$(awk "$STRIPPER" "$probe" | grep -E -- '-printf([^A-Za-z0-9_-]|$)' | sed 's/^ *//;s/ *$//')" \
     "and a pattern beginning with a dash reaches grep as a pattern"
@@ -562,12 +586,12 @@ section_begin 'fp contract'
     while IFS='|' read -r argspec rc outn out1 errn err1; do
       [ -n "$argspec" ] || continue
       case $argspec in
-        @NONE@)   call='fp --no-clipboard' ;;
-        @EMPTY@)  call="fp --no-clipboard ''" ;;
-        @TWO@)    call='fp --no-clipboard a b' ;;
+        @NONE@) call='fp --no-clipboard' ;;
+        @EMPTY@) call="fp --no-clipboard ''" ;;
+        @TWO@) call='fp --no-clipboard a b' ;;
         @ENDOPT@) call='fp --no-clipboard -- --relative' ;;
-        @SWAP@)   call='fp --relative --no-clipboard' ;;
-        *)        call="fp --no-clipboard '$argspec'" ;;
+        @SWAP@) call='fp --relative --no-clipboard' ;;
+        *) call="fp --no-clipboard '$argspec'" ;;
       esac
       expected="rc=$rc out=$outn err=$errn out1=[${out1//@S@/$scratch}] err1=[$err1]"
       assert_eq "$expected" \
@@ -613,7 +637,7 @@ TABLE
       [ -n "$argspec" ] || continue
       case $argspec in
         @NONE@) call='fpn --relative' ;;
-        *)      call="fpn --relative '${argspec//@S@/$scratch}'" ;;
+        *) call="fpn --relative '${argspec//@S@/$scratch}'" ;;
       esac
       expected="rc=$rc out=$outn err=$errn out1=[${out1//@S@/$scratch}] err1=[$err1]"
       assert_eq "$expected" \
@@ -697,8 +721,8 @@ section_begin 'fp and the clipboard'
   cap="$scratch/clipboard"
   clip_ok="$scratch/clip-ok"
   clip_fails="$scratch/clip-fails"
-  printf '#!/bin/sh\ncat > "%s"\n' "$cap" > "$clip_ok"
-  printf '#!/bin/sh\ncat > /dev/null\nexit 3\n'  > "$clip_fails"
+  printf '#!/bin/sh\ncat > "%s"\n' "$cap" >"$clip_ok"
+  printf '#!/bin/sh\ncat > /dev/null\nexit 3\n' >"$clip_fails"
   chmod +x "$clip_ok" "$clip_fails"
 
   # A cascade command that exists and then does not work. This is the
@@ -710,7 +734,7 @@ section_begin 'fp and the clipboard'
   # imitated.
   fakebin="$scratch/fakebin"
   mkdir -p "$fakebin"
-  printf '#!/bin/sh\ncat > /dev/null\nexit 3\n' > "$fakebin/pbcopy"
+  printf '#!/bin/sh\ncat > /dev/null\nexit 3\n' >"$fakebin/pbcopy"
   chmod +x "$fakebin/pbcopy"
 
   # And a PATH with none of the five on it, which is the one branch of the
@@ -749,7 +773,7 @@ section_begin 'fp and the clipboard'
     # a string comparison would throw away.
     assert_eq "$scratch/foo" "$(cat "$cap")" "$sh: the clipboard got the path"
     assert_eq "$(printf '%s' "$scratch/foo" | wc -c | tr -d ' ')" \
-      "$(wc -c < "$cap" | tr -d ' ')" \
+      "$(wc -c <"$cap" | tr -d ' ')" \
       "$sh: the clipboard got it with no trailing newline"
 
     # --no-clipboard is the whole of the difference: same stdout, and a
@@ -870,7 +894,7 @@ section_begin 'linux pbcopy script'
     # One-shot stand-in for the Mac listener: accepts a connection, writes
     # every byte received to $scratch/tunnel, exits. Its port is announced
     # in $scratch/port once it is listening.
-    python3 - "$scratch" > /dev/null 2>&1 <<'PY' &
+    python3 - "$scratch" >/dev/null 2>&1 <<'PY' &
 import socket, sys
 d = sys.argv[1]
 s = socket.socket()
@@ -905,7 +929,7 @@ line two' "$(cat "$scratch/tunnel")" \
 
     # Tunnel down, X display up: falls through to the local clipboard.
     mkdir -p "$scratch/bin"
-    printf '#!/bin/sh\ncat > "%s/local"\n' "$scratch" > "$scratch/bin/xclip"
+    printf '#!/bin/sh\ncat > "%s/local"\n' "$scratch" >"$scratch/bin/xclip"
     chmod +x "$scratch/bin/xclip"
     dead=$(free_port)
     printf 'local text' | env -u WAYLAND_DISPLAY DISPLAY=:0 PATH="$scratch/bin:$PATH" \
@@ -948,11 +972,18 @@ section_begin 'wd40'
     _errf=$(mktemp "$SANDBOX/cap-err.XXXXXX")
     _rcf=$(mktemp "$SANDBOX/cap-rc.XXXXXX")
     set +e
-    CAP_OUT=$("$@" 2>"$_errf"; printf '%d' "$?" > "$_rcf"; printf X)
+    CAP_OUT=$(
+      "$@" 2>"$_errf"
+      printf '%d' "$?" >"$_rcf"
+      printf X
+    )
     set -e
     CAP_OUT=${CAP_OUT%X}
     CAP_RC=$(cat "$_rcf")
-    CAP_ERR=$(cat "$_errf"; printf X)
+    CAP_ERR=$(
+      cat "$_errf"
+      printf X
+    )
     CAP_ERR=${CAP_ERR%X}
     rm -f "$_errf" "$_rcf"
   }
@@ -969,9 +1000,9 @@ section_begin 'wd40'
 
   # bare wd40: usage on stdout, exit 0 — a question, not a mistake
   capture bash "$WD40"
-  assert_ok        "bare wd40 exits 0"
+  assert_ok "bare wd40 exits 0"
   assert_eq "$(printf '%s' "$CAP_OUT" | head -1)" "Usage: wd40 <command>" \
-                   "bare wd40 prints usage on stdout"
+    "bare wd40 prints usage on stdout"
   assert_empty "bare wd40 says nothing on stderr" "$CAP_ERR"
 
   # help spellings
@@ -982,17 +1013,17 @@ section_begin 'wd40'
 
   # unknown argument: usage on stderr, exit 1
   capture bash "$WD40" frobnicate
-  assert_fail      "unknown argument exits 1"
+  assert_fail "unknown argument exits 1"
   assert_empty "unknown argument prints nothing on stdout" "$CAP_OUT"
 
   # an argument to an argumentless command
   capture bash "$WD40" list --json
-  assert_fail      "wd40 list --json exits 1"
+  assert_fail "wd40 list --json exits 1"
 
   # root anchoring: a WD40_ROOT with no manifest.toml is refused
   NOROOT=$(mktemp -d)
   capture env WD40_ROOT="$NOROOT" bash "$WD40" list
-  assert_fail      "a root without manifest.toml is refused"
+  assert_fail "a root without manifest.toml is refused"
   rm -rf "$NOROOT"
 
   section_report
@@ -1013,11 +1044,18 @@ section_begin 'wd40 list'
     _errf=$(mktemp "$SANDBOX/cap-err.XXXXXX")
     _rcf=$(mktemp "$SANDBOX/cap-rc.XXXXXX")
     set +e
-    CAP_OUT=$("$@" 2>"$_errf"; printf '%d' "$?" > "$_rcf"; printf X)
+    CAP_OUT=$(
+      "$@" 2>"$_errf"
+      printf '%d' "$?" >"$_rcf"
+      printf X
+    )
     set -e
     CAP_OUT=${CAP_OUT%X}
     CAP_RC=$(cat "$_rcf")
-    CAP_ERR=$(cat "$_errf"; printf X)
+    CAP_ERR=$(
+      cat "$_errf"
+      printf X
+    )
     CAP_ERR=${CAP_ERR%X}
     rm -f "$_errf" "$_rcf"
   }
@@ -1035,9 +1073,9 @@ section_begin 'wd40 list'
   # --- fixture: minimal root with manifest, scripts, shell, local ---
   FIX="$SANDBOX/listfix"
   mkdir -p "$FIX/wd40/common/scripts" "$FIX/wd40/common/shell" \
-           "$FIX/wd40/linux/scripts" "$FIX/wd40/local/shell" "$FIX/helpers"
+    "$FIX/wd40/linux/scripts" "$FIX/wd40/local/shell" "$FIX/helpers"
   cp "$REPO/helpers/read-manifest.py" "$FIX/helpers/"
-  cat > "$FIX/manifest.toml" <<'EOF'
+  cat >"$FIX/manifest.toml" <<'EOF'
 [[symlinks]]
 source = "wd40/wd40rc"
 target = "~/.config/wd40/wd40rc"
@@ -1055,10 +1093,10 @@ type = "glob"
 strip_ext = true
 platform = "linux"
 EOF
-  printf '#!/bin/sh\n# wd40: alpha - the alpha script\n:\n' > "$FIX/wd40/common/scripts/alpha.sh"
-  printf '#!/bin/sh\n# wd40: tuxonly - linux-only script\n:\n' > "$FIX/wd40/linux/scripts/tuxonly.sh"
-  printf '# wd40: fn-one - a shell function\n' > "$FIX/wd40/common/shell/fns.sh"
-  printf '#!/usr/bin/env bash\n:\n' > "$FIX/wd40/wd40rc"
+  printf '#!/bin/sh\n# wd40: alpha - the alpha script\n:\n' >"$FIX/wd40/common/scripts/alpha.sh"
+  printf '#!/bin/sh\n# wd40: tuxonly - linux-only script\n:\n' >"$FIX/wd40/linux/scripts/tuxonly.sh"
+  printf '# wd40: fn-one - a shell function\n' >"$FIX/wd40/common/shell/fns.sh"
+  printf '#!/usr/bin/env bash\n:\n' >"$FIX/wd40/wd40rc"
 
   # --- discovery + platform filter (darwin sees no tuxonly) ---
   capture env WD40_ROOT="$FIX" WD40_PLATFORM=darwin bash "$WD40" list
@@ -1077,25 +1115,25 @@ EOF
 
   mkdir -p "$SMOKE_HOME/.local/sbin" "$SMOKE_HOME/.config/wd40"
   ln -sfn "$FIX/wd40/common/scripts/alpha.sh" "$SMOKE_HOME/.local/sbin/alpha"
-  ln -sfn "$FIX/wd40/wd40rc"                  "$SMOKE_HOME/.config/wd40/wd40rc"
+  ln -sfn "$FIX/wd40/wd40rc" "$SMOKE_HOME/.config/wd40/wd40rc"
   capture env WD40_ROOT="$FIX" WD40_PLATFORM=darwin HOME="$SMOKE_HOME" bash "$WD40" list
   case $CAP_OUT in *'! '*alpha*) fail "installed alpha still marked !" ;; *) pass "installed alpha unmarked" ;; esac
   rm -f "$SMOKE_HOME/.local/sbin/alpha" "$SMOKE_HOME/.config/wd40/wd40rc"
 
   # --- local/ leniency: undeclared local file warns, exit stays 0 ---
-  printf 'alias mystery=1\n' > "$FIX/wd40/local/shell/mystery.sh"
+  printf 'alias mystery=1\n' >"$FIX/wd40/local/shell/mystery.sh"
   capture env WD40_ROOT="$FIX" WD40_PLATFORM=darwin bash "$WD40" list
   assert_ok "undeclared local file does not fail the run"
   case $CAP_ERR in *mystery.sh*) pass "local file warned about on stderr" ;; *) fail "no warning for local file" ;; esac
 
   # --- strict refusal: undeclared tracked shell file ---
-  printf 'alias nope=1\n' > "$FIX/wd40/common/shell/undeclared.sh"
+  printf 'alias nope=1\n' >"$FIX/wd40/common/shell/undeclared.sh"
   capture env WD40_ROOT="$FIX" WD40_PLATFORM=darwin bash "$WD40" list
   assert_fail "undeclared tracked file is refused"
   rm -f "$FIX/wd40/common/shell/undeclared.sh"
 
   # --- strict refusal: declared name ≠ strip-rule install name ---
-  printf '#!/bin/sh\n# wd40: wrongname - mismatch\n:\n' > "$FIX/wd40/common/scripts/actual.sh"
+  printf '#!/bin/sh\n# wd40: wrongname - mismatch\n:\n' >"$FIX/wd40/common/scripts/actual.sh"
   capture env WD40_ROOT="$FIX" WD40_PLATFORM=darwin bash "$WD40" list
   assert_fail "declared-name mismatch is refused"
   rm -f "$FIX/wd40/common/scripts/actual.sh"
@@ -1116,11 +1154,11 @@ section_begin 'loader wiring'
   LOADFIX="$SANDBOX/loadfix"
   mkdir -p "$LOADFIX/common/shell" "$LOADFIX/darwin/shell" "$LOADFIX/linux/shell"
   cp "$REPO/wd40/wd40rc" "$LOADFIX/wd40rc"
-  printf 'alias t_common=1\n'     > "$LOADFIX/common/shell/a.sh"
-  printf 'return 1\n'             > "$LOADFIX/common/shell/b-fails.sh"
-  printf 'alias t_after=1\n'      > "$LOADFIX/common/shell/c.sh"
-  printf 'alias t_darwin=1\n'     > "$LOADFIX/darwin/shell/d.sh"
-  printf 'alias t_linux=1\n'      > "$LOADFIX/linux/shell/l.sh"
+  printf 'alias t_common=1\n' >"$LOADFIX/common/shell/a.sh"
+  printf 'return 1\n' >"$LOADFIX/common/shell/b-fails.sh"
+  printf 'alias t_after=1\n' >"$LOADFIX/common/shell/c.sh"
+  printf 'alias t_darwin=1\n' >"$LOADFIX/darwin/shell/d.sh"
+  printf 'alias t_linux=1\n' >"$LOADFIX/linux/shell/l.sh"
   ln -s /nonexistent "$LOADFIX/common/shell/dangling.sh"
 
   for sh in $SHELLS; do
@@ -1129,7 +1167,7 @@ section_begin 'loader wiring'
       alias t_after  >/dev/null 2>&1 && printf A
       alias t_darwin >/dev/null 2>&1 && printf D
       alias t_linux  >/dev/null 2>&1 && printf L
-      set | grep -c '^_wd40_' || true" )
+      set | grep -c '^_wd40_' || true")
     assert_eq "$out" "CAD0" "$sh: sources common+platform, survives a failing file, skips other platform, cleans vars"
     grep -q 'skipped unreadable' "$SANDBOX/lderr" \
       && pass "$sh: dangling symlink warned about" \
@@ -1138,7 +1176,8 @@ section_begin 'loader wiring'
 
   # empty dirs must not error (zsh nullglob path)
   for sh in $SHELLS; do
-    EMPTYFIX="$SANDBOX/emptyfix"; mkdir -p "$EMPTYFIX/common/shell"
+    EMPTYFIX="$SANDBOX/emptyfix"
+    mkdir -p "$EMPTYFIX/common/shell"
     cp "$REPO/wd40/wd40rc" "$EMPTYFIX/wd40rc"
     if "$sh" -c ". '$EMPTYFIX/wd40rc'" 2>"$SANDBOX/emerr"; then
       assert_empty "$sh: empty shell dirs stay silent" "$(cat "$SANDBOX/emerr")"
@@ -1195,7 +1234,7 @@ section_begin 'scripts are executable and carry shebangs'
     [ -x "$f" ] && pass "$b is executable" || fail "$b is not executable"
     case $(head -1 "$f") in
       '#!'*) pass "$b has a shebang" ;;
-      *)     fail "$b has no shebang" ;;
+      *) fail "$b has no shebang" ;;
     esac
   done
 

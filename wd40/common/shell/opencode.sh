@@ -77,8 +77,9 @@ EOF2
   fi
 
   case "${1:-}" in
-    run|api)
-      local sub="$1"; shift
+    run | api)
+      local sub="$1"
+      shift
       command opencode "$sub" --server "$url" "$@"
       ;;
     *)

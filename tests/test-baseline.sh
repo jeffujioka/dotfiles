@@ -14,13 +14,20 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 section "Clean baseline"
 
-PASS=0; FAIL=0
+PASS=0
+FAIL=0
 
 # check NAME CONDITION_COMMAND... — pass when the command succeeds.
 check() {
-  local name="$1"; shift
-  if "$@"; then PASS=$((PASS+1)); pass "$name"
-  else FAIL=$((FAIL+1)); fail "$name"; fi
+  local name="$1"
+  shift
+  if "$@"; then
+    PASS=$((PASS + 1))
+    pass "$name"
+  else
+    FAIL=$((FAIL + 1))
+    fail "$name"
+  fi
 }
 
 # shell_files — the bash/sh files lint checks, one per line.

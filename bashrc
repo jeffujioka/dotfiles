@@ -17,11 +17,12 @@ export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-${HOME}/.config}"
 # behind system dirs (path_helper on macOS login shells), so always move.
 _path_prepend() {
   local i dir p
-  for (( i = $#; i >= 1; i-- )); do
+  for ((i = $#; i >= 1; i--)); do
     dir=${!i}
     p=":${PATH}:"
     while [[ $p == *":${dir}:"* ]]; do p=${p//":${dir}:"/:}; done
-    p=${p#:}; p=${p%:}
+    p=${p#:}
+    p=${p%:}
     PATH="${dir}${p:+:$p}"
   done
   export PATH
@@ -166,7 +167,7 @@ if [ -r "$HOME/.zsh_secrets" ]; then
 fi
 
 # Keep the terminal title meaningful: shell name when idle, command name when running.
-_set_title_precmd()  { printf '\e]0;%s\a' "${SHELL##*/}"; }
+_set_title_precmd() { printf '\e]0;%s\a' "${SHELL##*/}"; }
 _set_title_preexec() { printf '\e]0;%s\a' "${1%% *}"; }
 if [[ ${BLE_VERSION-} ]]; then
   blehook PRECMD+=_set_title_precmd
@@ -174,8 +175,15 @@ if [[ ${BLE_VERSION-} ]]; then
 else
   # PROMPT_COMMAND arms the DEBUG trap; the first command after a prompt fires it once.
   _title_armed=
-  _title_precmd() { _set_title_precmd; _title_armed=1; }
-  _title_debug()  { [[ -n $_title_armed ]] || return 0; _title_armed=; _set_title_preexec "$BASH_COMMAND"; }
+  _title_precmd() {
+    _set_title_precmd
+    _title_armed=1
+  }
+  _title_debug() {
+    [[ -n $_title_armed ]] || return 0
+    _title_armed=
+    _set_title_preexec "$BASH_COMMAND"
+  }
   PROMPT_COMMAND="${PROMPT_COMMAND:+${PROMPT_COMMAND%;};}_title_precmd"
   trap '_title_debug' DEBUG
 fi
@@ -184,7 +192,7 @@ cat "${XDG_CONFIG_HOME}/ascii-art-goku.txt" 2>/dev/null
 
 echo "setting up..."
 
-if command -v starship &> /dev/null ; then
+if command -v starship &>/dev/null; then
   echo "   starship"
   export STARSHIP_CONFIG="${XDG_CONFIG_HOME}/starship/config.toml"
   eval "$(starship init bash)"
@@ -195,12 +203,12 @@ if [[ -L "${XDG_CONFIG_HOME}/fzf/fzf.bash" || -f "${XDG_CONFIG_HOME}/fzf/fzf.bas
   source "${XDG_CONFIG_HOME}/fzf/fzf.bash"
 fi
 
-if command -v tv &> /dev/null ; then
+if command -v tv &>/dev/null; then
   echo "   television"
   eval "$(tv init bash)"
 fi
 
-if command -v zoxide &> /dev/null ; then
+if command -v zoxide &>/dev/null; then
   echo "  󰆤 zoxide"
   eval "$(zoxide init --cmd cd bash)"
 fi
