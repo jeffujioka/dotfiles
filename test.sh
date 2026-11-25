@@ -16,11 +16,13 @@ Usage:
   ./test.sh build-image <sudo|no-sudo|all>
   ./test.sh sanity-check [--docker] <sudo|no-sudo|all>
   ./test.sh lint
+  ./test.sh lint-files
 
 Commands:
   build-image     Build Docker test images
   sanity-check    Run sanity checks against the installation
   lint            Run ShellCheck, shfmt (bash and zsh) and Biome (Markdown)
+  lint-files      List the bash/sh files lint checks, one per line
 
 Flags (sanity-check):
   --docker        Run inside Docker containers (default: run locally)
@@ -103,6 +105,7 @@ run_local_checks() {
     "$SCRIPT_DIR/tests/test-installer-home-source.sh" || rc=1
     "$SCRIPT_DIR/tests/test-tool-configs.sh"      || rc=1
     "$SCRIPT_DIR/tests/test-lint.sh"              || rc=1
+    "$SCRIPT_DIR/tests/test-baseline.sh"          || rc=1
     "$SCRIPT_DIR/tests/test-installer-script.sh"  || rc=1
     "$SCRIPT_DIR/tests/test-install-cronjobs.sh"  || rc=1
     "$SCRIPT_DIR/tests/test-asdf-update.sh"       || rc=1
@@ -254,5 +257,6 @@ case "${1:-}" in
     build-image)   shift; cmd_build_image "$@" ;;
     sanity-check)  shift; cmd_sanity_check "$@" ;;
     lint)          shift; cmd_lint "$@" ;;
+    lint-files)    lint_shell_files ;;
     *)             usage ;;
 esac
