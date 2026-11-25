@@ -62,6 +62,29 @@ t_disable_reasons() {
 }
 check "every shellcheck disable directive has a reason" t_disable_reasons
 
+# zsh_files — the hand-written zsh files (D7), one per line.
+zsh_files() { "$REPO_ROOT/test.sh" lint-zsh-files; }
+
+t_shfmt_zsh() {
+  local files=() f
+  while IFS= read -r f; do files+=("$f"); done < <(zsh_files)
+  [ "${#files[@]}" -gt 0 ] || return 1
+  (cd "$REPO_ROOT" && shfmt -ln zsh -d "${files[@]}" >/dev/null)
+}
+check "shfmt -ln zsh reports no diff on the hand-written zsh files" t_shfmt_zsh
+
+# ZSH_PARSE_ROOT overrides the directory the files are read from, so the test
+# can be shown failing on a deliberately broken copy.
+t_zsh_parse() {
+  local files=() f root="${ZSH_PARSE_ROOT:-$REPO_ROOT}"
+  while IFS= read -r f; do files+=("$f"); done < <(zsh_files)
+  [ "${#files[@]}" -gt 0 ] || return 1
+  for f in "${files[@]}"; do
+    (cd "$root" && zsh -n "$f") || return 1
+  done
+}
+check "hand-written zsh files pass zsh -n" t_zsh_parse
+
 echo ""
 echo "$PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

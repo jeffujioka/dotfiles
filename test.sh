@@ -17,12 +17,14 @@ Usage:
   ./test.sh sanity-check [--docker] <sudo|no-sudo|all>
   ./test.sh lint
   ./test.sh lint-files
+  ./test.sh lint-zsh-files
 
 Commands:
   build-image     Build Docker test images
   sanity-check    Run sanity checks against the installation
   lint            Run ShellCheck, shfmt (bash and zsh) and Biome (Markdown)
   lint-files      List the bash/sh files lint checks, one per line
+  lint-zsh-files  List the hand-written zsh files lint checks, one per line
 
 Flags (sanity-check):
   --docker        Run inside Docker containers (default: run locally)
@@ -282,5 +284,6 @@ case "${1:-}" in
     cmd_lint "$@"
     ;;
   lint-files) lint_shell_files ;;
+  lint-zsh-files) printf '%s\n' "${LINT_ZSH_FILES[@]}" ;;
   *) usage ;;
 esac
