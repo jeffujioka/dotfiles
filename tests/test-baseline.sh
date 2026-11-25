@@ -41,6 +41,27 @@ t_shfmt_bash() {
 }
 check "shfmt reports no diff on bash and sh scripts" t_shfmt_bash
 
+t_shellcheck_clean() {
+  local files=() f
+  while IFS= read -r f; do files+=("$f"); done < <(shell_files)
+  [ "${#files[@]}" -gt 0 ] || return 1
+  (cd "$REPO_ROOT" && shellcheck "${files[@]}" >/dev/null)
+}
+check "ShellCheck reports nothing on the repository's shell files" t_shellcheck_clean
+
+# A directive line is a comment starting with `shellcheck disable=`; it needs
+# `# text` after the code list on the same line.
+t_disable_reasons() {
+  local bad
+  bad="$(cd "$REPO_ROOT" && git grep -nE '^[[:space:]]*#[[:space:]]*shellcheck[[:space:]]+disable=' \
+    | grep -vE 'disable=[A-Za-z0-9,]+[[:space:]]+#[[:space:]]*[^[:space:]]')" || true
+  [ -z "$bad" ] || {
+    echo "$bad" >&2
+    return 1
+  }
+}
+check "every shellcheck disable directive has a reason" t_disable_reasons
+
 echo ""
 echo "$PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

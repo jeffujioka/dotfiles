@@ -37,7 +37,7 @@ printf '{ "marker": "%s" }\n' "$$" >"$SANDBOX/src/biome/biome.jsonc"
 
 # shellcheck disable=SC2088  # literal manifest text; install.sh expands the ~
 CANONICAL='~/.config/biome'
-# shellcheck disable=SC2088
+# shellcheck disable=SC2088  # literal manifest text; install.sh expands the ~
 ALIAS='~/Library/Application Support/biome'
 
 # write_manifest WITH_CANONICAL — the canonical entry (repo dir -> ~/.config)
@@ -60,7 +60,7 @@ run_install() {
 }
 
 reset_home() {
-  rm -rf "$SANDBOX/home"
+  rm -rf "${SANDBOX:?}/home"
   mkdir -p "$SANDBOX/home"
 }
 

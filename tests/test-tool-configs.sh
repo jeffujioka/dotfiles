@@ -111,6 +111,7 @@ t_shellcheck_source() {
   h=$(new_home)
   work=$(mktemp -d "$SANDBOX/work.XXXXXX")
   printf 'GREETING=hi\nexport GREETING\n' >"$work/lib.sh"
+  # shellcheck disable=SC2016  # the fixture script text must keep a literal $GREETING
   printf '#!/bin/bash\nset -u\n. lib.sh\necho "$GREETING"\n' >"$work/main.sh"
   out=$(cd "$work" && in_home "$h" shellcheck -f gcc main.sh 2>&1) \
     || {
@@ -161,7 +162,9 @@ t_shfmt_house_style() {
   local h work
   h=$(new_home)
   work=$(mktemp -d "$h/work.XXXXXX")
+  # shellcheck disable=SC2016  # the fixture script text must keep a literal $1
   printf '#!/bin/bash\ncase "$1" in\n  a)\n    echo a\n    ;;\nesac\necho x \\\n  | cat\n' >"$work/good.sh"
+  # shellcheck disable=SC2016  # the fixture script text must keep a literal $1
   printf '#!/bin/bash\ncase "$1" in\n    a)\n        echo a\n        ;;\nesac\necho x \\\n    | cat\n' >"$work/bad.sh"
   (cd "$work" && in_home "$h" shfmt -d good.sh >/dev/null 2>&1) || return 1
   ! (cd "$work" && in_home "$h" shfmt -d bad.sh >/dev/null 2>&1)

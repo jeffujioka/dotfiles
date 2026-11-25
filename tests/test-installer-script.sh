@@ -56,6 +56,7 @@ chmod +x "$SANDBOX/bin/present-tool"
 run_fn() {
   printf '%s\n' "$1" >"$SANDBOX/manifest.toml"
   (
+    # shellcheck disable=SC2030  # the subshell isolates the installer's environment from the test on purpose
     export HOME="$SANDBOX/home" DOTFILES_MANIFEST="$SANDBOX/manifest.toml" \
       WD40_PLATFORM="${2:-linux}" PATH="$SANDBOX/bin:$PATH"
     script_dir="$REPO_ROOT"
@@ -66,7 +67,7 @@ run_fn() {
   ) >"$SANDBOX/out" 2>&1
 }
 reset_home() {
-  rm -rf "$SANDBOX/home"
+  rm -rf "${SANDBOX:?}/home"
   mkdir -p "$SANDBOX/home"
 }
 
@@ -79,6 +80,7 @@ entry() { # name creates extra-lines...
 # --- Case 1: runs script; shell default, args, env, post_install plumbed
 # through even with empty optional fields in between (tab-collapse regression).
 reset_home
+# shellcheck disable=SC2016  # the manifest text must keep a literal $HOME for the installer to expand
 if run_fn "$(entry thing absent-tool-1 'args = "-y --flag"' 'env = "FOO=bar"' 'post_install = "touch $HOME/post-ran"')"; then
   t_pass "install exits 0"
 else
@@ -89,32 +91,32 @@ if [ "$(cat "$SANDBOX/home/script-ran" 2>/dev/null)" = "ran args=[-y --flag] foo
 else
   t_fail "script args/env wrong: $(cat "$SANDBOX/home/script-ran" 2>/dev/null)"
 fi
-[ -e "$SANDBOX/home/post-ran" ] && t_pass "post_install ran" || t_fail "post_install did not run"
+if [ -e "$SANDBOX/home/post-ran" ]; then t_pass "post_install ran"; else t_fail "post_install did not run"; fi
 
 # --- Case 2: creates already on PATH → skipped
 reset_home
 run_fn "$(entry thing present-tool)"
-[ ! -e "$SANDBOX/home/script-ran" ] && t_pass "skipped when creates is on PATH" || t_fail "ran despite creates present"
+if [ ! -e "$SANDBOX/home/script-ran" ]; then t_pass "skipped when creates is on PATH"; else t_fail "ran despite creates present"; fi
 
 # --- Case 3: platform mismatch → skipped; match → runs
 reset_home
 run_fn "$(entry thing absent-tool-3 'platform = "darwin"')" linux
-[ ! -e "$SANDBOX/home/script-ran" ] && t_pass "skipped on platform mismatch" || t_fail "ran on wrong platform"
+if [ ! -e "$SANDBOX/home/script-ran" ]; then t_pass "skipped on platform mismatch"; else t_fail "ran on wrong platform"; fi
 run_fn "$(entry thing absent-tool-3 'platform = "linux"')" linux
-[ -e "$SANDBOX/home/script-ran" ] && t_pass "runs on matching platform" || t_fail "did not run on matching platform"
+if [ -e "$SANDBOX/home/script-ran" ]; then t_pass "runs on matching platform"; else t_fail "did not run on matching platform"; fi
 
 # --- Case 4: sha256 pin — match runs; mismatch warns and does not run
 reset_home
 run_fn "$(entry thing absent-tool-4 "sha256 = \"$VENDOR_SHA\"")"
-[ -e "$SANDBOX/home/script-ran" ] && t_pass "matching sha256 runs" || t_fail "matching sha256 did not run"
+if [ -e "$SANDBOX/home/script-ran" ]; then t_pass "matching sha256 runs"; else t_fail "matching sha256 did not run"; fi
 reset_home
 if run_fn "$(entry thing absent-tool-4 'sha256 = "deadbeef"')"; then
   t_pass "non-required sha mismatch does not abort (exit 0)"
 else
   t_fail "non-required sha mismatch aborted"
 fi
-[ ! -e "$SANDBOX/home/script-ran" ] && t_pass "sha mismatch: script not run" || t_fail "script ran despite sha mismatch"
-grep -q "Warning: Failed to install thing" "$SANDBOX/out" && t_pass "sha mismatch warns" || t_fail "no warning on sha mismatch"
+if [ ! -e "$SANDBOX/home/script-ran" ]; then t_pass "sha mismatch: script not run"; else t_fail "script ran despite sha mismatch"; fi
+if grep -q "Warning: Failed to install thing" "$SANDBOX/out"; then t_pass "sha mismatch warns"; else t_fail "no warning on sha mismatch"; fi
 
 # --- Case 5: required failure aborts nonzero
 reset_home
@@ -135,21 +137,24 @@ fi
 
 # --- Case 7: non-default shell is the interpreter
 reset_home
+# shellcheck disable=SC2016  # the stub script text must keep a literal $HOME and $@
 printf '#!/bin/bash\necho used > "$HOME/shell-used"\nexec bash "$@"\n' >"$SANDBOX/bin/mysh"
 chmod +x "$SANDBOX/bin/mysh"
 run_fn "$(entry thing absent-tool-7 'shell = "mysh"')"
-[ -e "$SANDBOX/home/shell-used" ] && [ -e "$SANDBOX/home/script-ran" ] \
-  && t_pass "configured shell runs the script" || t_fail "configured shell not used"
+if [ -e "$SANDBOX/home/shell-used" ] && [ -e "$SANDBOX/home/script-ran" ]; then t_pass "configured shell runs the script"; else t_fail "configured shell not used"; fi
 
 # --- Case 8: brew.tools platform filter (empty binary + platform must not shift
 # fields; unfiltered and matching entries install, mismatching is skipped)
+# shellcheck disable=SC2016  # the stub script text must keep a literal $1, $* and $HOME
 printf '#!/bin/bash\n[ "$1" = install ] && echo "$*" >> "$HOME/brew-installed"\nexit 0\n' >"$SANDBOX/bin/brew"
 chmod +x "$SANDBOX/bin/brew"
 run_brew() {
   printf '%s\n' "$1" >"$SANDBOX/manifest.toml"
   (
+    # shellcheck disable=SC2031  # the subshell in run_fn sets these separately; each helper needs its own isolated environment
     export HOME="$SANDBOX/home" DOTFILES_MANIFEST="$SANDBOX/manifest.toml" \
       WD40_PLATFORM=linux PATH="$SANDBOX/bin:$PATH"
+    # shellcheck disable=SC2034  # read by the install.sh functions sourced below, which ShellCheck cannot see
     script_dir="$REPO_ROOT"
     . "$REPO_ROOT/helpers/shell-utils.sh"
     # shellcheck disable=SC1090
@@ -182,6 +187,7 @@ fi
 
 # --- Case 9: a brew install that drains stdin (a dependency's post-install, e.g.
 # gtk+3 under colima) must not swallow the remaining manifest entries
+# shellcheck disable=SC2016  # the stub script text must keep a literal $1, $* and $HOME
 printf '#!/bin/bash\n[ "$1" = install ] && echo "$*" >> "$HOME/brew-installed"\ncat > /dev/null\nexit 0\n' >"$SANDBOX/bin/brew"
 chmod +x "$SANDBOX/bin/brew"
 reset_home

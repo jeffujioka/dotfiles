@@ -70,7 +70,7 @@ run_install() {
 }
 
 reset_home() {
-  rm -rf "$SANDBOX/home"
+  rm -rf "${SANDBOX:?}/home"
   mkdir -p "$SANDBOX/home"
 }
 

@@ -52,8 +52,10 @@ if [ -d "$HOME/.config/git/configs" ]; then
   dir_mode=$(stat -f '%Lp' "$HOME/.config/git/configs" 2>/dev/null) \
     || dir_mode=$(stat -c '%a' "$HOME/.config/git/configs")
   if [ "$dir_mode" = "700" ]; then
+    # shellcheck disable=SC2088  # the message names the path as users write it; no expansion wanted
     pass "~/.config/git/configs is 0700"
   else
+    # shellcheck disable=SC2088  # the message names the path as users write it; no expansion wanted
     fail "~/.config/git/configs is $dir_mode (expected 700)"
     found=$((found + 1))
   fi
@@ -69,6 +71,7 @@ if [ -d "$HOME/.config/git/configs" ]; then
     fi
   done
 else
+  # shellcheck disable=SC2088  # the message names the path as users write it; no expansion wanted
   warn "~/.config/git/configs does not exist (G1 not migrated yet?)"
 fi
 

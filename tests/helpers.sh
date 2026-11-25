@@ -58,8 +58,11 @@ summary() {
   counters=$(cat "$SANITY_COUNTERS_FILE")
   local p f w
   read -r p f w <<<"$counters"
+  # shellcheck disable=SC2059  # the _BOLD/_GREEN/... colour variables hold escape sequences the printf format must interpret
   printf "\n${_BOLD}════════════════════════${_NC}\n"
+  # shellcheck disable=SC2059  # same colour escape sequences in the format as above
   printf "  Results: ${_GREEN}%d passed${_NC}, ${_RED}%d failed${_NC}, ${_YELLOW}%d warnings${_NC}\n" "$p" "$f" "$w"
+  # shellcheck disable=SC2059  # same colour escape sequences in the format as above
   printf "${_BOLD}════════════════════════${_NC}\n"
   [ "$f" -eq 0 ]
 }

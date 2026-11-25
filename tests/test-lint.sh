@@ -45,6 +45,7 @@ new_fixture() {
   d=$(mktemp -d "$SANDBOX/repo.XXXXXX")
   cp "$TEST_SH" "$d/test.sh"
   cp -L "$REPO_ROOT/.editorconfig" "$REPO_ROOT/.shellcheckrc" "$REPO_ROOT/biome.jsonc" "$d/"
+  # shellcheck disable=SC2016  # the fixture script text must keep a literal $1
   printf '#!/bin/bash\necho "$1"\n' >"$d/good.sh"
   chmod +x "$d/good.sh" "$d/test.sh"
   printf '# Title\n\n- item\n' >"$d/README.md"
@@ -74,6 +75,7 @@ check "clean fixture passes with three headings" t_clean
 t_shellcheck() {
   local d
   d=$(new_fixture)
+  # shellcheck disable=SC2016  # the fixture script text must keep a literal $1
   printf '#!/bin/bash\nrm -rf $1\n' >"$d/bad.sh"
   ! fixture_lint "$d" && grep -q 'SC2086' "$d/out"
 }
@@ -82,6 +84,7 @@ check "ShellCheck finding fails lint" t_shellcheck
 t_shfmt_bash() {
   local d
   d=$(new_fixture)
+  # shellcheck disable=SC2016  # the fixture script text must keep a literal $1
   printf '#!/bin/bash\nif true; then\n    echo "$1"\nfi\n' >"$d/four.sh"
   ! fixture_lint "$d" && grep -q -- '--- four.sh' "$d/out"
 }
@@ -90,6 +93,7 @@ check "unformatted bash script fails lint" t_shfmt_bash
 t_shfmt_zsh() {
   local d
   d=$(new_fixture)
+  # shellcheck disable=SC2016  # the fixture script text must keep a literal $1
   printf '#!/usr/bin/zsh\nif true; then\n    print -r -- "$1"\nfi\n' >"$d/zshrc"
   ! fixture_lint "$d" && grep -q -- '--- zshrc' "$d/out"
 }
@@ -117,6 +121,7 @@ check "missing shfmt is refused with exit 1" t_missing_shfmt
 t_zsh_shebang_skipped() {
   local d
   d=$(new_fixture)
+  # shellcheck disable=SC2016  # the fixture script text must keep a literal ${f:t}
   printf '#!/usr/bin/zsh\nfor f in *(N); do print -r -- "${f:t}"; done\n' >"$d/other.zsh-script"
   fixture_lint "$d"
 }
@@ -128,6 +133,7 @@ t_generated_completions() {
   mkdir "$d/zsh_completions.d"
   for f in _bun _opencode _starship; do
     # A bash shebang would select the file anywhere else in the repo.
+    # shellcheck disable=SC2016  # the fixture script text must keep a literal $1
     printf '#!/bin/bash\n#compdef %s\n_x() {\n        echo $1\n}\n' "${f#_}" >"$d/zsh_completions.d/$f"
   done
   fixture_lint "$d"

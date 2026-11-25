@@ -55,11 +55,11 @@ run_install() {
 # --- happy path: strip + platform filter (darwin) ---
 write_manifest ""
 if run_install darwin; then pass "install exits 0"; else fail "install exited nonzero"; fi
-[ -L "$SANDBOX/home/.local/sbin/foo" ] && pass "foo.sh → foo" || fail "foo.sh not stripped"
-[ -L "$SANDBOX/home/.local/sbin/bar" ] && pass "bar.py → bar" || fail "bar.py not stripped"
-[ -L "$SANDBOX/home/.local/sbin/baz" ] && pass "baz unchanged" || fail "baz missing"
-[ ! -e "$SANDBOX/home/.local/sbin/foo.sh" ] && pass "no unstripped foo.sh" || fail "unstripped foo.sh linked"
-[ ! -d "$SANDBOX/home/.local/other" ] && pass "linux entry skipped on darwin" || fail "platform filter leaked"
+if [ -L "$SANDBOX/home/.local/sbin/foo" ]; then pass "foo.sh → foo"; else fail "foo.sh not stripped"; fi
+if [ -L "$SANDBOX/home/.local/sbin/bar" ]; then pass "bar.py → bar"; else fail "bar.py not stripped"; fi
+if [ -L "$SANDBOX/home/.local/sbin/baz" ]; then pass "baz unchanged"; else fail "baz missing"; fi
+if [ ! -e "$SANDBOX/home/.local/sbin/foo.sh" ]; then pass "no unstripped foo.sh"; else fail "unstripped foo.sh linked"; fi
+if [ ! -d "$SANDBOX/home/.local/other" ]; then pass "linux entry skipped on darwin"; else fail "platform filter leaked"; fi
 
 # links resolve to the fixture sources
 resolved=$(readlink "$SANDBOX/home/.local/sbin/foo")
@@ -69,14 +69,14 @@ case "$resolved" in
 esac
 
 # --- platform filter (linux) installs the second entry ---
-rm -rf "$SANDBOX/home"
+rm -rf "${SANDBOX:?}/home"
 mkdir -p "$SANDBOX/home"
 if run_install linux; then pass "linux install exits 0"; else fail "linux install failed"; fi
-[ -L "$SANDBOX/home/.local/other/foo.sh" ] && pass "linux entry installed unstripped" || fail "linux entry missing"
+if [ -L "$SANDBOX/home/.local/other/foo.sh" ]; then pass "linux entry installed unstripped"; else fail "linux entry missing"; fi
 
 # --- collision refusal: foo.sh and foo.py strip to one name ---
 printf '#!/usr/bin/env python3\n' >"$SANDBOX/src/scripts/foo.py"
-rm -rf "$SANDBOX/home"
+rm -rf "${SANDBOX:?}/home"
 mkdir -p "$SANDBOX/home"
 if run_install darwin; then fail "collision NOT refused"; else pass "collision refused (nonzero exit)"; fi
 rm "$SANDBOX/src/scripts/foo.py"
@@ -88,7 +88,7 @@ source = "'"$SANDBOX"'/src/scripts/foo.sh"
 target = "~/.local/one-file"
 strip_ext = true
 '
-rm -rf "$SANDBOX/home"
+rm -rf "${SANDBOX:?}/home"
 mkdir -p "$SANDBOX/home"
 if run_install darwin; then fail "strip_ext on symlink NOT refused"; else pass "strip_ext on symlink refused"; fi
 

@@ -62,29 +62,40 @@ stamp="$SANDBOX/home/.local/state/dotfiles/asdf-update.stamp"
 printf 'nodejs 26.10.0\ngolang 1.20.0\n' >"$SANDBOX/home/.tool-versions"
 
 LATEST_NODEJS=26.13.0 LATEST_GOLANG="" run
+# shellcheck disable=SC2016  # check eval's the condition later, so the $ must stay literal
 check "newer latest is written to ~/.tool-versions" '[ "$(tv nodejs)" = 26.13.0 ]'
+# shellcheck disable=SC2016  # check eval's the condition later, so the $ must stay literal
 check "plugin without a latest version is left as it was" '[ "$(tv golang)" = 1.20.0 ]'
+# shellcheck disable=SC2016  # check eval's the condition later, so the $ must stay literal
 check "plugin without a latest version does not fail the run" 'grep -q "no latest version" "$SANDBOX/out"'
+# shellcheck disable=SC2016  # check eval's the condition later, so the $ must stay literal
 check "a successful run leaves the stamp" '[ -f "$stamp" ]'
 
 rm -f "$stamp"
 : >"$ASDF_LOG"
 FAIL_INSTALL=nodejs LATEST_NODEJS=27.0.0 LATEST_GOLANG="" run
+# shellcheck disable=SC2034  # rc is read by the eval'd condition of the next check, which ShellCheck cannot see
 rc=$?
+# shellcheck disable=SC2016  # check eval's the condition later, so the $ must stay literal
 check "failed install leaves ~/.tool-versions on the installed version" '[ "$(tv nodejs)" = 26.13.0 ]'
+# shellcheck disable=SC2016  # check eval's the condition later, so the $ must stay literal
 check "failed install exits non-zero" '[ "$rc" -ne 0 ]'
+# shellcheck disable=SC2016  # check eval's the condition later, so the $ must stay literal
 check "failed install leaves no stamp, so --weekly retries" '[ ! -f "$stamp" ]'
 
 LATEST_NODEJS=26.13.0 LATEST_GOLANG="" run --weekly
 : >"$ASDF_LOG"
 LATEST_NODEJS=27.0.0 LATEST_GOLANG="" run --weekly
+# shellcheck disable=SC2016  # check eval's the condition later, so the $ must stay literal
 check "--weekly does nothing within a week of a good run" '[ ! -s "$ASDF_LOG" ] && [ "$(tv nodejs)" = 26.13.0 ]'
 
 touch -d '8 days ago' "$stamp"
 LATEST_NODEJS=27.0.0 LATEST_GOLANG="" run --weekly
+# shellcheck disable=SC2016  # check eval's the condition later, so the $ must stay literal
 check "--weekly runs again after a week" '[ "$(tv nodejs)" = 27.0.0 ]'
 
 LATEST_NODEJS=28.0.0 LATEST_GOLANG="" run
+# shellcheck disable=SC2016  # check eval's the condition later, so the $ must stay literal
 check "without --weekly it always runs" '[ "$(tv nodejs)" = 28.0.0 ]'
 
 [ "$FAIL" -eq 0 ]
