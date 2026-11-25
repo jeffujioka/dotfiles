@@ -161,6 +161,7 @@ add-zsh-hook preexec _set_title_preexec
 # this file too; its parent process tells, and the banner stays off so it never reaches the agent's context.
 _quiet_banner=0
 [[ ${$(ps -o comm= -p $PPID 2>/dev/null):t} == (omp|opencode|claude|codex) ]] && _quiet_banner=1
+
 if [[ -o interactive ]]; then
   (( _quiet_banner )) || cat ~/.config/ascii-art-goku.txt
   
@@ -208,3 +209,6 @@ fi
 zinit light zsh-users/zsh-syntax-highlighting
 
 export EDITOR=vim
+
+# bun completions
+[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
