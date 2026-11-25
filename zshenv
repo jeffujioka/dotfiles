@@ -6,6 +6,6 @@ skip_global_compinit=1
 # there; an asdf shim also execs `asdf`, which lives in Homebrew's bin. ~/.zshrc puts the same dirs in front again, and
 # `typeset -U` keeps PATH free of duplicates.
 if [[ "$OSTYPE" == darwin* ]]; then
-  typeset -U path
-  path=("$HOME/.asdf/shims" /opt/homebrew/bin $path)
+	typeset -U path
+	path=("$HOME/.asdf/shims" /opt/homebrew/bin $path)
 fi

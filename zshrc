@@ -1,7 +1,7 @@
 #!/usr/bin/zsh
 
 if [ -z "${XDG_CONFIG_HOME}" ]; then
-   export XDG_CONFIG_HOME="$HOME/.config"
+	export XDG_CONFIG_HOME="$HOME/.config"
 fi
 
 # Set the directory we want to store zinit and plugins
@@ -9,8 +9,8 @@ ZINIT_HOME="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 
 # Download Zinit, if it's not there yet
 if [ ! -d "$ZINIT_HOME" ]; then
-   mkdir -p "${ZINIT_HOME:h}"
-   git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
+	mkdir -p "${ZINIT_HOME:h}"
+	git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
 fi
 
 # Source/Load zinit
@@ -30,7 +30,7 @@ zinit snippet OMZP::command-not-found
 # tools (gh, fd, rg, eza …) get tab-completion registered.
 _brew_sf=""
 for _b in /opt/homebrew/bin/brew /usr/local/bin/brew "$HOME/.homebrew/bin/brew"; do
-  [[ -x "$_b" ]] && _brew_sf="${_b%/bin/brew}/share/zsh/site-functions" && break
+	[[ -x "$_b" ]] && _brew_sf="${_b%/bin/brew}/share/zsh/site-functions" && break
 done
 [[ -d "$_brew_sf" ]] && fpath=("$_brew_sf" $fpath)
 unset _brew_sf _b
@@ -39,11 +39,11 @@ fpath=(~/.zsh_completions.d $fpath)
 # trust the cached dump. Force a rebuild with `zcomp_rebuild` (wd40).
 autoload -Uz compinit
 _zcd=(${ZDOTDIR:-$HOME}/.zcompdump(N.mh-24))
-if (( ${#_zcd} )); then
-  compinit -C
+if ((${#_zcd})); then
+	compinit -C
 else
-  compinit
-  touch "${ZDOTDIR:-$HOME}/.zcompdump"
+	compinit
+	touch "${ZDOTDIR:-$HOME}/.zcompdump"
 fi
 unset _zcd
 
@@ -56,7 +56,11 @@ bindkey '^n' history-search-forward
 bindkey '^[w' kill-region
 
 # ctrl+l: clear screen AND scrollback (\e[3J), like the `clear` alias
-clear-screen-and-scrollback() { zle clear-screen; print -n '\e[3J'; zle redisplay }
+clear-screen-and-scrollback() {
+	zle clear-screen
+	print -n '\e[3J'
+	zle redisplay
+}
 zle -N clear-screen-and-scrollback
 bindkey '^l' clear-screen-and-scrollback
 
@@ -91,31 +95,31 @@ bindkey "^[[1;5D" backward-word
 CARGO_HOME="${XDG_CONFIG_HOME}/cargo"
 CARGO_ENV="${CARGO_HOME}/env"
 if [ -f "${CARGO_ENV}" ]; then
-  source "${CARGO_ENV}"
+	source "${CARGO_ENV}"
 elif [ -d "${CARGO_HOME}/bin" ]; then
-  if [[ ! "$PATH" == *"${CARGO_HOME}/bin"* ]]; then
-    export PATH="${CARGO_HOME}/bin:${PATH}"
-  fi
+	if [[ ! "$PATH" == *"${CARGO_HOME}/bin"* ]]; then
+		export PATH="${CARGO_HOME}/bin:${PATH}"
+	fi
 fi
 
 # Homebrew. Static equivalent of `brew shellenv` (saves a fork);
 # site-functions is already on fpath from the completions block above.
 if [[ "$OSTYPE" == darwin* ]] && [[ -x /opt/homebrew/bin/brew ]]; then
-  export HOMEBREW_PREFIX="/opt/homebrew"
+	export HOMEBREW_PREFIX="/opt/homebrew"
 elif [[ "$OSTYPE" == linux* ]] && [[ -x "$HOME/.homebrew/bin/brew" ]]; then
-  export HOMEBREW_PREFIX="$HOME/.homebrew"
+	export HOMEBREW_PREFIX="$HOME/.homebrew"
 fi
 if [[ -n $HOMEBREW_PREFIX ]]; then
-  export HOMEBREW_CELLAR="$HOMEBREW_PREFIX/Cellar"
-  export HOMEBREW_REPOSITORY="$HOMEBREW_PREFIX"
-  path=("$HOMEBREW_PREFIX/bin" "$HOMEBREW_PREFIX/sbin" $path)
-  [[ -n ${MANPATH-} ]] && export MANPATH=":${MANPATH#:}"
-  export INFOPATH="$HOMEBREW_PREFIX/share/info:${INFOPATH:-}"
+	export HOMEBREW_CELLAR="$HOMEBREW_PREFIX/Cellar"
+	export HOMEBREW_REPOSITORY="$HOMEBREW_PREFIX"
+	path=("$HOMEBREW_PREFIX/bin" "$HOMEBREW_PREFIX/sbin" $path)
+	[[ -n ${MANPATH-} ]] && export MANPATH=":${MANPATH#:}"
+	export INFOPATH="$HOMEBREW_PREFIX/share/info:${INFOPATH:-}"
 fi
 
 # VIMRUNTIME — fix for user homebrew vim compiled with system linuxbrew fallback path
 if [[ -d "$HOME/.homebrew/share/vim/vim92" ]]; then
-  export VIMRUNTIME="$HOME/.homebrew/share/vim/vim92"
+	export VIMRUNTIME="$HOME/.homebrew/share/vim/vim92"
 fi
 
 typeset -gU path PATH
@@ -138,7 +142,7 @@ path=("${HOME}/.local/sbin" "${HOME}/.local/bin" "${HOME}/.bun/bin" "${path[@]}"
 # TMPDIR, HOMEBREW_TEMP, JAVA_TOOL_OPTIONS → zprofile
 # (sourced at login by both bash and zsh so daemons inherit them)
 if [ -z "$TMPDIR" ]; then
-  source "${ZDOTDIR:-$HOME}/.zprofile"
+	source "${ZDOTDIR:-$HOME}/.zprofile"
 fi
 
 unsetopt pathdirs
@@ -146,15 +150,14 @@ unsetopt pathdirs
 # Secrets (API tokens, etc.) live outside this repo, in ~/.zsh_secrets,
 # so they never end up in a public dotfiles history. sourced only if present.
 if [ -r "$HOME/.zsh_secrets" ]; then
-  source "$HOME/.zsh_secrets"
+	source "$HOME/.zsh_secrets"
 fi
-
 
 # Keep the terminal title meaningful: shell name when idle, command name when running.
 autoload -Uz add-zsh-hook
-_set_title_precmd()  { printf '\e]0;%s\a' "${SHELL:t}" }
-_set_title_preexec() { printf '\e]0;%s\a' "${1%% *}" }
-add-zsh-hook precmd  _set_title_precmd
+_set_title_precmd() { printf '\e]0;%s\a' "${SHELL:t}"; }
+_set_title_preexec() { printf '\e]0;%s\a' "${1%% *}"; }
+add-zsh-hook precmd _set_title_precmd
 add-zsh-hook preexec _set_title_preexec
 
 # The banner below is for people. A shell that omp, opencode, claude or codex starts, such as omp's own `!` command, runs
@@ -163,36 +166,36 @@ _quiet_banner=0
 [[ ${$(ps -o comm= -p $PPID 2>/dev/null):t} == (omp|opencode|claude|codex) ]] && _quiet_banner=1
 
 if [[ -o interactive ]]; then
-  (( _quiet_banner )) || cat ~/.config/ascii-art-goku.txt
-  
-  (( _quiet_banner )) || echo "setting up..."
-  
-  if command -v starship &> /dev/null ; then
-    (( _quiet_banner )) || echo "   starship"
-    export STARSHIP_CONFIG="${XDG_CONFIG_HOME}/starship/config.toml"
-    eval "$(starship init zsh)"
-  fi
-  
-  if [[ -L "${XDG_CONFIG_HOME}/fzf/fzf.zsh" || -f "${XDG_CONFIG_HOME}/fzf/fzf.zsh" ]]; then
-    (( _quiet_banner )) || echo "   fzf"
-    source "${XDG_CONFIG_HOME}/fzf/fzf.zsh"
-  fi
-  
-  if command -v tv &> /dev/null ; then
-    (( _quiet_banner )) || echo "   television"
-    eval "$(tv init zsh)"
-  fi
-  
-  if command -v zoxide &> /dev/null ; then
-    (( _quiet_banner )) || echo "  󰆤 zoxide"
-    eval "$(zoxide init --cmd cd zsh)"
-  fi
+	((_quiet_banner)) || cat ~/.config/ascii-art-goku.txt
+
+	((_quiet_banner)) || echo "setting up..."
+
+	if command -v starship &>/dev/null; then
+		((_quiet_banner)) || echo "   starship"
+		export STARSHIP_CONFIG="${XDG_CONFIG_HOME}/starship/config.toml"
+		eval "$(starship init zsh)"
+	fi
+
+	if [[ -L "${XDG_CONFIG_HOME}/fzf/fzf.zsh" || -f "${XDG_CONFIG_HOME}/fzf/fzf.zsh" ]]; then
+		((_quiet_banner)) || echo "   fzf"
+		source "${XDG_CONFIG_HOME}/fzf/fzf.zsh"
+	fi
+
+	if command -v tv &>/dev/null; then
+		((_quiet_banner)) || echo "   television"
+		eval "$(tv init zsh)"
+	fi
+
+	if command -v zoxide &>/dev/null; then
+		((_quiet_banner)) || echo "  󰆤 zoxide"
+		eval "$(zoxide init --cmd cd zsh)"
+	fi
 fi
 unset _quiet_banner
 
 # added by wd40 install.sh
 if [ -r "$HOME/.config/wd40/wd40rc" ]; then
-  . "$HOME/.config/wd40/wd40rc"
+	. "$HOME/.config/wd40/wd40rc"
 fi
 export KUBECONFIG="$HOME/.kube/config"
 
@@ -201,8 +204,8 @@ export KUBECONFIG="$HOME/.kube/config"
 # fnm
 FNM_PATH="$HOME/.local/share/fnm"
 if [ -d "$FNM_PATH" ]; then
-  export PATH="$FNM_PATH:$PATH"
-  eval "$(fnm env --shell zsh)"
+	export PATH="$FNM_PATH:$PATH"
+	eval "$(fnm env --shell zsh)"
 fi
 
 # Must load last: it wraps every ZLE widget defined before it.

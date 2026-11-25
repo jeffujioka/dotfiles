@@ -17,6 +17,6 @@ export JAVA_TOOL_OPTIONS="-Djava.io.tmpdir=$HOME/.local/tmp"
 # OpenChamber imports them through its login-shell probe on every launch
 # (Dock, auto-update relaunch, login). Scoped to OpenChamber's own shells.
 if [[ "${__CFBundleIdentifier:-}" == dev.openchamber.desktop ]]; then
-  export OPENCHAMBER_OPENCODE_PORT=31991
-  export OPENCODE_SERVER_PASSWORD="$(security find-generic-password -s openchamber-opencode -w 2>/dev/null)"
+	export OPENCHAMBER_OPENCODE_PORT=31991
+	export OPENCODE_SERVER_PASSWORD="$(security find-generic-password -s openchamber-opencode -w 2>/dev/null)"
 fi
