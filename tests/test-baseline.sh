@@ -1,8 +1,10 @@
 #!/bin/bash
 # Clean-baseline tests: the repo as committed passes the lint tools. The file
 # selection comes from `./test.sh lint-files`, the same function `./test.sh
-# lint` uses. Keeps its own PASS/FAIL tally; later tasks add their checks
-# below, with the `check` helper.
+# lint` uses. They read the repo's tracked files, so without a git checkout
+# (the Docker flow copies the repo without .git) they warn and skip. Keeps its
+# own tally (helpers.sh); later tasks add their checks below, with the
+# `check_cmd` helper.
 
 set -u
 
@@ -14,22 +16,6 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 section "Clean baseline"
 
-PASS=0
-FAIL=0
-
-# check NAME CONDITION_COMMAND... — pass when the command succeeds.
-check() {
-  local name="$1"
-  shift
-  if "$@"; then
-    PASS=$((PASS + 1))
-    pass "$name"
-  else
-    FAIL=$((FAIL + 1))
-    fail "$name"
-  fi
-}
-
 # shell_files — the bash/sh files lint checks, one per line.
 shell_files() { "$REPO_ROOT/test.sh" lint-files; }
 
@@ -39,7 +25,7 @@ t_shfmt_bash() {
   [ "${#files[@]}" -gt 0 ] || return 1
   (cd "$REPO_ROOT" && shfmt -d "${files[@]}" >/dev/null)
 }
-check "shfmt reports no diff on bash and sh scripts" t_shfmt_bash
+check_cmd_git "$REPO_ROOT" "shfmt reports no diff on bash and sh scripts" t_shfmt_bash
 
 t_shellcheck_clean() {
   local files=() f
@@ -47,20 +33,23 @@ t_shellcheck_clean() {
   [ "${#files[@]}" -gt 0 ] || return 1
   (cd "$REPO_ROOT" && shellcheck "${files[@]}" >/dev/null)
 }
-check "ShellCheck reports nothing on the repository's shell files" t_shellcheck_clean
+check_cmd_git "$REPO_ROOT" "ShellCheck reports nothing on the repository's shell files" t_shellcheck_clean
 
 # A directive line is a comment starting with `shellcheck disable=`; it needs
-# `# text` after the code list on the same line.
+# `# text` after the code list on the same line. `git grep` exits 1 when it
+# finds nothing, which is fine; any higher status is an error, so a failing
+# `git grep` cannot pass the check.
 t_disable_reasons() {
-  local bad
-  bad="$(cd "$REPO_ROOT" && git grep -nE '^[[:space:]]*#[[:space:]]*shellcheck[[:space:]]+disable=' \
-    | grep -vE 'disable=[A-Za-z0-9,]+[[:space:]]+#[[:space:]]*[^[:space:]]')" || true
+  local found rc=0 bad
+  found="$(cd "$REPO_ROOT" && git grep -nE '^[[:space:]]*#[[:space:]]*shellcheck[[:space:]]+disable=')" || rc=$?
+  [ "$rc" -le 1 ] || return 1
+  bad="$(printf '%s\n' "$found" | grep -vE 'disable=[A-Za-z0-9,]+[[:space:]]+#[[:space:]]*[^[:space:]]' || true)"
   [ -z "$bad" ] || {
     echo "$bad" >&2
     return 1
   }
 }
-check "every shellcheck disable directive has a reason" t_disable_reasons
+check_cmd_git "$REPO_ROOT" "every shellcheck disable directive has a reason" t_disable_reasons
 
 # zsh_files — the hand-written zsh files (D7), one per line.
 zsh_files() { "$REPO_ROOT/test.sh" lint-zsh-files; }
@@ -71,7 +60,7 @@ t_shfmt_zsh() {
   [ "${#files[@]}" -gt 0 ] || return 1
   (cd "$REPO_ROOT" && shfmt -ln zsh -d "${files[@]}" >/dev/null)
 }
-check "shfmt -ln zsh reports no diff on the hand-written zsh files" t_shfmt_zsh
+check_cmd_git "$REPO_ROOT" "shfmt -ln zsh reports no diff on the hand-written zsh files" t_shfmt_zsh
 
 # ZSH_PARSE_ROOT overrides the directory the files are read from, so the test
 # can be shown failing on a deliberately broken copy.
@@ -83,7 +72,7 @@ t_zsh_parse() {
     (cd "$root" && zsh -n "$f") || return 1
   done
 }
-check "hand-written zsh files pass zsh -n" t_zsh_parse
+check_cmd_git "$REPO_ROOT" "hand-written zsh files pass zsh -n" t_zsh_parse
 
 # LINT_ROOT overrides the checkout whose test.sh runs, so the test can be shown
 # failing on a deliberately broken copy. HOME is an empty sandbox: lint must
@@ -95,8 +84,6 @@ t_lint_passes() {
   rm -rf "$home"
   return "$rc"
 }
-check "./test.sh lint exits 0" t_lint_passes
+check_cmd_git "${LINT_ROOT:-$REPO_ROOT}" "./test.sh lint exits 0" t_lint_passes
 
-echo ""
-echo "$PASS passed, $FAIL failed"
-[ "$FAIL" -eq 0 ]
+cmd_summary

@@ -2,7 +2,7 @@
 # Behaviour tests for `./test.sh lint`. Every case builds a throwaway git repo
 # holding a copy of test.sh and the lint configs, so the command's
 # SCRIPT_DIR-relative file selection runs against the fixture, never the real
-# repo. Keeps its own PASS/FAIL tally with the `check` helper.
+# repo. Keeps its own tally with the `check_cmd` helper.
 #
 # LINT_TEST_SH (default: the repo's test.sh) is the script under test; the
 # tests point it at a broken copy to show they can fail.
@@ -18,23 +18,8 @@ TEST_SH="${LINT_TEST_SH:-$REPO_ROOT/test.sh}"
 
 section "Lint command"
 
-PASS=0
-FAIL=0
 SANDBOX=$(mktemp -d)
 trap 'rm -rf "$SANDBOX"' EXIT
-
-# check NAME CONDITION_COMMAND... — pass when the command succeeds.
-check() {
-  local name="$1"
-  shift
-  if "$@"; then
-    PASS=$((PASS + 1))
-    pass "$name"
-  else
-    FAIL=$((FAIL + 1))
-    fail "$name"
-  fi
-}
 
 # new_fixture — git repo with the lint configs and one clean script and
 # Markdown file, all tracked, plus an untracked copy of test.sh (the real one
@@ -70,7 +55,7 @@ t_clean() {
   fixture_lint "$d" || return 1
   grep -q '^== ShellCheck' "$d/out" && grep -q '^== shfmt' "$d/out" && grep -q '^== Biome' "$d/out"
 }
-check "clean fixture passes with three headings" t_clean
+check_cmd "clean fixture passes with three headings" t_clean
 
 t_shellcheck() {
   local d
@@ -79,7 +64,7 @@ t_shellcheck() {
   printf '#!/bin/bash\nrm -rf $1\n' >"$d/bad.sh"
   ! fixture_lint "$d" && grep -q 'SC2086' "$d/out"
 }
-check "ShellCheck finding fails lint" t_shellcheck
+check_cmd "ShellCheck finding fails lint" t_shellcheck
 
 t_shfmt_bash() {
   local d
@@ -88,7 +73,7 @@ t_shfmt_bash() {
   printf '#!/bin/bash\nif true; then\n    echo "$1"\nfi\n' >"$d/four.sh"
   ! fixture_lint "$d" && grep -q -- '--- four.sh' "$d/out"
 }
-check "unformatted bash script fails lint" t_shfmt_bash
+check_cmd "unformatted bash script fails lint" t_shfmt_bash
 
 t_shfmt_zsh() {
   local d
@@ -97,7 +82,7 @@ t_shfmt_zsh() {
   printf '#!/usr/bin/zsh\nif true; then\n    print -r -- "$1"\nfi\n' >"$d/zshrc"
   ! fixture_lint "$d" && grep -q -- '--- zshrc' "$d/out"
 }
-check "unformatted zsh file fails lint" t_shfmt_zsh
+check_cmd "unformatted zsh file fails lint" t_shfmt_zsh
 
 t_markdown() {
   local d
@@ -105,7 +90,7 @@ t_markdown() {
   printf '# Title\n\n* item\n' >"$d/notes.md"
   ! fixture_lint "$d" && grep -q 'notes.md' "$d/out"
 }
-check "unformatted Markdown fails lint" t_markdown
+check_cmd "unformatted Markdown fails lint" t_markdown
 
 t_missing_shfmt() {
   local d bin t rc=0
@@ -116,7 +101,7 @@ t_missing_shfmt() {
   fixture_lint "$d" "$bin:/usr/bin:/bin" || rc=$?
   [ "$rc" -eq 1 ] && grep -qx 'Error: shfmt not found (run ./install.sh)' "$d/out"
 }
-check "missing shfmt is refused with exit 1" t_missing_shfmt
+check_cmd "missing shfmt is refused with exit 1" t_missing_shfmt
 
 t_zsh_shebang_skipped() {
   local d
@@ -125,7 +110,7 @@ t_zsh_shebang_skipped() {
   printf '#!/usr/bin/zsh\nfor f in *(N); do print -r -- "${f:t}"; done\n' >"$d/other.zsh-script"
   fixture_lint "$d"
 }
-check "unlisted zsh-shebang file is skipped" t_zsh_shebang_skipped
+check_cmd "unlisted zsh-shebang file is skipped" t_zsh_shebang_skipped
 
 t_generated_completions() {
   local d f
@@ -138,8 +123,47 @@ t_generated_completions() {
   done
   fixture_lint "$d"
 }
-check "generated completions are not checked" t_generated_completions
+check_cmd "generated completions are not checked" t_generated_completions
 
-echo ""
-echo "$PASS passed, $FAIL failed"
-[ "$FAIL" -eq 0 ]
+# tree_copy [git] — copy of the files test-baseline.sh and test-tool-configs.sh
+# read, made the way the Docker flow copies the repo (tar, no .git); with
+# `git`, the copy is also `git init`ed (no commits). Echoes the path.
+tree_copy() {
+  local d
+  d=$(mktemp -d "$SANDBOX/tree.XXXXXX")
+  tar -C "$REPO_ROOT" -cf - test.sh tests helpers config manifest.toml biome.jsonc \
+    .editorconfig .shellcheckrc .git-blame-ignore-revs .gitignore gitconfig GLOSSARY.md \
+    | tar -C "$d" -xf -
+  [ "${1:-}" = git ] && git -C "$d" init -q
+  echo "$d"
+}
+
+# run_in_tree DIR NAME — run tests/NAME.sh in DIR with its own counters; output
+# in DIR/NAME.out, status returned.
+run_in_tree() {
+  local rc=0
+  (cd "$1" && env -u SANITY_COUNTERS_FILE bash "tests/$2.sh") >"$1/$2.out" 2>&1 || rc=$?
+  return "$rc"
+}
+
+t_skip_without_git() {
+  local d f
+  d=$(tree_copy)
+  for f in test-baseline test-tool-configs; do
+    run_in_tree "$d" "$f" || return 1
+    grep -q 'skipped: no git checkout' "$d/$f.out" || return 1
+  done
+}
+check_cmd "repo-code checks skip, not fail, in a copy without .git" t_skip_without_git
+
+t_no_skip_in_checkout() {
+  local d f
+  d=$(tree_copy git)
+  for f in test-baseline test-tool-configs; do
+    ! run_in_tree "$d" "$f" || return 1
+    ! grep -q 'skipped' "$d/$f.out" || return 1
+  done
+}
+check_cmd "the same checks run and fail in a git checkout without commits" t_no_skip_in_checkout
+
+cmd_summary

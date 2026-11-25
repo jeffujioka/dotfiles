@@ -67,6 +67,45 @@ summary() {
   [ "$f" -eq 0 ]
 }
 
+# --- Command-form checks for the tests/test-*.sh files that keep their own tally.
+# (Named check_cmd so the older files' own `check` — eval form — never clashes.)
+CMD_PASS=0
+CMD_FAIL=0
+
+# check_cmd NAME CMD... — pass when the command succeeds.
+check_cmd() {
+  local name="$1"
+  shift
+  if "$@"; then
+    CMD_PASS=$((CMD_PASS + 1))
+    pass "$name"
+  else
+    CMD_FAIL=$((CMD_FAIL + 1))
+    fail "$name"
+  fi
+}
+
+# check_cmd_git ROOT NAME CMD... — check_cmd, but a warning (neither pass nor
+# fail) when ROOT is not a git checkout: the copy the Docker flow makes has no
+# .git, so checks that read the repo's tracked files or history cannot run.
+check_cmd_git() {
+  local root="$1" name="$2"
+  shift 2
+  if git -C "$root" rev-parse --git-dir >/dev/null 2>&1; then
+    check_cmd "$name" "$@"
+  else
+    warn "$name (skipped: no git checkout)"
+  fi
+}
+
+# cmd_summary — print "N passed, M failed" for the check_cmd tally and return
+# non-zero when any failed.
+cmd_summary() {
+  echo ""
+  echo "$CMD_PASS passed, $CMD_FAIL failed"
+  [ "$CMD_FAIL" -eq 0 ]
+}
+
 # shellcheck source=../helpers/shell-utils.sh
 _SCRIPT_DIR_HELPERS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$_SCRIPT_DIR_HELPERS/../helpers/shell-utils.sh"

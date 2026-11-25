@@ -5,6 +5,8 @@
 #   ./test.sh build-image <sudo|no-sudo|all>
 #   ./test.sh sanity-check [--docker] <sudo|no-sudo|all>
 #   ./test.sh lint
+#   ./test.sh lint-files
+#   ./test.sh lint-zsh-files
 
 set -e
 

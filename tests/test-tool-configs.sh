@@ -2,8 +2,8 @@
 # Behaviour tests for the lint/format tool configs: the user-level Biome and
 # ShellCheck configs under config/, the repo's biome.jsonc and the manifest's
 # linter formulas. Uses the installed biome/shellcheck in a sandboxed HOME so
-# no real user config leaks in. Keeps its own PASS/FAIL tally; later tasks add
-# their checks below, with the `check` helper.
+# no real user config leaks in. Keeps its own tally (helpers.sh); later tasks add
+# their checks below, with the `check_cmd` helper.
 #
 # TOOL_CONFIG_ROOT (default: the repo) points at the tree holding the configs;
 # the tests copy broken trees there to show they can fail.
@@ -19,23 +19,8 @@ ROOT="${TOOL_CONFIG_ROOT:-$REPO_ROOT}"
 
 section "Tool configs (Biome, ShellCheck, shfmt)"
 
-PASS=0
-FAIL=0
 SANDBOX=$(mktemp -d)
 trap 'rm -rf "$SANDBOX"' EXIT
-
-# check NAME CONDITION_COMMAND... — pass when the command succeeds.
-check() {
-  local name="$1"
-  shift
-  if "$@"; then
-    PASS=$((PASS + 1))
-    pass "$name"
-  else
-    FAIL=$((FAIL + 1))
-    fail "$name"
-  fi
-}
 
 # new_home — fresh sandbox HOME with the user-level configs installed where
 # the tools look: Biome at ~/.config/biome and (macOS) ~/Library/Application
@@ -78,7 +63,7 @@ t_formulas_both_platforms() {
     done
   done
 }
-check "biome, shellcheck and shfmt install on darwin and linux" t_formulas_both_platforms
+check_cmd "biome, shellcheck and shfmt install on darwin and linux" t_formulas_both_platforms
 
 t_biome_formats_js() {
   local h work out
@@ -93,7 +78,7 @@ t_biome_formats_js() {
       return 1
     }
 }
-check "user-level Biome config formats JavaScript to the house style" t_biome_formats_js
+check_cmd "user-level Biome config formats JavaScript to the house style" t_biome_formats_js
 
 t_biome_md_untouched() {
   local h work
@@ -104,7 +89,7 @@ t_biome_md_untouched() {
   (cd "$work" && in_home "$h" biome format --write n.md >/dev/null 2>&1)
   cmp -s "$work/n.md" "$work/n.orig"
 }
-check "user-level Biome config leaves Markdown with frontmatter unchanged" t_biome_md_untouched
+check_cmd "user-level Biome config leaves Markdown with frontmatter unchanged" t_biome_md_untouched
 
 t_shellcheck_source() {
   local h work out
@@ -120,7 +105,7 @@ t_shellcheck_source() {
     }
   ! printf '%s' "$out" | grep -q 'SC2154'
 }
-check "ShellCheck follows a relative source with the user-level config" t_shellcheck_source
+check_cmd "ShellCheck follows a relative source with the user-level config" t_shellcheck_source
 
 # project_biome — project dir with the repo's biome.jsonc, a git repo so
 # useIgnoreFile works; echoes the path.
@@ -141,7 +126,7 @@ t_repo_biome_md() {
   (cd "$d" && in_home "$h" biome check >/dev/null 2>&1) || return 1
   cmp -s "$d/n.md" "$d/n.orig"
 }
-check "repo Biome config keeps Markdown frontmatter" t_repo_biome_md
+check_cmd "repo Biome config keeps Markdown frontmatter" t_repo_biome_md
 
 t_repo_biome_ignores() {
   local h d out
@@ -156,7 +141,7 @@ t_repo_biome_ignores() {
   }
   ! printf '%s' "$out" | grep -Eq 'a\.(js|json)'
 }
-check "repo Biome config ignores JavaScript and JSON" t_repo_biome_ignores
+check_cmd "repo Biome config ignores JavaScript and JSON" t_repo_biome_ignores
 
 # The whole tree (ROOT) passes `biome check` with the repo config.
 t_biome_check_repo() {
@@ -167,7 +152,7 @@ t_biome_check_repo() {
     return 1
   }
 }
-check "biome check exits 0 in the repository" t_biome_check_repo
+check_cmd "biome check exits 0 in the repository" t_biome_check_repo
 
 t_shfmt_house_style() {
   local h work
@@ -180,7 +165,7 @@ t_shfmt_house_style() {
   (cd "$work" && in_home "$h" shfmt -d good.sh >/dev/null 2>&1) || return 1
   ! (cd "$work" && in_home "$h" shfmt -d bad.sh >/dev/null 2>&1)
 }
-check "user-level shfmt config indents to the house style" t_shfmt_house_style
+check_cmd "user-level shfmt config indents to the house style" t_shfmt_house_style
 
 t_shfmt_only_shell() {
   local f="$ROOT/config/shfmt/editorconfig" headers
@@ -188,14 +173,14 @@ t_shfmt_only_shell() {
   headers=$(grep -E '^[[:space:]]*\[' "$f")
   [ "$headers" = "[[shell]]" ]
 }
-check "shfmt config has only the [[shell]] section" t_shfmt_only_shell
+check_cmd "shfmt config has only the [[shell]] section" t_shfmt_only_shell
 
 # repo_link NAME TARGET — NAME in the repo is a symlink to TARGET.
 repo_link() {
   [ -L "$ROOT/$1" ] && [ "$(readlink "$ROOT/$1")" = "$2" ]
 }
-check ".editorconfig links to config/shfmt/editorconfig" repo_link .editorconfig config/shfmt/editorconfig
-check ".shellcheckrc links to config/shellcheck/shellcheckrc" repo_link .shellcheckrc config/shellcheck/shellcheckrc
+check_cmd ".editorconfig links to config/shfmt/editorconfig" repo_link .editorconfig config/shfmt/editorconfig
+check_cmd ".shellcheckrc links to config/shellcheck/shellcheckrc" repo_link .shellcheckrc config/shellcheck/shellcheckrc
 
 # Blame ignore: the file lists existing commits; the global gitconfig must not
 # set it (Git fails fatally on a global ignoreRevsFile missing in a repo).
@@ -209,12 +194,12 @@ t_blame_ignore_commits() {
   done <"$f"
   [ "$n" -ge 1 ]
 }
-check "blame ignore file lists existing commits" t_blame_ignore_commits
+check_cmd_git "$ROOT" "blame ignore file lists existing commits" t_blame_ignore_commits
 
 t_gitconfig_no_ignorerevs() {
   ! grep -q ignoreRevsFile "$ROOT/gitconfig"
 }
-check "gitconfig does not set blame.ignoreRevsFile" t_gitconfig_no_ignorerevs
+check_cmd "gitconfig does not set blame.ignoreRevsFile" t_gitconfig_no_ignorerevs
 
 # Glossary terms: User-level config is defined (avoiding "global config") and
 # the Herdr container of tabs and panes is "Herdr workspace", not "Workspace".
@@ -222,14 +207,12 @@ t_glossary_user_level() {
   grep -qxF '**User-level config**:' "$ROOT/GLOSSARY.md" \
     && grep -qE '^_Avoid_:.*global config' "$ROOT/GLOSSARY.md"
 }
-check "GLOSSARY defines User-level config" t_glossary_user_level
+check_cmd "GLOSSARY defines User-level config" t_glossary_user_level
 
 t_glossary_herdr_workspace() {
   grep -qxF '**Herdr workspace**:' "$ROOT/GLOSSARY.md" \
     && ! grep -qxF '**Workspace**:' "$ROOT/GLOSSARY.md"
 }
-check "GLOSSARY names Herdr workspace and not Workspace" t_glossary_herdr_workspace
+check_cmd "GLOSSARY names Herdr workspace and not Workspace" t_glossary_herdr_workspace
 
-echo ""
-echo "$PASS passed, $FAIL failed"
-[ "$FAIL" -eq 0 ]
+cmd_summary
