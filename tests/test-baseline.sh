@@ -85,6 +85,18 @@ t_zsh_parse() {
 }
 check "hand-written zsh files pass zsh -n" t_zsh_parse
 
+# LINT_ROOT overrides the checkout whose test.sh runs, so the test can be shown
+# failing on a deliberately broken copy. HOME is an empty sandbox: lint must
+# rely on the repo's own configs only.
+t_lint_passes() {
+  local root="${LINT_ROOT:-$REPO_ROOT}" home rc=0
+  home=$(mktemp -d)
+  env -u XDG_CONFIG_HOME -u BIOME_CONFIG_PATH HOME="$home" "$root/test.sh" lint >/dev/null 2>&1 || rc=$?
+  rm -rf "$home"
+  return "$rc"
+}
+check "./test.sh lint exits 0" t_lint_passes
+
 echo ""
 echo "$PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

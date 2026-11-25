@@ -158,6 +158,17 @@ t_repo_biome_ignores() {
 }
 check "repo Biome config ignores JavaScript and JSON" t_repo_biome_ignores
 
+# The whole tree (ROOT) passes `biome check` with the repo config.
+t_biome_check_repo() {
+  local h out
+  h=$(new_home)
+  out=$(cd "$ROOT" && in_home "$h" biome check 2>&1) || {
+    echo "$out" >&2
+    return 1
+  }
+}
+check "biome check exits 0 in the repository" t_biome_check_repo
+
 t_shfmt_house_style() {
   local h work
   h=$(new_home)
