@@ -205,6 +205,20 @@ t_gitconfig_no_ignorerevs() {
 }
 check "gitconfig does not set blame.ignoreRevsFile" t_gitconfig_no_ignorerevs
 
+# Glossary terms: User-level config is defined (avoiding "global config") and
+# the Herdr container of tabs and panes is "Herdr workspace", not "Workspace".
+t_glossary_user_level() {
+  grep -qxF '**User-level config**:' "$ROOT/GLOSSARY.md" \
+    && grep -qE '^_Avoid_:.*global config' "$ROOT/GLOSSARY.md"
+}
+check "GLOSSARY defines User-level config" t_glossary_user_level
+
+t_glossary_herdr_workspace() {
+  grep -qxF '**Herdr workspace**:' "$ROOT/GLOSSARY.md" \
+    && ! grep -qxF '**Workspace**:' "$ROOT/GLOSSARY.md"
+}
+check "GLOSSARY names Herdr workspace and not Workspace" t_glossary_herdr_workspace
+
 echo ""
 echo "$PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

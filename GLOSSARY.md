@@ -28,7 +28,7 @@ _Avoid_: cron job, timer
 The terminal multiplexer that organises panes, tabs and workspaces, and supervises coding agents. It replaced tmux.
 _Avoid_: tmux, multiplexer (unqualified)
 
-**Workspace**:
+**Herdr workspace**:
 A Herdr container of tabs and panes, used to keep one project's terminals together.
 _Avoid_: session (that was the tmux term)
 
@@ -57,3 +57,9 @@ _Avoid_: local version, project version
 **Node owner**:
 The one tool allowed to put `node` on the `PATH`. It is asdf; nvm and Homebrew's `node` are not used.
 _Avoid_: node manager (unqualified)
+
+## Tool configuration
+
+**User-level config**:
+A tool's config in the home directory, linked from this repo, that applies to files outside any project and to projects without a config of their own; a project's own config replaces it.
+_Avoid_: global config, default config
