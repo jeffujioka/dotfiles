@@ -77,8 +77,10 @@ run_local_checks() {
   # Source shell config to ensure PATH is set up correctly
   # Try zshrc for zsh shells, bashrc for bash shells
   if [ -n "$ZSH_VERSION" ] && [ -f "$HOME/.zshrc" ]; then
+    # shellcheck disable=SC1091  # the user's own shell config under $HOME, not part of the repo
     source "$HOME/.zshrc" 2>/dev/null || true
   elif [ -z "$ZSH_VERSION" ] && [ -f "$HOME/.bashrc" ]; then
+    # shellcheck disable=SC1091  # the user's own shell config under $HOME, not part of the repo
     source "$HOME/.bashrc" 2>/dev/null || true
   fi
   # Also ensure cargo is in PATH (for non-interactive shells)

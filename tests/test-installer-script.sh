@@ -61,7 +61,7 @@ run_fn() {
       WD40_PLATFORM="${2:-linux}" PATH="$SANDBOX/bin:$PATH"
     script_dir="$REPO_ROOT"
     . "$REPO_ROOT/helpers/shell-utils.sh"
-    # shellcheck disable=SC1090
+    # shellcheck disable=SC1090  # the functions are cut out of install.sh with sed at run time, so there is no file to follow
     . <(sed -n '/^read_manifest()/,/^}/p;/^run_script_install()/,/^)/p;/^install_script_installers()/,/^}/p' "$REPO_ROOT/install.sh")
     install_script_installers
   ) >"$SANDBOX/out" 2>&1
@@ -157,7 +157,7 @@ run_brew() {
     # shellcheck disable=SC2034  # read by the install.sh functions sourced below, which ShellCheck cannot see
     script_dir="$REPO_ROOT"
     . "$REPO_ROOT/helpers/shell-utils.sh"
-    # shellcheck disable=SC1090
+    # shellcheck disable=SC1090  # the functions are cut out of install.sh with sed at run time, so there is no file to follow
     . <(sed -n '/^read_manifest()/,/^}/p;/^install_brew_tools()/,/^}/p' "$REPO_ROOT/install.sh")
     install_brew_tools
   ) >"$SANDBOX/out" 2>&1

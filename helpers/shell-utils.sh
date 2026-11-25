@@ -31,6 +31,7 @@ platform_matches() {
 # Field separator for `read-manifest.py --sep`: unit separator, NOT tab. Tab is
 # IFS-whitespace, so `read` collapses empty optional fields and shifts the
 # later ones. Use as: `IFS=$MANIFEST_SEP read -r ...`.
+# shellcheck disable=SC2034  # read by the scripts that source this file, as IFS=$MANIFEST_SEP
 MANIFEST_SEP=$'\x1f'
 
 # brew_package_installed INSTALLED_NAMES FORMULA — INSTALLED_NAMES is the

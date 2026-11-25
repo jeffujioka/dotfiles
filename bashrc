@@ -9,6 +9,8 @@
 #   4. Interactive bash only (DISABLE_ZSH set or stdout not a tty): the bash
 #      equivalent of zshrc's interactive setup.
 
+# shellcheck shell=bash
+
 export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-${HOME}/.config}"
 
 # _path_prepend DIR... — put DIRs at the front of PATH, in the given order,
@@ -35,6 +37,7 @@ _path_prepend() {
 CARGO_HOME="${XDG_CONFIG_HOME}/cargo"
 CARGO_ENV="${CARGO_HOME}/env"
 if [ -f "${CARGO_ENV}" ]; then
+  # shellcheck disable=SC1090  # path is built from XDG_CONFIG_HOME at run time
   source "${CARGO_ENV}"
 elif [ -d "${CARGO_HOME}/bin" ]; then
   _path_prepend "${CARGO_HOME}/bin"
@@ -84,11 +87,13 @@ _path_prepend "${HOME}/.local/sbin" "${HOME}/.local/bin" "${HOME}/.bun/bin"
 # TMPDIR, HOMEBREW_TEMP, JAVA_TOOL_OPTIONS → zprofile
 # (sourced at login by both bash and zsh so daemons inherit them)
 if [ -z "$TMPDIR" ] && [ -r "$HOME/.zprofile" ]; then
+  # shellcheck disable=SC1091  # ~/.zprofile is linked from the repo's zprofile at install time; ShellCheck cannot resolve the link
   source "$HOME/.zprofile"
 fi
 
 export KUBECONFIG="$HOME/.kube/config"
 
+# shellcheck disable=SC1091  # optional uv/rust env file under $HOME, not part of the repo
 [ -f "$HOME/.local/bin/env" ] && . "$HOME/.local/bin/env"
 
 # fnm
@@ -114,6 +119,7 @@ fi
 
 # ---- interactive bash only ------------------------------------------------
 
+# shellcheck disable=SC1091  # optional ble.sh install under $HOME, not part of the repo
 [[ -r "${HOME}/.local/share/blesh/ble.sh" ]] && source "${HOME}/.local/share/blesh/ble.sh" --noattach
 
 # History — bash counterparts of zshrc's setopt hist_* options.
@@ -128,6 +134,7 @@ shopt -s checkwinsize
 
 # enable color support of ls and also add handy aliases
 if [ -x /usr/bin/dircolors ]; then
+  # shellcheck disable=SC2015  # the second eval is the fallback for both a missing file and a failing first eval
   test -r "${HOME}/.dircolors" && eval "$(dircolors -b "${HOME}/.dircolors")" || eval "$(dircolors -b)"
   alias ls='ls --color=auto'
   alias grep='grep --color=auto'
@@ -139,10 +146,12 @@ alias la='ls -a'
 alias l='ls -F'
 alias jira="jira-dc"
 
+# shellcheck disable=SC1091  # optional per-user file under $HOME that does not exist in the repo
 [ -f "${HOME}/.bash_aliases" ] && . "${HOME}/.bash_aliases"
 
 # programmable completion
 if ! shopt -oq posix; then
+  # shellcheck disable=SC1091  # system completion files that exist only on some distributions
   if [ -f /usr/share/bash-completion/bash_completion ]; then
     . /usr/share/bash-completion/bash_completion
   elif [ -f /etc/bash_completion ]; then
@@ -152,6 +161,7 @@ fi
 
 if [ -d "${HOME}/.bashrc.d" ]; then
   for rc in "${HOME}"/.bashrc.d/*.sh; do
+    # shellcheck disable=SC1090  # the file name comes from a glob over ~/.bashrc.d at run time
     [ -x "$rc" ] && . "$rc"
   done
   unset rc
@@ -163,6 +173,7 @@ stty -ixon 2>/dev/null
 # Secrets (API tokens, etc.) live outside this repo, in ~/.zsh_secrets,
 # so they never end up in a public dotfiles history. sourced only if present.
 if [ -r "$HOME/.zsh_secrets" ]; then
+  # shellcheck disable=SC1091  # per-user secrets file under $HOME that is never in the repo
   source "$HOME/.zsh_secrets"
 fi
 
@@ -200,6 +211,7 @@ fi
 
 if [[ -L "${XDG_CONFIG_HOME}/fzf/fzf.bash" || -f "${XDG_CONFIG_HOME}/fzf/fzf.bash" ]]; then
   echo "   fzf"
+  # shellcheck disable=SC1091  # linked from the repo's config/fzf.bash at install time; ShellCheck cannot resolve the link
   source "${XDG_CONFIG_HOME}/fzf/fzf.bash"
 fi
 
@@ -215,6 +227,7 @@ fi
 
 # added by wd40 install.sh
 if [ -r "$HOME/.config/wd40/wd40rc" ]; then
+  # shellcheck disable=SC1091  # per-user file under $HOME that does not exist in the repo
   . "$HOME/.config/wd40/wd40rc"
 fi
 
