@@ -97,6 +97,8 @@ run_local_checks() {
     "$SCRIPT_DIR/tests/check-non-asdf-tools.sh"   || rc=1
     "$SCRIPT_DIR/tests/check-symlinks.sh"         || rc=1
     "$SCRIPT_DIR/tests/test-installer-seed.sh"    || rc=1
+    "$SCRIPT_DIR/tests/test-installer-home-source.sh" || rc=1
+    "$SCRIPT_DIR/tests/test-tool-configs.sh"      || rc=1
     "$SCRIPT_DIR/tests/test-installer-script.sh"  || rc=1
     "$SCRIPT_DIR/tests/test-install-cronjobs.sh"  || rc=1
     "$SCRIPT_DIR/tests/test-asdf-update.sh"       || rc=1

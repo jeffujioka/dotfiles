@@ -96,6 +96,9 @@ formula = "bash"
 formula = "bat"
 
 [[brew.tools]]
+formula = "biome"
+
+[[brew.tools]]
 formula = "can1357/tap/omp"
 binary = "omp"
 
@@ -203,6 +206,9 @@ formula = "sesh"
 
 [[brew.tools]]
 formula = "shellcheck"
+
+[[brew.tools]]
+formula = "shfmt"
 
 [[brew.tools]]
 formula = "sing-box"
@@ -334,6 +340,12 @@ target = "~/.config/biome"
 source = "~/.config/biome"
 target = "~/Library/Application Support/biome"
 platform = "darwin"
+
+# ShellCheck 0.11 reads ~/.shellcheckrc (and ~/.config/shellcheckrc only when
+# XDG_CONFIG_HOME is set, which just interactive zsh does), so link the former.
+[[symlinks]]
+source = "config/shellcheck/shellcheckrc"
+target = "~/.shellcheckrc"
 
 [[symlinks]]
 source = "config/fzf.zsh"

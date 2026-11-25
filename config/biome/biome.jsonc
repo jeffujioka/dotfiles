@@ -1,0 +1,28 @@
+{
+  // User-level Biome config, installed to ~/.config/biome (linked into
+  // ~/Library/Application Support/biome on macOS, where Biome looks).
+  //
+  // Biome uses it for files outside any project and for projects without a
+  // biome.json. A project's own biome.json REPLACES it (no merge); to inherit
+  // it, the project lists this file in "extends".
+  //
+  // Keep these OUT of this file (Biome 2.6.x):
+  //  - "vcs.useIgnoreFile": there is no ignore file next to a user-level
+  //    config, so Biome refuses to start. Set it in each project.
+  //  - "markdown.parser.frontmatter": ignored when set here, so a YAML
+  //    frontmatter block gets rewritten into a heading. Set it in the project.
+  "$schema": "https://biomejs.dev/schemas/2.6.9/schema.json",
+  "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },
+  "javascript": { "formatter": { "quoteStyle": "single" } },
+  "linter": { "rules": { "preset": "recommended" } },
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
+  "markdown": {
+    "formatter": {
+      // Off here because frontmatter cannot be enabled globally (see above).
+      // A project that sets "markdown.parser.frontmatter" can turn it back on.
+      "enabled": false,
+      "indentStyle": "space",
+      "proseWrap": "preserve"
+    }
+  }
+}

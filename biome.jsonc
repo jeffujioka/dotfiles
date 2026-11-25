@@ -1,0 +1,27 @@
+{
+  // Biome formats this repo's Markdown only; shell scripts go through
+  // ShellCheck and shfmt (see .shellcheckrc and .editorconfig).
+  "$schema": "https://biomejs.dev/schemas/2.6.9/schema.json",
+  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "files": {
+    "includes": [
+      "**",
+      // User-level Biome config: left in scope, Biome rejects it as a second
+      // root configuration.
+      "!!config/biome",
+      // Symlinks Biome reports as a cycle.
+      "!!config/neofetch",
+      // Local agent plans and specs, not part of the tracked docs.
+      "!docs/superpowers"
+    ]
+  },
+  "linter": { "enabled": false },
+  "assist": { "enabled": false },
+  // Off for every language, then on for Markdown alone.
+  "formatter": { "enabled": false },
+  "markdown": {
+    // Needed here, not in the user-level config, which ignores parser options.
+    "parser": { "frontmatter": true },
+    "formatter": { "enabled": true, "indentStyle": "space", "proseWrap": "preserve" }
+  }
+}

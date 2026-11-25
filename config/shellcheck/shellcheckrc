@@ -1,0 +1,8 @@
+# User-level ShellCheck config, linked to ~/.shellcheckrc. ShellCheck reads it
+# only when no .shellcheckrc exists in the script's directory or a parent, so
+# any repo with its own file overrides it entirely.
+#
+# Follow `source`d files even when they are not passed on the command line,
+# looking for them relative to the script that sources them.
+external-sources=true
+source-path=SCRIPTDIR
