@@ -347,6 +347,11 @@ platform = "darwin"
 source = "config/shellcheck/shellcheckrc"
 target = "~/.shellcheckrc"
 
+# shfmt reads ~/.editorconfig, and only its [[shell]] section.
+[[symlinks]]
+source = "config/shfmt/editorconfig"
+target = "~/.editorconfig"
+
 [[symlinks]]
 source = "config/fzf.zsh"
 target = "~/.config/fzf/fzf.zsh"

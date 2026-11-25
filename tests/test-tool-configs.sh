@@ -41,6 +41,8 @@ new_home() {
   [ -d "$ROOT/config/biome" ] && ln -s "$ROOT/config/biome" "$h/Library/Application Support/biome"
   [ -f "$ROOT/config/shellcheck/shellcheckrc" ] \
     && ln -s "$ROOT/config/shellcheck/shellcheckrc" "$h/.shellcheckrc"
+  [ -f "$ROOT/config/shfmt/editorconfig" ] \
+    && ln -s "$ROOT/config/shfmt/editorconfig" "$h/.editorconfig"
   echo "$h"
 }
 
@@ -129,6 +131,31 @@ t_repo_biome_ignores() {
   ! printf '%s' "$out" | grep -Eq 'a\.(js|json)'
 }
 check "repo Biome config ignores JavaScript and JSON" t_repo_biome_ignores
+
+t_shfmt_house_style() {
+  local h work
+  h=$(new_home); work=$(mktemp -d "$h/work.XXXXXX")
+  printf '#!/bin/bash\ncase "$1" in\n  a)\n    echo a\n    ;;\nesac\necho x \\\n  | cat\n' > "$work/good.sh"
+  printf '#!/bin/bash\ncase "$1" in\n    a)\n        echo a\n        ;;\nesac\necho x \\\n    | cat\n' > "$work/bad.sh"
+  (cd "$work" && in_home "$h" shfmt -d good.sh >/dev/null 2>&1) || return 1
+  ! (cd "$work" && in_home "$h" shfmt -d bad.sh >/dev/null 2>&1)
+}
+check "user-level shfmt config indents to the house style" t_shfmt_house_style
+
+t_shfmt_only_shell() {
+  local f="$ROOT/config/shfmt/editorconfig" headers
+  [ -f "$f" ] || return 1
+  headers=$(grep -E '^[[:space:]]*\[' "$f")
+  [ "$headers" = "[[shell]]" ]
+}
+check "shfmt config has only the [[shell]] section" t_shfmt_only_shell
+
+# repo_link NAME TARGET — NAME in the repo is a symlink to TARGET.
+repo_link() {
+  [ -L "$ROOT/$1" ] && [ "$(readlink "$ROOT/$1")" = "$2" ]
+}
+check ".editorconfig links to config/shfmt/editorconfig" repo_link .editorconfig config/shfmt/editorconfig
+check ".shellcheckrc links to config/shellcheck/shellcheckrc" repo_link .shellcheckrc config/shellcheck/shellcheckrc
 
 echo ""
 echo "$PASS passed, $FAIL failed"

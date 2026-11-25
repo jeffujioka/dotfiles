@@ -1,0 +1,9 @@
+# Read by shfmt. [[shell]] is its section for every shell script, extensionless
+# ones included. The values are the style that rewrites the fewest existing
+# lines. switch_case_indent is the spelling shfmt 3.14 reads (newer releases
+# also accept case_indent).
+[[shell]]
+indent_style = space
+indent_size = 2
+switch_case_indent = true
+binary_next_line = true
