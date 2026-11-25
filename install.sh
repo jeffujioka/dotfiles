@@ -411,6 +411,11 @@ function apply_dotfiles() {
 
     # Expand ~ to $HOME
     tgt="${tgt/#\~/$HOME}"
+    # A `~/` source names a path under $HOME instead of a repo file (the macOS
+    # alias entries). Note it before the expansion erases the distinction: the
+    # symlink case links such a source verbatim, never resolved through.
+    home_source=""
+    case "$src" in \~/*) home_source="1"; src="${src/#\~/$HOME}" ;; esac
     # Resolve src relative to repo root (not $PWD) — C2 fix
     if [[ "$src" != /* ]]; then src="$script_dir/$src"; fi
 
@@ -419,6 +424,18 @@ function apply_dotfiles() {
 
     case "$typ" in
       symlink)
+        if [ -n "$home_source" ]; then
+          # Checked before anything below touches the target: a missing
+          # source would otherwise leave a dangling link behind. Order the
+          # entry after the one that creates its source.
+          if [ ! -e "$src" ]; then
+            echo "Error: source $src does not exist (list it after the entry that creates it)" >&2
+            exit 1
+          fi
+          link_dest="$src"
+        else
+          link_dest=$(resolve_path "$src")
+        fi
         if [ "$should_backup" = "true" ]; then
           backup_this "$tgt"
         fi
@@ -427,7 +444,7 @@ function apply_dotfiles() {
           echo "Removing stale directory $tgt (replacing with symlink)"
           rm -rf "$tgt"
         fi
-        ln -sfn "$(resolve_path "$src")" "$tgt"
+        ln -sfn "$link_dest" "$tgt"
         ;;
       seed)
         # Create-if-absent only. The target is machine-local state the user

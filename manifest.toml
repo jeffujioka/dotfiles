@@ -320,6 +320,21 @@ target = "~/.config/starship/config.toml"
 source = "config/starship/presets"
 target = "~/.config/starship/presets"
 
+# Biome's user-level config (used for files outside any project and for
+# projects without their own biome.json). ~/.config/biome is the one place to
+# edit. Linux reads it natively. On macOS Biome ignores it and reads
+# ~/Library/Application Support/biome instead, so that path is an alias of
+# ~/.config/biome (a `~/` source is linked verbatim, so it must come after
+# the entry that creates ~/.config/biome).
+[[symlinks]]
+source = "config/biome"
+target = "~/.config/biome"
+
+[[symlinks]]
+source = "~/.config/biome"
+target = "~/Library/Application Support/biome"
+platform = "darwin"
+
 [[symlinks]]
 source = "config/fzf.zsh"
 target = "~/.config/fzf/fzf.zsh"

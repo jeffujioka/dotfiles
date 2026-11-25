@@ -31,19 +31,28 @@ trap 'rm -f "$SEEN_GLOB_LINKS"' EXIT
 
     case "$typ" in
         symlink)
+            # A `~/` source names an already-installed link (the macOS alias)
+            # and is linked verbatim; any other source is a repo-relative path.
+            case "$src" in
+                \~/*) src_path=$(expand_path "$src"); verbatim=true ;;
+                *)    src_path="$REPO_ROOT/$src";     verbatim=false ;;
+            esac
             if [ -L "$tgt" ]; then
                 actual=$(resolve_path "$tgt")
-                expected=$(resolve_path "$REPO_ROOT/$src")
+                expected=$(resolve_path "$src_path")
                 if [ "$actual" = "$expected" ]; then
                     pass "$tgt → $src"
                 else
                     fail "$tgt → $(basename "$actual") (expected $src)"
                 fi
+                if [ "$verbatim" = true ] && [ "$(readlink "$tgt")" != "$src_path" ]; then
+                    fail "$tgt → $(readlink "$tgt") (expected a verbatim link to $src_path)"
+                fi
                 # Guard against ln -sf creating a nested symlink inside
                 # a directory-targeting symlink (recursive symlink bug).
-                if [ -d "$REPO_ROOT/$src" ]; then
+                if [ -d "$src_path" ]; then
                     base=$(basename "$src")
-                    if [ -L "$REPO_ROOT/$src/$base" ]; then
+                    if [ -L "$src_path/$base" ]; then
                         fail "$src/$base is a recursive symlink (ln -sfn missing?)"
                     fi
                 fi
