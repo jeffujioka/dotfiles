@@ -103,6 +103,7 @@ run_local_checks() {
   "$SCRIPT_DIR/tests/check-symlinks.sh" || rc=1
   "$SCRIPT_DIR/tests/test-installer-seed.sh" || rc=1
   "$SCRIPT_DIR/tests/test-installer-home-source.sh" || rc=1
+  "$SCRIPT_DIR/tests/test-installer-blame-ignore.sh" || rc=1
   "$SCRIPT_DIR/tests/test-tool-configs.sh" || rc=1
   "$SCRIPT_DIR/tests/test-lint.sh" || rc=1
   "$SCRIPT_DIR/tests/test-baseline.sh" || rc=1

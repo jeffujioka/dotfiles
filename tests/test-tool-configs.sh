@@ -183,6 +183,25 @@ repo_link() {
 check ".editorconfig links to config/shfmt/editorconfig" repo_link .editorconfig config/shfmt/editorconfig
 check ".shellcheckrc links to config/shellcheck/shellcheckrc" repo_link .shellcheckrc config/shellcheck/shellcheckrc
 
+# Blame ignore: the file lists existing commits; the global gitconfig must not
+# set it (Git fails fatally on a global ignoreRevsFile missing in a repo).
+t_blame_ignore_commits() {
+  local f="$ROOT/.git-blame-ignore-revs" line n=0
+  [ -f "$f" ] || return 1
+  while IFS= read -r line; do
+    case "$line" in '' | '#'*) continue ;; esac
+    git -C "$ROOT" cat-file -e "${line}^{commit}" 2>/dev/null || return 1
+    n=$((n + 1))
+  done <"$f"
+  [ "$n" -ge 1 ]
+}
+check "blame ignore file lists existing commits" t_blame_ignore_commits
+
+t_gitconfig_no_ignorerevs() {
+  ! grep -q ignoreRevsFile "$ROOT/gitconfig"
+}
+check "gitconfig does not set blame.ignoreRevsFile" t_gitconfig_no_ignorerevs
+
 echo ""
 echo "$PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

@@ -543,6 +543,15 @@ function apply_dotfiles() {
 
 }
 
+# Point git blame at .git-blame-ignore-revs, in THIS clone's local config only
+# (never the global gitconfig: Git fails fatally on a global ignoreRevsFile
+# that is missing in a repo). Targets script_dir, never the cwd. Idempotent.
+set_blame_ignore_revs() {
+  [ -f "$script_dir/.git-blame-ignore-revs" ] || return 0
+  git -C "$script_dir" rev-parse --git-dir >/dev/null 2>&1 || return 0
+  git -C "$script_dir" config --local blame.ignoreRevsFile .git-blame-ignore-revs
+}
+
 install_deps="1"
 no_sudo_install=""
 no_backups="1"
@@ -631,6 +640,8 @@ fi
 if [ -n "$no_backups" ]; then
   apply_dotfiles
 fi
+
+set_blame_ignore_revs
 
 echo ""
 echo "dotfiles have been successfully installed"
