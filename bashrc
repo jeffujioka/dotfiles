@@ -34,7 +34,8 @@ _path_prepend() {
 # Each block PREPENDs — the LAST one to run ends up at the FRONT of PATH.
 
 # cargo — lowest priority (Rust toolchain, manual use)
-CARGO_HOME="${XDG_CONFIG_HOME}/cargo"
+export CARGO_HOME="${XDG_CONFIG_HOME}/cargo"
+export RUSTUP_HOME="${XDG_CONFIG_HOME}/rustup"
 CARGO_ENV="${CARGO_HOME}/env"
 if [ -f "${CARGO_ENV}" ]; then
   # shellcheck disable=SC1090  # path is built from XDG_CONFIG_HOME at run time
